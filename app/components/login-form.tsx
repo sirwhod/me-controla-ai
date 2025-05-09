@@ -1,16 +1,16 @@
 'use client'
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "@/app/lib/utils"
+import { Button } from "@/app/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/app/components/ui/card"
+import { Input } from "@/app/components/ui/input"
+import { Label } from "@/app/components/ui/label"
 import { signIn } from "next-auth/react"
 
 export function LoginForm({
@@ -18,7 +18,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   async function handleGoogleSignIn() {
-    await signIn('google', { callbackUrl: '/dashboard' })
+    await signIn('google', { callbackUrl: '/home' })
   }
 
   return (

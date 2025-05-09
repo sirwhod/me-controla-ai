@@ -1,6 +1,6 @@
 import { PiggyBank } from "lucide-react"
 
-import { LoginForm } from "@/components/login-form"
+import { LoginForm } from "@/app/components/login-form"
 
 export default function LoginPage() {
   return (
