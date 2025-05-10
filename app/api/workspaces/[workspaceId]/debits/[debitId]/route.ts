@@ -1,0 +1,146 @@
+import { auth } from '@/app/lib/auth'
+import { db } from '@/app/lib/firebase'
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+
+const updateDebitSchema = z.object({
+  description: z.string().min(1, { message: 'A descrição não pode ser vazia.' }).optional(),
+  value: z.number().positive({ message: 'O valor deve ser positivo.' }).optional(),
+  date: z.string().datetime({ message: 'Data inválida.' }).optional(),
+  bankId: z.string().optional().nullable(),
+  paymentMethodId: z.string().optional().nullable(),
+  categoryId: z.string().optional().nullable(),
+  proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
+  status: z.string().optional(),
+  frequency: z.enum(['monthly']).optional(),
+  startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
+  endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
+  isActive: z.boolean().optional(),
+  totalInstallments: z.number().int().positive({ message: 'Total de parcelas deve ser positivo.' }).optional(),
+  currentInstallment: z.number().int().min(1, { message: 'Número da parcela atual deve ser 1 ou maior.' }).optional(),
+})
+
+type UpdateDebit = z.infer<typeof updateDebitSchema>
+
+export async function GET(req: NextRequest, { params }: { params: { workspaceId: string; debitId: string } }) {
+  try {
+    const workspaceId = params.workspaceId
+    const debitId = params.debitId
+    const session = await auth()
+
+    if (!session?.user) {
+      return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
+    }
+
+    const debitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc(debitId)
+    const debitDoc = await debitRef.get()
+
+    if (!debitDoc.exists) {
+      return NextResponse.json({ message: 'Débito não encontrado' }, { status: 404 })
+    }
+
+    const debitData = debitDoc.data()
+    const formattedDebit = {
+      id: debitDoc.id,
+      ...debitData,
+      date: debitData?.date ? debitData.date.toDate() : null, 
+      createdAt: debitData?.createdAt ? debitData.createdAt.toDate() : null,
+      updatedAt: debitData?.updatedAt ? debitData.updatedAt.toDate() : null,
+      startDate: debitData?.startDate ? debitData.startDate.toDate() : null, 
+      endDate: debitData?.endDate ? debitData.endDate.toDate() : null,     
+    }
+
+    return NextResponse.json(formattedDebit, { status: 200 })
+
+  } catch (error) {
+    console.error(`Erro ao visualizar débito ${params.debitId} para workspace ${params.workspaceId}:`, error)
+    return NextResponse.json({ message: 'Erro interno do servidor ao visualizar débito' }, { status: 500 })
+  }
+}
+
+export async function PUT(req: NextRequest, { params }: { params: { workspaceId: string; debitId: string } }) {
+    return PATCH(req, { params })
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: { workspaceId: string; debitId: string } }) {
+  try {
+    const workspaceId = params.workspaceId
+    const debitId = params.debitId
+    const session = await auth()
+
+    if (!session?.user) {
+      return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
+    }
+
+    const body = await req.json()
+    const validationResult = updateDebitSchema.safeParse(body)
+
+    if (!validationResult.success) {
+      return NextResponse.json({
+        message: 'Dados de entrada inválidos para atualizar débito.',
+        error: validationResult.error.errors.map(e => e.message).join(', '),
+      }, { status: 400 })
+    }
+
+    const updateData = validationResult.data
+
+    if (Object.keys(updateData).length === 0) {
+        return NextResponse.json({ message: 'Nenhum dado fornecido para atualização' }, { status: 400 })
+    }
+
+    const debitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc(debitId)
+
+    const dataToUpdate: UpdateDebit = { ...updateData }
+
+    if (dataToUpdate.date && typeof dataToUpdate.date === 'string') {
+        dataToUpdate.date = new Date(dataToUpdate.date).toDateString()
+    }
+     if (dataToUpdate.startDate && typeof dataToUpdate.startDate === 'string') {
+        dataToUpdate.startDate = new Date(dataToUpdate.startDate).toDateString()
+    }
+    if (dataToUpdate.endDate && typeof dataToUpdate.endDate === 'string') {
+         dataToUpdate.endDate = dataToUpdate.endDate.trim() === '' ? null : new Date(dataToUpdate.endDate).toDateString()
+    } else if (dataToUpdate.endDate === null) {
+         dataToUpdate.endDate = null
+    }
+
+
+    await debitRef.update({
+        ...dataToUpdate,
+        updatedAt: new Date(),
+    })
+
+    return NextResponse.json({ message: 'Débito atualizado com sucesso!' }, { status: 200 })
+
+  } catch (error) {
+    console.error(`Erro ao atualizar débito ${params.debitId} para workspace ${params.workspaceId}:`, error)
+    return NextResponse.json({ message: 'Erro interno do servidor ao atualizar débito' }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: { workspaceId: string; debitId: string } }) {
+  try {
+    const workspaceId = params.workspaceId
+    const debitId = params.debitId
+    const session = await auth()
+
+    if (!session?.user) {
+      return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
+    }
+
+    const debitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc(debitId)
+
+    const debitDoc = await debitRef.get()
+    if (!debitDoc.exists) {
+        return NextResponse.json({ message: 'Débito não encontrado para exclusão' }, { status: 404 })
+    }
+
+    await debitRef.delete()
+
+    return NextResponse.json({ message: 'Débito excluído com sucesso!' }, { status: 200 })
+
+  } catch (error) {
+    console.error(`Erro ao excluir débito ${params.debitId} para workspace ${params.workspaceId}:`, error)
+    return NextResponse.json({ message: 'Erro interno do servidor ao excluir débito' }, { status: 500 })
+  }
+}
