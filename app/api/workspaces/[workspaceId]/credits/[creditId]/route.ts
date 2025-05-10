@@ -3,10 +3,16 @@ import { db } from '@/app/lib/firebase'
 import { UpdateCredit, updateCreditSchema } from '@/app/types/financial';
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(req: NextRequest, { params }: { params: { workspaceId: string; creditId: string } }) {
+interface CreditsRouteParams {
+  workspaceId: string
+  creditId: string
+}
+
+export async function GET(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const creditId = params.creditId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const creditId = searchParams.creditId
     const session = await auth()
 
     if (!session?.user) {
@@ -32,19 +38,21 @@ export async function GET(req: NextRequest, { params }: { params: { workspaceId:
     return NextResponse.json(formattedCredit, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao visualizar crédito ${params.creditId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao visualizar crédito ${searchParams.creditId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao visualizar crédito' }, { status: 500 })
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { workspaceId: string; creditId: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
     return PATCH(req, { params })
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { workspaceId: string; creditId: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const creditId = params.creditId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const creditId = searchParams.creditId
     const session = await auth()
 
     if (!session?.user) {
@@ -83,15 +91,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { workspaceI
     return NextResponse.json({ message: 'Crédito atualizado com sucesso!' }, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao atualizar crédito ${params.creditId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao atualizar crédito ${searchParams.creditId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao atualizar crédito' }, { status: 500 })
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { workspaceId: string; creditId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const creditId = params.creditId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const creditId = searchParams.creditId
     const session = await auth()
 
     if (!session?.user) {
@@ -110,7 +120,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { workspace
     return NextResponse.json({ message: 'Crédito excluído com sucesso!' }, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao excluir crédito ${params.creditId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao excluir crédito ${searchParams.creditId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao excluir crédito' }, { status: 500 })
   }
 }

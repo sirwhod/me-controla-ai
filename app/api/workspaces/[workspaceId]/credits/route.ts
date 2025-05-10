@@ -3,9 +3,14 @@ import { db } from '@/app/lib/firebase'
 import { createCreditSchema } from '@/app/types/financial'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(req: NextRequest, { params }: { params: { workspaceId: string } }) {
+interface CreditsRouteParams {
+  workspaceId: string;
+}
+
+export async function GET(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
     const session = await auth()
 
     if (!session?.user) {
@@ -31,14 +36,16 @@ export async function GET(req: NextRequest, { params }: { params: { workspaceId:
     return NextResponse.json(credits, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao listar créditos para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao listar créditos para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao listar créditos' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { workspaceId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
     const session = await auth()
 
     if (!session?.user) {
@@ -95,7 +102,8 @@ export async function POST(req: NextRequest, { params }: { params: { workspaceId
     return NextResponse.json({ message: 'Crédito criado com sucesso!', creditId: newCreditRef.id }, { status: 201 })
 
   } catch (error) {
-    console.error(`Erro ao criar crédito para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao criar crédito para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao criar crédito' }, { status: 500 })
   }
 }
