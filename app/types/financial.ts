@@ -106,6 +106,24 @@ export interface Category {
   updatedAt: Date | null; // Data de atualização (Timestamp convertido)
 }
 
+export const createCategorySchema = z.object({
+  name: z.string().min(1, { message: 'O nome da categoria é obrigatório.' }),
+  type: z.enum(['expense', 'income'], {
+    errorMap: () => ({ message: 'Tipo de categoria inválido. Deve ser "expense" ou "income".' }),
+  }),
+})
+
+export type CreateCategory = z.infer<typeof createCategorySchema>
+
+export const updateCategorySchema = z.object({
+  name: z.string().min(1, { message: 'O nome da categoria não pode ser vazio.' }).optional(),
+  type: z.enum(['expense', 'income'], {
+    errorMap: () => ({ message: 'Tipo de categoria inválido. Deve ser "expense" ou "income".' }),
+  }).optional(),
+})
+
+export type UpdateCategory = z.infer<typeof updateCategorySchema>
+
 
 // --- Interface para Meta (Goal) ---
 // Corresponde ao documento em 'workspaces/{workspaceId}/goals/{goalId}'

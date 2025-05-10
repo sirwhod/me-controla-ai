@@ -1,14 +1,7 @@
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
+import { createCategorySchema } from '@/app/types/financial'
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-
-const createCategorySchema = z.object({
-  name: z.string().min(1, { message: 'O nome da categoria é obrigatório.' }),
-  type: z.enum(['expense', 'income'], {
-    errorMap: () => ({ message: 'Tipo de categoria inválido. Deve ser "expense" ou "income".' }),
-  }),
-})
 
 export async function GET(req: NextRequest, { params }: { params: { workspaceId: string } }) {
   try {
