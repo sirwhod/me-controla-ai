@@ -1,17 +1,7 @@
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
+import { updatePaymentMethodSchema } from '@/app/types/financial';
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-
-const updatePaymentMethodSchema = z.object({
-  name: z.string().min(1, { message: 'O nome do método de pagamento não pode ser vazio.' }).optional(),
-  type: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
-    errorMap: () => ({ message: 'Tipo de método de pagamento inválido.' }),
-  }).optional(),
-  bankId: z.string().optional().nullable(),
-  invoiceClosingDay: z.number().int().min(1).max(31).optional().nullable(),
-  invoiceDueDate: z.number().int().min(1).max(31).optional().nullable(),
-})
 
 export async function GET(req: NextRequest, { params }: { params: { workspaceId: string; paymentMethodId: string } }) {
   try {

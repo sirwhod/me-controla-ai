@@ -94,6 +94,29 @@ export interface PaymentMethod {
   updatedAt: Date | null; // Data de atualização (Timestamp convertido)
 }
 
+export const createPaymentMethodSchema = z.object({
+  name: z.string().min(1, { message: 'O nome do método de pagamento é obrigatório.' }),
+  type: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
+    errorMap: () => ({ message: 'Tipo de método de pagamento inválido.' }),
+  }),
+  bankId: z.string().optional().nullable(),
+  invoiceClosingDay: z.number().int().min(1).max(31).optional().nullable(),
+  invoiceDueDate: z.number().int().min(1).max(31).optional().nullable(),
+})
+
+export type CreatePaymentMethod = z.infer<typeof createPaymentMethodSchema>
+
+export const updatePaymentMethodSchema = z.object({
+  name: z.string().min(1, { message: 'O nome do método de pagamento não pode ser vazio.' }).optional(),
+  type: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
+    errorMap: () => ({ message: 'Tipo de método de pagamento inválido.' }),
+  }).optional(),
+  bankId: z.string().optional().nullable(),
+  invoiceClosingDay: z.number().int().min(1).max(31).optional().nullable(),
+  invoiceDueDate: z.number().int().min(1).max(31).optional().nullable(),
+})
+
+export type UpdatePaymentMethod = z.infer<typeof updatePaymentMethodSchema>
 
 // --- Interface para Categoria (Category) ---
 // Corresponde ao documento em 'workspaces/{workspaceId}/categories/{categoryId}'
