@@ -8,7 +8,6 @@ import { Button } from "@/app/components/ui/button"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -54,7 +53,7 @@ export function WorkspaceForm({isDialog = false}: WorkspaceFormProps) {
   
         console.log('Workspace criado:', result.workspaceId);
   
-      } catch (err: any) {
+      } catch (err) {
         console.error('Erro ao criar workspace:', err);
       } finally {
         refetch()

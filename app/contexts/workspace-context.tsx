@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, Dispatch, SetStateAction, ReactNode, useEffect } from 'react'
+import { createContext, useState, Dispatch, SetStateAction, ReactNode, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import { getWorkspaces, Workspace } from '../http/get-workspaces'
