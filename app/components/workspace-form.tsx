@@ -20,6 +20,7 @@ import { DialogClose, DialogFooter } from "./ui/dialog"
 import { createWorkspaceAction } from "../actions/workspace-actions"
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
 import { User, Users } from "lucide-react"
+import { useWorkspace } from "../hooks/use-workspace"
 
 const FormSchema = z.object({
   name: z.string().min(2, {
@@ -35,6 +36,7 @@ interface WorkspaceFormProps {
 }
 
 export function WorkspaceForm({isDialog = false}: WorkspaceFormProps) {
+  const { refetch } = useWorkspace()
   const form = useForm<CreateWorkspaceRequest>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -55,6 +57,7 @@ export function WorkspaceForm({isDialog = false}: WorkspaceFormProps) {
       } catch (err: any) {
         console.error('Erro ao criar workspace:', err);
       } finally {
+        refetch()
         toast.success("Workspace criado com sucesso!")
       }
   }

@@ -1,18 +1,10 @@
 import { AppSidebar } from "@/app/components/app-sidebar"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/app/components/ui/breadcrumb"
-import { Separator } from "@/app/components/ui/separator"
+import QueryProvider from "@/app/components/query-provider";
 import {
   SidebarInset,
   SidebarProvider,
-  SidebarTrigger,
 } from "@/app/components/ui/sidebar"
+import { WorkspaceProvider } from "@/app/contexts/workspace-context";
 import { SessionProvider } from "next-auth/react";
 
 export default function HomeLayout({
@@ -23,10 +15,14 @@ export default function HomeLayout({
   return (
     <SessionProvider>
       <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          {children}
-        </SidebarInset>
+        <QueryProvider>
+          <WorkspaceProvider>
+            <AppSidebar />
+            <SidebarInset>
+              {children}
+            </SidebarInset>
+          </WorkspaceProvider>
+        </QueryProvider>
       </SidebarProvider>
     </SessionProvider>
   )

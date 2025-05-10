@@ -28,6 +28,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/app/components/ui/sidebar"
+import { useWorkspace } from "../hooks/use-workspace"
 
 const data = {
   navMain: [
@@ -149,21 +150,29 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { workspaceActive } = useWorkspace()
+
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+              <div>
                 <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                   <PiggyBank className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">Poupa Grana.</span>
-                  <span className="truncate text-xs">Pessoal</span>
+                  <span className="truncate text-xs">
+                    {
+                      workspaceActive?.type && workspaceActive.type === "personal" ?
+                      "Pessoal" :
+                      "Compartilhado"
+                    }
+                  </span>
                 </div>
-              </a>
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
