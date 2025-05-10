@@ -3,10 +3,16 @@ import { db } from '@/app/lib/firebase'
 import { updatePaymentMethodSchema } from '@/app/types/financial';
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(req: NextRequest, { params }: { params: { workspaceId: string; paymentMethodId: string } }) {
+interface PaymentMethodsRouteParams {
+  workspaceId: string;
+  paymentMethodId: string
+}
+
+export async function GET(req: NextRequest, { params }: { params: Promise<PaymentMethodsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const paymentMethodId = params.paymentMethodId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const paymentMethodId = searchParams.paymentMethodId
     const session = await auth()
 
     if (!session?.user) {
@@ -31,19 +37,21 @@ export async function GET(req: NextRequest, { params }: { params: { workspaceId:
     return NextResponse.json(formattedPaymentMethod, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao visualizar metodo de pagamento ${params.paymentMethodId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao visualizar metodo de pagamento ${searchParams.paymentMethodId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao visualizar metodo de pagamento' }, { status: 500 })
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { workspaceId: string; paymentMethodId: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<PaymentMethodsRouteParams> }) {
     return PATCH(req, { params })
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { workspaceId: string; paymentMethodId: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<PaymentMethodsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const paymentMethodId = params.paymentMethodId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const paymentMethodId = searchParams.paymentMethodId
     const session = await auth()
 
     if (!session?.user) {
@@ -76,15 +84,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { workspaceI
     return NextResponse.json({ message: 'Método de pagamento atualizado com sucesso!' }, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao atualizar metodo de pagamento ${params.paymentMethodId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao atualizar metodo de pagamento ${searchParams.paymentMethodId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao atualizar metodo de pagamento' }, { status: 500 })
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { workspaceId: string; paymentMethodId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<PaymentMethodsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const paymentMethodId = params.paymentMethodId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const paymentMethodId = searchParams.paymentMethodId
     const session = await auth()
 
     if (!session?.user) {
@@ -103,7 +113,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { workspace
     return NextResponse.json({ message: 'Método de pagamento excluído com sucesso!' }, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao excluir metodo de pagamento ${params.paymentMethodId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao excluir metodo de pagamento ${searchParams.paymentMethodId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao excluir metodo de pagamento' }, { status: 500 })
   }
 }
