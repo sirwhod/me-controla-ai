@@ -3,10 +3,16 @@ import { db } from '@/app/lib/firebase'
 import { UpdateGoal, updateGoalSchema } from '@/app/types/financial';
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(req: NextRequest, { params }: { params: { workspaceId: string; goalId: string } }) {
+interface GoalsRouteParams {
+  workspaceId: string;
+  goalId: string
+}
+
+export async function GET(req: NextRequest, { params }: { params: Promise<GoalsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const goalId = params.goalId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const goalId = searchParams.goalId
     const session = await auth()
 
     if (!session?.user) {
@@ -33,19 +39,21 @@ export async function GET(req: NextRequest, { params }: { params: { workspaceId:
     return NextResponse.json(formattedGoal, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao visualizar meta ${params.goalId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao visualizar meta ${searchParams.goalId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao visualizar meta' }, { status: 500 })
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { workspaceId: string; goalId: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<GoalsRouteParams> }) {
     return PATCH(req, { params })
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { workspaceId: string; goalId: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<GoalsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const goalId = params.goalId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const goalId = searchParams.goalId
     const session = await auth()
 
     if (!session?.user) {
@@ -98,15 +106,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { workspaceI
     return NextResponse.json({ message: 'Meta atualizada com sucesso!' }, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao atualizar meta ${params.goalId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao atualizar meta ${searchParams.goalId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao atualizar meta' }, { status: 500 })
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { workspaceId: string; goalId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<GoalsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const goalId = params.goalId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const goalId = searchParams.goalId
     const session = await auth()
 
     if (!session?.user) {
@@ -125,7 +135,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { workspace
     return NextResponse.json({ message: 'Meta excluída com sucesso!' }, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao excluir meta ${params.goalId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao excluir meta ${searchParams.goalId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao excluir meta' }, { status: 500 })
   }
 }

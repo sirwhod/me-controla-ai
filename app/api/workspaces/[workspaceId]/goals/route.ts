@@ -3,9 +3,14 @@ import { db } from '@/app/lib/firebase'
 import { createGoalSchema } from '@/app/types/financial'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(req: NextRequest, { params }: { params: { workspaceId: string } }) {
+interface GoalsRouteParams {
+  workspaceId: string;
+}
+
+export async function GET(req: NextRequest, { params }: { params: Promise<GoalsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
     const session = await auth()
 
     if (!session?.user) {
@@ -32,14 +37,16 @@ export async function GET(req: NextRequest, { params }: { params: { workspaceId:
     return NextResponse.json(goals, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao listar metas para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao listar metas para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao listar metas' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { workspaceId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<GoalsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
     const session = await auth()
 
     if (!session?.user) {
@@ -85,7 +92,8 @@ export async function POST(req: NextRequest, { params }: { params: { workspaceId
     return NextResponse.json({ message: 'Meta criada com sucesso!', goalId: newGoalRef.id }, { status: 201 })
 
   } catch (error) {
-    console.error(`Erro ao criar meta para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao criar meta para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao criar meta' }, { status: 500 })
   }
 }
