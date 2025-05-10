@@ -32,6 +32,44 @@ export interface Debit {
   lastGeneratedMonthYear?: string; // Para Modelos Fixo/Assinatura: Último período gerado (string "Mês Ano")
 }
 
+export const createDebitSchema = z.object({
+  description: z.string().min(1, { message: 'A descrição do débito é obrigatória.' }),
+  value: z.number().positive({ message: 'O valor do débito deve ser positivo.' }),
+  date: z.string().datetime({ message: 'Data da transação inválida.' }),
+  type: z.enum(['Comum', 'Fixo', 'Assinatura', 'Parcelamento'], {
+    errorMap: () => ({ message: 'Tipo de débito inválido.' }),
+  }),
+  bankId: z.string().optional().nullable(),
+  paymentMethodId: z.string().optional().nullable(),
+  categoryId: z.string().optional().nullable(),
+  proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
+  frequency: z.enum(['monthly']).optional(),
+  startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
+  endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
+  totalInstallments: z.number().int().positive({ message: 'Total de parcelas deve ser um número positivo.' }).optional(),
+  currentInstallment: z.number().int().min(1, { message: 'Número da parcela atual deve ser 1 ou maior.' }).optional(),
+})
+
+export type CreateDebit = z.infer<typeof createDebitSchema>
+
+export const updateDebitSchema = z.object({
+  description: z.string().min(1, { message: 'A descrição não pode ser vazia.' }).optional(),
+  value: z.number().positive({ message: 'O valor deve ser positivo.' }).optional(),
+  date: z.string().datetime({ message: 'Data inválida.' }).optional(),
+  bankId: z.string().optional().nullable(),
+  paymentMethodId: z.string().optional().nullable(),
+  categoryId: z.string().optional().nullable(),
+  proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
+  status: z.string().optional(),
+  frequency: z.enum(['monthly']).optional(),
+  startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
+  endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
+  isActive: z.boolean().optional(),
+  totalInstallments: z.number().int().positive({ message: 'Total de parcelas deve ser positivo.' }).optional(),
+  currentInstallment: z.number().int().min(1, { message: 'Número da parcela atual deve ser 1 ou maior.' }).optional(),
+})
+
+export type UpdateDebit = z.infer<typeof updateDebitSchema>
 
 // --- Interface para Crédito (Credit) ---
 export interface Credit {

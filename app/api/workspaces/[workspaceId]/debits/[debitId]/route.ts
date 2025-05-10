@@ -1,26 +1,7 @@
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
+import { UpdateDebit, updateDebitSchema } from '@/app/types/financial';
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-
-const updateDebitSchema = z.object({
-  description: z.string().min(1, { message: 'A descrição não pode ser vazia.' }).optional(),
-  value: z.number().positive({ message: 'O valor deve ser positivo.' }).optional(),
-  date: z.string().datetime({ message: 'Data inválida.' }).optional(),
-  bankId: z.string().optional().nullable(),
-  paymentMethodId: z.string().optional().nullable(),
-  categoryId: z.string().optional().nullable(),
-  proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
-  status: z.string().optional(),
-  frequency: z.enum(['monthly']).optional(),
-  startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
-  endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
-  isActive: z.boolean().optional(),
-  totalInstallments: z.number().int().positive({ message: 'Total de parcelas deve ser positivo.' }).optional(),
-  currentInstallment: z.number().int().min(1, { message: 'Número da parcela atual deve ser 1 ou maior.' }).optional(),
-})
-
-type UpdateDebit = z.infer<typeof updateDebitSchema>
 
 export async function GET(req: NextRequest, { params }: { params: { workspaceId: string; debitId: string } }) {
   try {
