@@ -3,10 +3,16 @@ import { db } from '@/app/lib/firebase'
 import { UpdateDebit, updateDebitSchema } from '@/app/types/financial';
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(req: NextRequest, { params }: { params: { workspaceId: string; debitId: string } }) {
+interface CreditsRouteParams {
+  workspaceId: string;
+  debitId: string
+}
+
+export async function GET(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const debitId = params.debitId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const debitId = searchParams.debitId
     const session = await auth()
 
     if (!session?.user) {
@@ -34,19 +40,21 @@ export async function GET(req: NextRequest, { params }: { params: { workspaceId:
     return NextResponse.json(formattedDebit, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao visualizar débito ${params.debitId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao visualizar débito ${searchParams.debitId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao visualizar débito' }, { status: 500 })
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { workspaceId: string; debitId: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
     return PATCH(req, { params })
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { workspaceId: string; debitId: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const debitId = params.debitId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const debitId = searchParams.debitId
     const session = await auth()
 
     if (!session?.user) {
@@ -94,15 +102,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { workspaceI
     return NextResponse.json({ message: 'Débito atualizado com sucesso!' }, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao atualizar débito ${params.debitId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao atualizar débito ${searchParams.debitId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao atualizar débito' }, { status: 500 })
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { workspaceId: string; debitId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const debitId = params.debitId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const debitId = searchParams.debitId
     const session = await auth()
 
     if (!session?.user) {
@@ -121,7 +131,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { workspace
     return NextResponse.json({ message: 'Débito excluído com sucesso!' }, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao excluir débito ${params.debitId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao excluir débito ${searchParams.debitId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao excluir débito' }, { status: 500 })
   }
 }

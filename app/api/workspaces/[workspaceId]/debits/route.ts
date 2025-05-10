@@ -3,9 +3,14 @@ import { db } from '@/app/lib/firebase'
 import { createDebitSchema, Debit } from '@/app/types/financial'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(req: NextRequest, { params }: { params: { workspaceId: string } }) {
+interface DebitsRouteParams {
+  workspaceId: string;
+}
+
+export async function GET(req: NextRequest, { params }: { params: Promise<DebitsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
     const session = await auth()
 
     if (!session?.user) {
@@ -33,14 +38,16 @@ export async function GET(req: NextRequest, { params }: { params: { workspaceId:
     return NextResponse.json(debits, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao listar débitos para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao listar débitos para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao listar débitos' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { workspaceId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<DebitsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
     const session = await auth()
 
     if (!session?.user) {
@@ -164,7 +171,8 @@ export async function POST(req: NextRequest, { params }: { params: { workspaceId
     return NextResponse.json({ message: 'Débito criado com sucesso!', debitId: newDebitRef.id }, { status: 201 })
 
   } catch (error) {
-    console.error(`Erro ao criar débito para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao criar débito para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao criar débito' }, { status: 500 })
   }
 }
