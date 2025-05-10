@@ -162,7 +162,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <PiggyBank className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Poupa Grana.</span>
+                  <span className="truncate font-medium">MeControla.AI</span>
                   <span className="truncate text-xs">
                     {
                       workspaceActive?.type && workspaceActive.type === "personal" ?
