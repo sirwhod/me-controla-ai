@@ -3,6 +3,7 @@
 import { FieldValue } from 'firebase-admin/firestore'; // Importe FieldValue
 import { auth } from '../lib/auth';
 import { db } from '../lib/firebase';
+import { CreateWorkspaceRequest } from '../components/workspace-form';
 
 // Defina o tipo de retorno da ação para melhor tipagem no cliente
 interface CreateWorkspaceResult {
@@ -12,7 +13,7 @@ interface CreateWorkspaceResult {
   error?: string;
 }
 
-export async function createWorkspaceAction(formData: FormData): Promise<CreateWorkspaceResult> {
+export async function createWorkspaceAction({name, type}: CreateWorkspaceRequest): Promise<CreateWorkspaceResult> {
   try {
     const session = await auth();
 
@@ -26,19 +27,13 @@ export async function createWorkspaceAction(formData: FormData): Promise<CreateW
         return { success: false, message: 'UID do usuário não encontrado na sessão', error: 'UID não disponível' };
     }
 
-    const name = formData.get('name') as string | null;
-
-    if (!name || typeof name !== 'string' || name.trim() === '') {
-      return { success: false, message: 'Nome do workspace inválido', error: 'Nome inválido' };
-    }
-
     const newWorkspaceRef = db.collection('workspaces').doc();
 
     const newWorkspaceData = {
       name: name.trim(),
       ownerId: userId,
       members: [userId],
-      type: 'personal',
+      type,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
