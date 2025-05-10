@@ -3,10 +3,16 @@ import { db } from '@/app/lib/firebase'
 import { updateBankSchema } from '@/app/types/financial';
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(req: NextRequest, { params }: { params: { workspaceId: string; bankId: string } }) {
+interface BankRouteParams {
+  workspaceId: string;
+  bankId: string;
+}
+
+export async function GET(req: NextRequest, { params }: { params: Promise<BankRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const bankId = params.bankId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const bankId = searchParams.bankId
 
     const session = await auth()
     if (!session?.user) {
@@ -31,19 +37,21 @@ export async function GET(req: NextRequest, { params }: { params: { workspaceId:
     return NextResponse.json(formattedBank, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao visualizar banco ${params.bankId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao visualizar banco ${searchParams.bankId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao visualizar banco' }, { status: 500 })
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { workspaceId: string; bankId: string } }) {
-    return PATCH(req, { params }) // Redireciona PUT para PATCH
+export async function PUT(req: NextRequest, { params }: { params: Promise<BankRouteParams> }) {
+    return PATCH(req, { params: params }) // Redireciona PUT para PATCH
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { workspaceId: string; bankId: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<BankRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const bankId = params.bankId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const bankId = searchParams.bankId
 
     const session = await auth()
     if (!session?.user) {
@@ -76,15 +84,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { workspaceI
     return NextResponse.json({ message: 'Banco atualizado com sucesso!' }, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao atualizar banco ${params.bankId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao atualizar banco ${searchParams.bankId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao atualizar banco' }, { status: 500 })
   }
 }
  
-export async function DELETE(req: NextRequest, { params }: { params: { workspaceId: string; bankId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<BankRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const bankId = params.bankId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const bankId = searchParams.bankId
 
     const session = await auth()
     if (!session?.user) {
@@ -103,7 +113,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { workspace
     return NextResponse.json({ message: 'Banco excluído com sucesso!' }, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao excluir banco ${params.bankId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao excluir banco ${searchParams.bankId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao excluir banco' }, { status: 500 })
   }
 }
