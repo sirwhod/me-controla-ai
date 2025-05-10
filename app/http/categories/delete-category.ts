@@ -4,7 +4,7 @@ interface DeleteCategoryResponse {
   message: string;
 }
 
-export async function deleteCategorys(
+export async function deleteCategory(
   workspaceId: string, 
   categoryId: string,
 ): Promise<DeleteCategoryResponse> {

@@ -5,7 +5,7 @@ interface UpdateCategoryResponse {
   message: string;
 }
 
-export async function updateCategorys(
+export async function updateCategory(
   workspaceId: string, 
   categoryId: string,
   {
