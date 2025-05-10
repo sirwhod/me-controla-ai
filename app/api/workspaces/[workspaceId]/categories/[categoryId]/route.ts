@@ -3,10 +3,16 @@ import { db } from '@/app/lib/firebase'
 import { updateCategorySchema } from '@/app/types/financial'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(req: NextRequest, { params }: { params: { workspaceId: string; categoryId: string } }) {
+interface CategoryRouteParams {
+  workspaceId: string
+  categoryId: string
+}
+
+export async function GET(req: NextRequest, { params }: { params: Promise<CategoryRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const categoryId = params.categoryId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const categoryId = searchParams.categoryId
     const session = await auth()
 
     if (!session?.user) {
@@ -31,19 +37,21 @@ export async function GET(req: NextRequest, { params }: { params: { workspaceId:
     return NextResponse.json(formattedCategory, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao visualizar categoria ${params.categoryId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao visualizar categoria ${searchParams.categoryId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao visualizar categoria' }, { status: 500 })
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { workspaceId: string; categoryId: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<CategoryRouteParams> }) {
     return PATCH(req, { params })
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { workspaceId: string; categoryId: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<CategoryRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const categoryId = params.categoryId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const categoryId = searchParams.categoryId
     const session = await auth()
 
     if (!session?.user) {
@@ -76,15 +84,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { workspaceI
     return NextResponse.json({ message: 'Categoria atualizada com sucesso!' }, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao atualizar categoria ${params.categoryId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao atualizar categoria ${searchParams.categoryId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao atualizar categoria' }, { status: 500 })
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { workspaceId: string; categoryId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<CategoryRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
-    const categoryId = params.categoryId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
+    const categoryId = searchParams.categoryId
     const session = await auth()
 
     if (!session?.user) {
@@ -103,7 +113,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { workspace
     return NextResponse.json({ message: 'Categoria excluída com sucesso!' }, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao excluir categoria ${params.categoryId} para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao excluir categoria ${searchParams.categoryId} para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao excluir categoria' }, { status: 500 })
   }
 }
