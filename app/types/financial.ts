@@ -52,6 +52,32 @@ export interface Credit {
   updatedAt: Date | null; // Convertido de Timestamp para Date
 }
 
+export const createCreditSchema = z.object({
+  description: z.string().min(1, { message: 'A descrição do crédito é obrigatória.' }),
+  value: z.number().positive({ message: 'O valor do crédito deve ser positivo.' }),
+  date: z.string().datetime({ message: 'Data da transação inválida.' }),
+  bankId: z.string().optional().nullable(),
+  paymentMethodId: z.string().optional().nullable(),
+  categoryId: z.string().optional().nullable(),
+  proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
+  status: z.string().optional(),
+})
+
+export type CreateCredit = z.infer<typeof createCreditSchema>
+
+export const updateCreditSchema = z.object({
+  description: z.string().min(1, { message: 'A descrição não pode ser vazia.' }).optional(),
+  value: z.number().positive({ message: 'O valor deve ser positivo.' }).optional(),
+  date: z.string().datetime({ message: 'Data inválida.' }).optional(),
+  bankId: z.string().optional().nullable(),
+  paymentMethodId: z.string().optional().nullable(),
+  categoryId: z.string().optional().nullable(),
+  proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
+  status: z.string().optional(),
+})
+
+export type UpdateCredit = z.infer<typeof updateCreditSchema>
+
 // --- Interface para Banco (Bank) ---
 // Corresponde ao documento em 'workspaces/{workspaceId}/banks/{bankId}'
 export interface Bank {

@@ -1,20 +1,7 @@
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
+import { UpdateCredit, updateCreditSchema } from '@/app/types/financial';
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-
-const updateCreditSchema = z.object({
-  description: z.string().min(1, { message: 'A descrição não pode ser vazia.' }).optional(),
-  value: z.number().positive({ message: 'O valor deve ser positivo.' }).optional(),
-  date: z.string().datetime({ message: 'Data inválida.' }).optional(),
-  bankId: z.string().optional().nullable(),
-  paymentMethodId: z.string().optional().nullable(),
-  categoryId: z.string().optional().nullable(),
-  proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
-  status: z.string().optional(),
-})
-
-type UpdateCredit = z.infer<typeof updateCreditSchema>
 
 export async function GET(req: NextRequest, { params }: { params: { workspaceId: string; creditId: string } }) {
   try {

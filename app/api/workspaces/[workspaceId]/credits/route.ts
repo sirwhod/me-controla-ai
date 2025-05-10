@@ -1,17 +1,7 @@
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
+import { createCreditSchema } from '@/app/types/financial'
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-const createCreditSchema = z.object({
-  description: z.string().min(1, { message: 'A descrição do crédito é obrigatória.' }),
-  value: z.number().positive({ message: 'O valor do crédito deve ser positivo.' }),
-  date: z.string().datetime({ message: 'Data da transação inválida.' }),
-  bankId: z.string().optional().nullable(),
-  paymentMethodId: z.string().optional().nullable(),
-  categoryId: z.string().optional().nullable(),
-  proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
-  status: z.string().optional(),
-})
 
 export async function GET(req: NextRequest, { params }: { params: { workspaceId: string } }) {
   try {
