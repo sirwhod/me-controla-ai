@@ -10,6 +10,7 @@ import { Separator } from "@/app/components/ui/separator"
 import {
   SidebarTrigger,
 } from "@/app/components/ui/sidebar"
+import WorkspaceSelector from "@/app/components/workspace-selector"
 
 export default function Page() {
   return (
@@ -30,7 +31,9 @@ export default function Page() {
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Selecionar Workspace</BreadcrumbPage>
+                  <BreadcrumbPage>
+                    <WorkspaceSelector />
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
