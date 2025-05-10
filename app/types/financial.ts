@@ -1,11 +1,4 @@
-// Importe a interface Workspace se necessário para referências
-// import { Workspace } from './workspace'; // Ajuste o caminho
-
-// Importe as interfaces para entidades relacionadas se necessário
-// import { Bank } from './bank'; // Ajuste o caminho
-// import { PaymentMethod } from './paymentMethod'; // Ajuste o caminho
-// import { Category } from './category'; // Ajuste o caminho
-
+import { z } from "zod";
 
 // --- Interface para Débito (Debit) ---
 export interface Debit {
@@ -59,10 +52,74 @@ export interface Credit {
   updatedAt: Date | null; // Convertido de Timestamp para Date
 }
 
-// Você pode adicionar interfaces para outras entidades aqui ou em arquivos separados
-// Ex:
-// export interface Bank { ... }
-// export interface PaymentMethod { ... }
-// export interface Category { ... }
-// export interface Goal { ... }
+// --- Interface para Banco (Bank) ---
+// Corresponde ao documento em 'workspaces/{workspaceId}/banks/{bankId}'
+export interface Bank {
+  id: string; // O ID do documento do Firestore
+  workspaceId: string; // ID do workspace pai
+  name: string;
+  code: string | null; // Código do banco (pode ser null)
+  iconUrl: string | null; // URL do ícone (pode ser null)
+  createdAt: Date | null; // Data de criação (Timestamp convertido)
+  updatedAt: Date | null; // Data de atualização (Timestamp convertido)
+}
+
+export const createBankSchema = z.object({
+  name: z.string().min(1, { message: 'O nome do banco é obrigatório.' }),
+  code: z.string().optional(),
+  iconUrl: z.string().url('URL do ícone inválida.').optional().or(z.literal('')),
+})
+
+export type CreateBank = z.infer<typeof createBankSchema>
+
+export const updateBankSchema = z.object({
+  name: z.string().min(1, { message: 'O nome do banco não pode ser vazio.' }).optional(),
+  code: z.string().optional().nullable(),
+  iconUrl: z.string().url('URL do ícone inválida.').optional().or(z.literal('')).nullable(),
+})
+
+export type UpdateBank = z.infer<typeof updateBankSchema>
+
+// --- Interface para Método de Pagamento (PaymentMethod) ---
+// Corresponde ao documento em 'workspaces/{workspaceId}/paymentMethods/{paymentMethodId}'
+export interface PaymentMethod {
+  id: string; // O ID do documento do Firestore
+  workspaceId: string; // ID do workspace pai
+  name: string;
+  type: 'Crédito' | 'Débito' | 'Pix' | 'Conta'; // Tipo de método
+  bankId: string | null; // ID do banco associado (pode ser null)
+  invoiceClosingDay: number | null; // Dia de fechamento (para Crédito, pode ser null)
+  invoiceDueDate: number | null; // Dia de vencimento (para Crédito, pode ser null)
+  createdAt: Date | null; // Data de criação (Timestamp convertido)
+  updatedAt: Date | null; // Data de atualização (Timestamp convertido)
+}
+
+
+// --- Interface para Categoria (Category) ---
+// Corresponde ao documento em 'workspaces/{workspaceId}/categories/{categoryId}'
+export interface Category {
+  id: string; // O ID do documento do Firestore
+  workspaceId: string; // ID do workspace pai
+  name: string;
+  type: 'expense' | 'income'; // Tipo de categoria
+  createdAt: Date | null; // Data de criação (Timestamp convertido)
+  updatedAt: Date | null; // Data de atualização (Timestamp convertido)
+}
+
+
+// --- Interface para Meta (Goal) ---
+// Corresponde ao documento em 'workspaces/{workspaceId}/goals/{goalId}'
+export interface Goal {
+  id: string; // O ID do documento do Firestore
+  workspaceId: string; // ID do workspace pai
+  name: string;
+  targetAmount: number;
+  currentAmount: number; // Progresso atual (atualizado manualmente)
+  startDate: Date | null; // Data de início (Timestamp convertido)
+  endDate: Date | null; // Data de término (Timestamp convertido, pode ser null)
+  userId: string | null; // UID do usuário responsável (pode ser null)
+  description: string | null; // Descrição (pode ser null)
+  createdAt: Date | null; // Data de criação (Timestamp convertido)
+  updatedAt: Date | null; // Data de atualização (Timestamp convertido)
+}
 

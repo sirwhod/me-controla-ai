@@ -1,13 +1,7 @@
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
+import { updateBankSchema } from '@/app/types/financial';
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod' 
-
-const updateBankSchema = z.object({
-  name: z.string().min(1, { message: 'O nome do banco não pode ser vazio.' }).optional(),
-  code: z.string().optional().nullable(),
-  iconUrl: z.string().url('URL do ícone inválida.').optional().or(z.literal('')).nullable(),
-})
 
 export async function GET(req: NextRequest, { params }: { params: { workspaceId: string; bankId: string } }) {
   try {

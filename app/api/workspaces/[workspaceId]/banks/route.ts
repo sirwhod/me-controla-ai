@@ -1,13 +1,7 @@
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
+import { createBankSchema } from '@/app/types/financial'
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-
-const createBankSchema = z.object({
-  name: z.string().min(1, { message: 'O nome do banco é obrigatório.' }),
-  code: z.string().optional(),
-  iconUrl: z.string().url('URL do ícone inválida.').optional().or(z.literal('')),
-})
 
 export async function GET(req: NextRequest, { params }: { params: { workspaceId: string } }) {
   try {
