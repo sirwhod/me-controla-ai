@@ -18,7 +18,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   async function handleGoogleSignIn() {
-    await signIn('google', { callbackUrl: '/home' })
+    await signIn('google', { callbackUrl: '/dashboard' })
   }
 
   return (
