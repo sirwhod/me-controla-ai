@@ -1,16 +1,7 @@
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
+import { createGoalSchema } from '@/app/types/financial'
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-
-const createGoalSchema = z.object({
-  name: z.string().min(1, { message: 'O nome da meta é obrigatório.' }),
-  targetAmount: z.number().positive({ message: 'O valor alvo da meta deve ser positivo.' }),
-  startDate: z.string().datetime({ message: 'Data de início inválida.' }), // Recebe como string ISO 8601
-  endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')),
-  description: z.string().optional().or(z.literal('')),
-  userId: z.string().optional().nullable(),
-})
 
 export async function GET(req: NextRequest, { params }: { params: { workspaceId: string } }) {
   try {

@@ -141,3 +141,25 @@ export interface Goal {
   updatedAt: Date | null; // Data de atualização (Timestamp convertido)
 }
 
+export const createGoalSchema = z.object({
+  name: z.string().min(1, { message: 'O nome da meta é obrigatório.' }),
+  targetAmount: z.number().positive({ message: 'O valor alvo da meta deve ser positivo.' }),
+  startDate: z.string().datetime({ message: 'Data de início inválida.' }), // Recebe como string ISO 8601
+  endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')),
+  description: z.string().optional().or(z.literal('')),
+  userId: z.string().optional().nullable(),
+})
+
+export type CreateGoal = z.infer<typeof createGoalSchema>
+
+export const updateGoalSchema = z.object({
+  name: z.string().min(1, { message: 'O nome da meta não pode ser vazio.' }).optional(),
+  targetAmount: z.number().positive({ message: 'O valor alvo da meta deve ser positivo.' }).optional(),
+  currentAmount: z.number().min(0, { message: 'O progresso atual não pode ser negativo.' }).optional(),
+  startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
+  endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
+  description: z.string().optional().or(z.literal('')).nullable(),
+  userId: z.string().optional().nullable(),
+})
+
+export type UpdateGoal = z.infer<typeof updateGoalSchema>

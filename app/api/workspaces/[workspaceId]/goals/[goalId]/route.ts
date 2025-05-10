@@ -1,19 +1,7 @@
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
+import { UpdateGoal, updateGoalSchema } from '@/app/types/financial';
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-
-const updateGoalSchema = z.object({
-  name: z.string().min(1, { message: 'O nome da meta não pode ser vazio.' }).optional(),
-  targetAmount: z.number().positive({ message: 'O valor alvo da meta deve ser positivo.' }).optional(),
-  currentAmount: z.number().min(0, { message: 'O progresso atual não pode ser negativo.' }).optional(),
-  startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
-  endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
-  description: z.string().optional().or(z.literal('')).nullable(),
-  userId: z.string().optional().nullable(),
-})
-
-type Goal = z.infer<typeof updateGoalSchema>
 
 export async function GET(req: NextRequest, { params }: { params: { workspaceId: string; goalId: string } }) {
   try {
@@ -91,7 +79,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { workspaceI
 
     const goalRef = db.collection('workspaces').doc(workspaceId).collection('goals').doc(goalId)
 
-    const dataToUpdate: Goal = { ...updateData }
+    const dataToUpdate: UpdateGoal = { ...updateData }
     if (dataToUpdate.startDate && typeof dataToUpdate.startDate === 'string') {
         dataToUpdate.startDate = new Date(dataToUpdate.startDate).toDateString()
     }
