@@ -3,9 +3,14 @@ import { db } from '@/app/lib/firebase'
 import { createPaymentMethodSchema } from '@/app/types/financial'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(req: NextRequest, { params }: { params: { workspaceId: string } }) {
+interface PaymentMethodsRouteParams {
+  workspaceId: string;
+}
+
+export async function GET(req: NextRequest, { params }: { params: Promise<PaymentMethodsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
     const session = await auth()
 
     if (!session?.user) {
@@ -30,14 +35,16 @@ export async function GET(req: NextRequest, { params }: { params: { workspaceId:
     return NextResponse.json(paymentMethods, { status: 200 })
 
   } catch (error) {
-    console.error(`Erro ao listar metodos de pagamento para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao listar metodos de pagamento para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao listar metodos de pagamento' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { workspaceId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<PaymentMethodsRouteParams> }) {
   try {
-    const workspaceId = params.workspaceId
+    const searchParams = await params
+    const workspaceId = searchParams.workspaceId
     const session = await auth()
 
     if (!session?.user) {
@@ -91,7 +98,8 @@ export async function POST(req: NextRequest, { params }: { params: { workspaceId
     return NextResponse.json({ message: 'Método de pagamento criado com sucesso!', paymentMethodId: newPaymentMethodRef.id }, { status: 201 })
 
   } catch (error) {
-    console.error(`Erro ao criar metodo de pagamento para workspace ${params.workspaceId}:`, error)
+    const searchParams = await params
+    console.error(`Erro ao criar metodo de pagamento para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao criar metodo de pagamento' }, { status: 500 })
   }
 }
