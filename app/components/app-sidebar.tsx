@@ -4,10 +4,11 @@ import * as React from "react"
 import {
   HandCoins,
   LifeBuoy,
-  PiggyBank,
   Send,
   Settings2,
 } from "lucide-react"
+
+import Logo from "@/public/logo.svg"
 
 import { NavMain } from "@/app/components/nav-main"
 import { NavSecondary } from "@/app/components/nav-secondary"
@@ -22,6 +23,7 @@ import {
   SidebarMenuItem,
 } from "@/app/components/ui/sidebar"
 import { useWorkspace } from "../hooks/use-workspace"
+import Image from "next/image"
 
 const data = {
   navMain: [
@@ -85,9 +87,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <div>
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <PiggyBank className="size-4" />
-                </div>
+                <Image src={Logo} alt="" width={32} height={32} />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">MeControla.AI</span>
                   <span className="truncate text-xs">

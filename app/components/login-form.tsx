@@ -27,7 +27,7 @@ export function LoginForm({
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Bem-Vindo(a).</CardTitle>
           <CardDescription>
-            Entrar com sua conta do Google.
+            Entre com sua conta do Google.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -81,7 +81,7 @@ export function LoginForm({
         </CardContent>
       </Card>
       <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
-        Ao Clicar em entrar, você está aceitando os <a href="#">Termos de Serviço</a>{" "}
+        Ao entrar, você está aceitando os <a href="#">Termos de Serviço</a>{" "}
         e a <a href="#">Politica de Privacidade</a>.
       </div>
     </div>

@@ -1,22 +1,30 @@
-import { PiggyBank } from "lucide-react"
 import { Button } from "../components/ui/button"
 import Link from "next/link"
+
+
+import Logo from "@/public/logo.svg"
+import Image from "next/image"
 
 export default function Home() {
   return (
     <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-      <div className="flex w-full max-w-sm flex-col gap-6">
+      <div className="flex w-full max-w-sm flex-col gap-6 justify-center items-center">
         <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">Seja Bem-vindo!</h1>
         <p className="leading-7 [&:not(:first-child)]:mt-6">A primeira versão da landing page do MeControla.AI</p>
-        <a href="#" className="flex items-center gap-2 self-center font-medium">
-          <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-            <PiggyBank className="size-4" />
+        <div className="flex flex-row gap-2 items-center justify-center">
+          <Image src={Logo} alt="" width={32} height={32} />
+          <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-medium">MeControla.AI</span>
+            <span className="truncate text-xs">
+              Aplicativo de gestão financeira.
+            </span>
           </div>
-          MeControla.AI
-        </a>
-        <Button>
-          <Link href={'/sign-in'}>Entrar</Link>
-        </Button>
+        </div>
+        <Link href={'/sign-in'} className="w-full cursor-pointer">
+          <Button className="w-full">
+            Entrar
+          </Button>
+        </Link>
       </div>
     </div>
   )

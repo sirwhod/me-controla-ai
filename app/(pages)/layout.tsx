@@ -5,6 +5,8 @@ import { ThemeProvider } from "../components/theme-provider";
 import { Toaster } from "../components/ui/sonner";
 import { SessionProvider } from "next-auth/react";
 
+import Logo from "@/public/logo.svg"
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -18,6 +20,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "MeControla.AI",
   description: "Aplicativo de gestão financeira.",
+  icons: {
+    icon: Logo.src
+  },
 };
 
 export default function RootLayout({
