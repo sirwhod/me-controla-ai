@@ -39,7 +39,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   })],
   events: {
     createUser: async ({ user }) => {
-      console.log(`Entrou em create user!`)
       if (!user.id) return;
       const userRef = db.collection("users").doc(user.id);
 
@@ -55,7 +54,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const newWorkspaceRef = db.collection('workspaces').doc();
 
       const personalWorkspaceData = {
-        name: `Workspace Pessoal de ${user.name || user.email || 'Novo Usuário'}`,
+        name: `Caixinha de ${user.name || user.email || 'Novo Usuário'}`,
         ownerId: user.id,
         members: [user.id],
         type: 'personal',
@@ -70,7 +69,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         updatedAt: new Date(),
       });
 
-      console.log(`[Auth.js Event] Workspace pessoal ${newWorkspaceRef.id} criado automaticamente para o usuário: ${user.id}`);
+      console.log(`[Auth.js Event] Caixinha pessoal ${newWorkspaceRef.id} criado automaticamente para o usuário: ${user.id}`);
 
       // --- Fim da Lógica para Criar o Workspace Pessoal ---
     },

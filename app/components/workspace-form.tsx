@@ -18,12 +18,12 @@ import { toast } from "sonner"
 import { DialogClose, DialogFooter } from "./ui/dialog"
 import { createWorkspaceAction } from "../actions/workspace-actions"
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
-import { User, Users } from "lucide-react"
+import { Loader2, PlusCircle, User, Users } from "lucide-react"
 import { useWorkspace } from "../hooks/use-workspace"
 
 const FormSchema = z.object({
   name: z.string().min(2, {
-    message: "O Nome do workspace precisa ter pelo menos 2 caracteres",
+    message: "O Nome da caixinha precisa ter pelo menos 2 caracteres",
   }),
   type: z.enum(["personal", "shared"])
 })
@@ -48,16 +48,16 @@ export function WorkspaceForm({isDialog = false}: WorkspaceFormProps) {
         const result = await createWorkspaceAction({name, type});
   
         if (!result.success) {
-           toast.error(result.message || 'Erro desconhecido ao criar workspace');
+           toast.error(result.message || 'Erro desconhecido ao criar caixinha');
         }
   
-        console.log('Workspace criado:', result.workspaceId);
+        console.log('Caixinha criado:', result.workspaceId);
   
       } catch (err) {
-        console.error('Erro ao criar workspace:', err);
+        console.error('Erro ao criar caixinha:', err);
       } finally {
         refetch()
-        toast.success("Workspace criado com sucesso!")
+        toast.success("Caixinha criado com sucesso!")
       }
   }
 
@@ -69,9 +69,9 @@ export function WorkspaceForm({isDialog = false}: WorkspaceFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome do Workspace</FormLabel>
+              <FormLabel>Nome da Caixinha</FormLabel>
               <FormControl>
-                <Input placeholder="shadcn" {...field} />
+                <Input placeholder="Caixinha da Família" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -82,21 +82,21 @@ export function WorkspaceForm({isDialog = false}: WorkspaceFormProps) {
           name="type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tipo do Workspace</FormLabel>
+              <FormLabel>Tipo da Caixinha</FormLabel>
               <FormControl>
                 <ToggleGroup
                     type="single"
                     value={field.value}
                     onValueChange={field.onChange}
-                    className="flex flex-wrap gap-2"
+                    className="flex flex-wrap w-full"
                   >
                     <ToggleGroupItem value="personal" aria-label="Workspace pessoal">
                       <User />
-                      Personal
+                      Pessoal
                     </ToggleGroupItem>
                     <ToggleGroupItem value="shared" aria-label="Workspace compartilhado">
                       <Users />
-                      Shared
+                      Compartilhado
                     </ToggleGroupItem>
                   </ToggleGroup>
                 </FormControl>
@@ -106,15 +106,16 @@ export function WorkspaceForm({isDialog = false}: WorkspaceFormProps) {
         />
         {isDialog ? (
           <DialogFooter>
-          <DialogClose asChild>
+          <DialogClose disabled={form.formState.isSubmitting} asChild>
             <Button variant="outline">Cancelar</Button>
           </DialogClose>
           {/* O botão agora chama a função handleCreateWorkspace */}
           <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? 'Criando...' : 'Criar'}
+            {form.formState.isSubmitting ? <Loader2 className="h-4 w-4 animate-spin"/> : <PlusCircle className="h-4 w-4 "/>}
+            {form.formState.isSubmitting ? 'Criando...' : 'Criar caixinha'}
           </Button>
         </DialogFooter>
-        ) : <Button type="submit">Criar</Button>}
+        ) : <Button type="submit">Criar caixinha</Button>}
       </form>
     </Form>
   )

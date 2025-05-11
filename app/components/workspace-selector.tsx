@@ -34,7 +34,7 @@ export default function WorkspaceSelector() {
           <ChevronsUpDown className="w-4 h-4 text-muted" />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
+          <DropdownMenuLabel>Caixinha</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {workspaces.length > 0 ? (
             <ul className="space-y-2">
@@ -51,20 +51,20 @@ export default function WorkspaceSelector() {
               ))}
             </ul>
           ) : (
-            <p>Você ainda não tem workspaces. Crie um para começar!</p>
+            <p>Você ainda não tem caixinhas. Crie uma para começar!</p>
           )}
           <DropdownMenuSeparator />
           <DialogTrigger asChild>
             <DropdownMenuItem>
               <PlusCircle />
-              Criar Novo Workspace
+              Criar nova caixinha
             </DropdownMenuItem>
           </DialogTrigger>
         </DropdownMenuContent>
       </DropdownMenu>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Criar Novo Workspace</DialogTitle>
+          <DialogTitle>Criar nova caixinha</DialogTitle>
         </DialogHeader>
         <WorkspaceForm isDialog />
       </DialogContent>
