@@ -10,8 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Aplicativo de gestão financeira.',
     start_url: '/',
     display: 'fullscreen',
-    background_color: '#ffffff',
-    theme_color: '#000000',
+    background_color: '#000000',
+    theme_color: '#ffffff',
     icons: [
       {
         src: Icon192.src,

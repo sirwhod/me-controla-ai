@@ -23,6 +23,10 @@ export const metadata: Metadata = {
   icons: {
     icon: Logo.src
   },
+  themeColor: [ // Define as cores do tema para a meta tag inicial
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' }, // Sua cor para o tema claro
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },  // Sua cor para o tema escuro
+  ],
 };
 
 export default function RootLayout({
@@ -31,22 +35,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <html lang="en" suppressHydrationWarning>
+        <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <SessionProvider>
-              {children}
-            </SessionProvider>
-            <Toaster />
-          </ThemeProvider>
-      </body>
-    </html>
+        >
+          <SessionProvider>
+            {children}
+          </SessionProvider>
+          <Toaster />
+        </body>
+      </html>
+    </ThemeProvider>
   );
 }
