@@ -1,6 +1,6 @@
 'use client'
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu'
 import { ChevronsUpDown, PlusCircle, User, Users } from 'lucide-react'
 import { WorkspaceForm } from './workspace-form'
@@ -62,9 +62,10 @@ export default function WorkspaceSelector() {
           </DialogTrigger>
         </DropdownMenuContent>
       </DropdownMenu>
-      <DialogContent>
+      <DialogContent className="w-xs">
         <DialogHeader>
           <DialogTitle>Criar nova caixinha</DialogTitle>
+          <DialogDescription>Crie uma nova caixinha para gerenciar suas finanças.</DialogDescription>
         </DialogHeader>
         <WorkspaceForm isDialog />
       </DialogContent>

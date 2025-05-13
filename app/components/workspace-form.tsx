@@ -17,9 +17,10 @@ import { Input } from "@/app/components/ui/input"
 import { toast } from "sonner"
 import { DialogClose, DialogFooter } from "./ui/dialog"
 import { createWorkspaceAction } from "../actions/workspace-actions"
-import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
 import { Loader2, PlusCircle, User, Users } from "lucide-react"
 import { useWorkspace } from "../hooks/use-workspace"
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
+import { Label } from "./ui/label"
 
 const FormSchema = z.object({
   name: z.string().min(2, {
@@ -64,6 +65,53 @@ export function WorkspaceForm({isDialog = false}: WorkspaceFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleCreateWorkspace)} className="w-full space-y-6">
+      <FormField
+          control={form.control}
+          name="type"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <RadioGroup
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    className="flex w-full"
+                  >
+                    <div className="w-full">
+                      <RadioGroupItem
+                        value="personal"
+                        id="personal"
+                        className="peer sr-only"
+                        aria-label="Workspace pessoal"
+                      />
+                      <Label
+                        htmlFor="personal"
+                        className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                      >
+                        <User className="mb-3 h-6 w-6" />
+                        Pessoal
+                      </Label>
+                    </div>
+                    <div className="w-full">
+                      <RadioGroupItem
+                        value="shared"
+                        id="shared"
+                        className="peer sr-only"
+                        aria-label="Workspace compartilhad"
+                      />
+                      <Label
+                        htmlFor="shared"
+                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                      >
+                        <Users className="mb-3 h-6 w-6" />
+                        Compartilhada
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="name"
@@ -73,33 +121,6 @@ export function WorkspaceForm({isDialog = false}: WorkspaceFormProps) {
               <FormControl>
                 <Input placeholder="Caixinha da Família" {...field} />
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tipo da Caixinha</FormLabel>
-              <FormControl>
-                <ToggleGroup
-                    type="single"
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    className="flex flex-wrap w-full"
-                  >
-                    <ToggleGroupItem value="personal" aria-label="Workspace pessoal">
-                      <User />
-                      Pessoal
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="shared" aria-label="Workspace compartilhado">
-                      <Users />
-                      Compartilhado
-                    </ToggleGroupItem>
-                  </ToggleGroup>
-                </FormControl>
               <FormMessage />
             </FormItem>
           )}
