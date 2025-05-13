@@ -9,9 +9,9 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'MeControla.AI',
     description: 'Aplicativo de gestão financeira.',
     start_url: '/',
-    display: 'standalone',
+    display: 'minimal-ui',
     background_color: '#000000',
-    theme_color: '#ffffff',
+    theme_color: '#000000',
     icons: [
       {
         src: Icon192.src,
