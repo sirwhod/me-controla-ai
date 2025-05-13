@@ -21,8 +21,10 @@ import { useMutation, useQuery } from "@tanstack/react-query"
 import { createBank } from "../http/banks/create-bank"
 import { useWorkspace } from "../hooks/use-workspace"
 import { getBanks } from "../http/banks/get-banks"
+import { useState } from "react"
 
 export function CreateBank() {
+  const [modalIsOpen, setModalIsOpen] = useState<boolean>(false)
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
 
   const form = useForm<CreateBankProps>({
@@ -58,6 +60,7 @@ export function CreateBank() {
         if (response) {
           refetch()
           toast.success(response.message)
+          setModalIsOpen(!modalIsOpen)
         }
       }
 
@@ -71,9 +74,9 @@ export function CreateBank() {
 
 
   return (
-    <Dialog>
+    <Dialog open={modalIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">
+        <Button onClick={() => setModalIsOpen(!modalIsOpen)} variant="default">
           <PlusCircle />
           Novo Banco
         </Button>
@@ -130,20 +133,18 @@ export function CreateBank() {
               )}
             />
             <DialogFooter className="justify-between">
-              <DialogClose asChild>
+              <DialogClose onClick={() => setModalIsOpen(!modalIsOpen)} asChild>
                 <Button type="button" variant="secondary">
                   Cancelar
                 </Button>
               </DialogClose>
-              <DialogClose asChild>
-                <Button type="submit">
-                  Criar Banco
-                </Button>
-              </DialogClose>
+              <Button type="submit">
+                <PlusCircle className="h-4 w-4" />
+                Criar Banco
+              </Button>
             </DialogFooter>
           </form>
         </Form>
-
       </DialogContent>
     </Dialog>
   )
