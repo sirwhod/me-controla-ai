@@ -6,7 +6,7 @@ import { Button } from "@/app/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu"
 import { Bank } from "@/app/types/financial"
 import { ColumnDef } from "@tanstack/react-table"
-import { Banknote, MoreHorizontal } from "lucide-react"
+import { Landmark, MoreHorizontal } from "lucide-react"
 import Image from "next/image"
 
 export const columns: ColumnDef<Bank>[] = [
@@ -28,8 +28,8 @@ export const columns: ColumnDef<Bank>[] = [
           {iconUrl ? (
             <Image src={iconUrl} alt="" width={36} height={36} />
           ) : (
-            <div className="bg-orange-500 p-2 rounded-md">
-              <Banknote className="text-foreground" />
+            <div className="bg-primary p-2 rounded-sm">
+              <Landmark className="h-6 w-6 text-foreground" />
             </div>
           )}
           <div className="flex flex-col gap-0 items-start justify-self-start">
