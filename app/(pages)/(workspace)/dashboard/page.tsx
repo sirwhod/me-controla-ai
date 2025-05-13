@@ -3,7 +3,6 @@
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
@@ -15,6 +14,7 @@ import {
 import { Skeleton } from "@/app/components/ui/skeleton"
 import WorkspaceSelector from "@/app/components/workspace-selector"
 import { useWorkspace } from "@/app/hooks/use-workspace"
+import Link from "next/link"
 
 export default function Page() {
   const { workspaceActive, isLoading: isWorkspaceLoading } = useWorkspace()
@@ -43,9 +43,9 @@ export default function Page() {
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
+                  <Link href="#">
                     Dashboard
-                  </BreadcrumbLink>
+                  </Link>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>

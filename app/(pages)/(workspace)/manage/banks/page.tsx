@@ -3,7 +3,6 @@
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
@@ -21,6 +20,7 @@ import { getBanks } from "@/app/http/banks/get-banks"
 import { Bank } from "@/app/types/financial"
 import { Skeleton } from "@/app/components/ui/skeleton"
 import { Loader } from "@/app/components/ui/loader"
+import Link from "next/link"
 
 function LoadPage() {
   return (
@@ -59,7 +59,7 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="/dashboard">
+                  <Link href="/dashboard">
                     {isWorkspaceLoading || !workspaceActive  &&  (
                       <Skeleton className="h-5 w-48" />
                     )}
@@ -67,13 +67,13 @@ export default function Page() {
                       <Skeleton className="h-5 w-48" />
                     )}
                     <WorkspaceSelector />
-                  </BreadcrumbLink>
+                  </Link>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/dashboard">
+                  <Link href="/dashboard">
                     Dashboard
-                  </BreadcrumbLink>
+                  </Link>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
