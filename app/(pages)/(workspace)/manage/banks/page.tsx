@@ -59,7 +59,7 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <Link href="/dashboard">
+                  <Link href="#">
                     {isWorkspaceLoading || !workspaceActive  &&  (
                       <Skeleton className="h-5 w-48" />
                     )}
