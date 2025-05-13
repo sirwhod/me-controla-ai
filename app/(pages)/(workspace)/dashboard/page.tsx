@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,9 +12,13 @@ import { Separator } from "@/app/components/ui/separator"
 import {
   SidebarTrigger,
 } from "@/app/components/ui/sidebar"
+import { Skeleton } from "@/app/components/ui/skeleton"
 import WorkspaceSelector from "@/app/components/workspace-selector"
+import { useWorkspace } from "@/app/hooks/use-workspace"
 
 export default function Page() {
+  const { workspaceActive, isLoading: isWorkspaceLoading } = useWorkspace()
+
   return (
     <>
         <header className="flex h-16 shrink-0 items-center gap-2">
@@ -26,6 +32,12 @@ export default function Page() {
               <BreadcrumbList>
                 <BreadcrumbItem>
                   <BreadcrumbPage>
+                    {isWorkspaceLoading || !workspaceActive  &&  (
+                      <Skeleton className="h-5 w-48" />
+                    )}
+                    {isWorkspaceLoading &&  (
+                      <Skeleton className="h-5 w-48" />
+                    )}
                     <WorkspaceSelector />
                   </BreadcrumbPage>
                 </BreadcrumbItem>
