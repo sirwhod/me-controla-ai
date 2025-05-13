@@ -6,9 +6,12 @@ interface CreateBankResponse {
   bankId: string; // O ID do banco criado
 }
 
-export async function createBanks(
-  workspaceId: string, 
-  {name, code, iconUrl}: CreateBank
+interface CreateBankFn extends CreateBank {
+  workspaceId: string
+}
+
+export async function createBank(
+  {workspaceId, name, code, iconUrl}: CreateBankFn
 ): Promise<CreateBankResponse> {
   if (!workspaceId) {
     return {

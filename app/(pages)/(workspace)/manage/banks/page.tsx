@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -11,8 +13,27 @@ import {
   SidebarTrigger,
 } from "@/app/components/ui/sidebar"
 import WorkspaceSelector from "@/app/components/workspace-selector"
+import { DataTable } from "./data-table"
+import { columns } from "./columns"
+import { useWorkspace } from "@/app/hooks/use-workspace"
+import { useQuery } from "@tanstack/react-query"
+import { getBanks } from "@/app/http/banks/get-banks"
+import { Bank } from "@/app/types/financial"
 
 export default function Page() {
+  const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
+
+  const { data: banks, isLoading: isBanksLoading } = useQuery<Bank[], Error>({
+    queryKey: ['banks', workspaceActive?.id],
+    queryFn: () => getBanks(workspaceActive!.id),
+    staleTime: 1000 * 60 * 5,
+    enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
+  })
+
+  if (isBanksLoading) {
+    return <div>Carregando ...</div>
+  }
+
   return (
     <>
         <header className="flex h-16 shrink-0 items-center gap-2">
@@ -25,15 +46,21 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage>
+                  <BreadcrumbLink href="/dashboard">
                     <WorkspaceSelector />
-                  </BreadcrumbPage>
+                  </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
+                  <BreadcrumbLink href="/dashboard">
                     Dashboard
                   </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>
+                    Bancos
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -45,7 +72,11 @@ export default function Page() {
             <div className="bg-muted/50 aspect-video rounded-xl" />
             <div className="bg-muted/50 aspect-video rounded-xl" />
           </div>
-          <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
+          <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min p-4">
+            {banks && (
+              <DataTable columns={columns} data={banks} />
+            )}
+          </div>
         </div>
     </>
   )

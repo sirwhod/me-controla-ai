@@ -4,9 +4,13 @@ interface DeleteBankResponse {
   message: string;
 }
 
-export async function deleteBanks(
+export interface DeleteBankProps {
   workspaceId: string, 
   bankId: string,
+}
+
+export async function deleteBank(
+  { workspaceId, bankId } : DeleteBankProps
 ): Promise<DeleteBankResponse> {
   if (!workspaceId) {
     return {
