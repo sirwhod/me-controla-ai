@@ -19,6 +19,23 @@ import { useWorkspace } from "@/app/hooks/use-workspace"
 import { useQuery } from "@tanstack/react-query"
 import { getBanks } from "@/app/http/banks/get-banks"
 import { Bank } from "@/app/types/financial"
+import { Skeleton } from "@/app/components/ui/skeleton"
+import { Loader } from "@/app/components/ui/loader"
+
+function LoadPage() {
+  return (
+    <div className="flex w-full flex-col items-center justify-center space-y-8 p-4 h-96">
+      <div>
+          <div
+            className="flex flex-col items-center justify-center gap-2 p-4"
+          >
+            <Loader size="lg" text="Carregando" />
+            <span className="text-muted-foreground text-sm">Carregando</span>
+          </div>
+      </div>
+    </div>
+  )
+}
 
 export default function Page() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
@@ -29,10 +46,6 @@ export default function Page() {
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
-
-  if (isBanksLoading) {
-    return <div>Carregando ...</div>
-  }
 
   return (
     <>
@@ -47,6 +60,12 @@ export default function Page() {
               <BreadcrumbList>
                 <BreadcrumbItem>
                   <BreadcrumbLink href="/dashboard">
+                    {isWorkspaceLoading || !workspaceActive  &&  (
+                      <Skeleton className="h-5 w-48" />
+                    )}
+                    {isWorkspaceLoading &&  (
+                      <Skeleton className="h-5 w-48" />
+                    )}
                     <WorkspaceSelector />
                   </BreadcrumbLink>
                 </BreadcrumbItem>
@@ -73,6 +92,15 @@ export default function Page() {
             <div className="bg-muted/50 aspect-video rounded-xl" />
           </div>
           <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min p-4">
+            {isWorkspaceLoading || !workspaceActive  &&  (
+              <LoadPage />
+            )}
+            {isWorkspaceLoading &&  (
+              <LoadPage />
+            )}
+            {isBanksLoading && (
+              <LoadPage />
+            )}
             {banks && (
               <DataTable columns={columns} data={banks} />
             )}
