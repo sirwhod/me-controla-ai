@@ -198,9 +198,11 @@ export function CreatePaymentMethod({ bankId }: CreatePaymentMethodProps) {
             {form.watch("type") === "Crédito" && (
               <>
                 <Separator />
-                <div>
-                  <strong>Dados do crédito</strong>
-                  <span>Informe os dias de Fechamento e Pagamento da fatura.</span>
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-0.5">
+                    <strong className="text-lg font-semibold">Dados do crédito</strong>
+                    <p className="text-sm text-muted-foreground">Informe os dias de Fechamento e Pagamento da fatura.</p>
+                  </div>
                   <div className="flex flex-row gap-2 w-full">
                     <FormField
                       control={form.control}
