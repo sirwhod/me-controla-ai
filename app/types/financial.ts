@@ -164,8 +164,8 @@ export const createPaymentMethodSchema = z.object({
     errorMap: () => ({ message: 'Tipo de método de pagamento inválido.' }),
   }),
   bankId: z.string().optional().nullable(),
-  invoiceClosingDay: z.number().int().min(1).max(31).optional().nullable(),
-  invoiceDueDate: z.number().int().min(1).max(31).optional().nullable(),
+  invoiceClosingDay: z.string().min(1).max(31).optional(),
+  invoiceDueDate: z.string().min(1).max(31).optional(),
 })
 
 export type CreatePaymentMethod = z.infer<typeof createPaymentMethodSchema>

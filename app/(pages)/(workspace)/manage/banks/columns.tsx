@@ -8,6 +8,7 @@ import { Bank } from "@/app/types/financial"
 import { ColumnDef } from "@tanstack/react-table"
 import { Landmark, MoreHorizontal } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 
 export const columns: ColumnDef<Bank>[] = [
   {
@@ -46,6 +47,7 @@ export const columns: ColumnDef<Bank>[] = [
       const bank = row.original
  
       return (
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -61,7 +63,11 @@ export const columns: ColumnDef<Bank>[] = [
               Copiar ID do banco
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Tipos de Pagamento</DropdownMenuItem>
+            <DropdownMenuItem>
+              <Link href={`/manage/banks/payment-methods/${bank.id}`}>
+                Métodos de pagamento
+              </Link>
+            </DropdownMenuItem>
             <DeleteBank bankId={bank.id} />
           </DropdownMenuContent>
         </DropdownMenu>

@@ -4,9 +4,16 @@ interface DeletePaymentMethodResponse {
   message: string;
 }
 
-export async function deletePaymentMethod(
+interface DeletePaymentMethod {
   workspaceId: string, 
-  paymentmethodId: string,
+  paymentMethodId: string,
+}
+
+export async function deletePaymentMethod(
+  {
+    paymentMethodId,
+    workspaceId
+  }: DeletePaymentMethod
 ): Promise<DeletePaymentMethodResponse> {
   if (!workspaceId) {
     return {
@@ -14,14 +21,14 @@ export async function deletePaymentMethod(
     }
   }
 
-  if (!paymentmethodId) {
+  if (!paymentMethodId) {
     return {
       message: "O Id do método de pagamento é nescessário para a exclusão do método de pagamento."
     }
   }
 
   const response = await api.delete<DeletePaymentMethodResponse>(
-    `/workspaces/${workspaceId}/payment-methods/${paymentmethodId}`,
+    `/workspaces/${workspaceId}/payment-methods/${paymentMethodId}`,
   )
 
   return response.data

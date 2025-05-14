@@ -6,15 +6,19 @@ interface CreatePaymentMethodResponse {
   paymentmethodId: string; // O ID do categoria criada
 }
 
-export async function createPaymentMethod(
+interface CreatePaymentMethodProps extends CreatePaymentMethod {
   workspaceId: string, 
+}
+
+export async function createPaymentMethod(
   {
     name,
     type,
     bankId,
     invoiceClosingDay,
-    invoiceDueDate
-  }: CreatePaymentMethod
+    invoiceDueDate,
+    workspaceId
+  }: CreatePaymentMethodProps
 ): Promise<CreatePaymentMethodResponse> {
   if (!workspaceId) {
     return {
@@ -24,7 +28,7 @@ export async function createPaymentMethod(
   }
 
   const response = await api.post<CreatePaymentMethodResponse>(
-    `/workspaces/${workspaceId}/payment-methods`,
+    `/workspaces/${workspaceId}/banks/${bankId}/payment-methods`,
     {
       name,
       type,

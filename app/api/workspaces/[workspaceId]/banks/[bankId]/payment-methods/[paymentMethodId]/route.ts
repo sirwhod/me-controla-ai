@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 interface PaymentMethodsRouteParams {
   workspaceId: string;
+  bankId: string
   paymentMethodId: string
 }
 
@@ -12,6 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Paymen
   try {
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
+    const bankId = searchParams.bankId
     const paymentMethodId = searchParams.paymentMethodId
     const session = await auth()
 
@@ -19,7 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Paymen
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
     }
 
-    const paymentMethodRef = db.collection('workspaces').doc(workspaceId).collection('paymentMethods').doc(paymentMethodId)
+    const paymentMethodRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId).collection("paymentMethods").doc(paymentMethodId)
     const paymentMethodDoc = await paymentMethodRef.get()
 
     if (!paymentMethodDoc.exists) {
@@ -51,6 +53,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Paym
   try {
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
+    const bankId = searchParams.bankId
     const paymentMethodId = searchParams.paymentMethodId
     const session = await auth()
 
@@ -74,7 +77,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Paym
         return NextResponse.json({ message: 'Nenhum dado fornecido para atualização' }, { status: 400 })
     }
 
-    const paymentMethodRef = db.collection('workspaces').doc(workspaceId).collection('paymentMethods').doc(paymentMethodId)
+    const paymentMethodRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId).collection("paymentMethods").doc(paymentMethodId)
 
     await paymentMethodRef.update({
         ...updateData,
@@ -94,6 +97,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Pay
   try {
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
+    const bankId = searchParams.bankId
     const paymentMethodId = searchParams.paymentMethodId
     const session = await auth()
 
@@ -101,7 +105,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Pay
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
     }
 
-    const paymentMethodRef = db.collection('workspaces').doc(workspaceId).collection('paymentMethods').doc(paymentMethodId)
+    const paymentMethodRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId).collection("paymentMethods").doc(paymentMethodId)
 
     const paymentMethodDoc = await paymentMethodRef.get()
     if (!paymentMethodDoc.exists) {

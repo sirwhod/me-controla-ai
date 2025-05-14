@@ -5,20 +5,21 @@ import { NextRequest, NextResponse } from 'next/server'
 
 interface PaymentMethodsRouteParams {
   workspaceId: string;
+  bankId: string
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<PaymentMethodsRouteParams> }) {
   try {
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
+    const bankId = searchParams.bankId
     const session = await auth()
 
     if (!session?.user) {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
     }
 
-    const paymentMethodsQuery = db.collection('workspaces').doc(workspaceId).collection('paymentMethods')
-      .orderBy('name', 'asc')
+    const paymentMethodsQuery = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId).collection("paymentMethods").orderBy("name", "asc")
 
     const querySnapshot = await paymentMethodsQuery.get()
 
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Payme
   try {
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
+    const bankId = searchParams.bankId
     const session = await auth()
 
     if (!session?.user) {
@@ -61,7 +63,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Payme
       }, { status: 400 })
     }
 
-    const { name, type, bankId, invoiceClosingDay, invoiceDueDate } = validationResult.data
+    const { name, type, invoiceClosingDay, invoiceDueDate } = validationResult.data
 
     if (type === 'Crédito') {
         if (invoiceClosingDay === undefined || invoiceClosingDay === null) {
@@ -71,7 +73,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Payme
              return NextResponse.json({ message: 'Dia de vencimento da fatura é obrigatório para tipo Crédito.' }, { status: 400 })
         }
     } else {
-
         if (invoiceClosingDay !== undefined && invoiceClosingDay !== null) {
              return NextResponse.json({ message: 'Dia de fechamento da fatura só é permitido para tipo Crédito.' }, { status: 400 })
         }
@@ -80,12 +81,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Payme
         }
     }
 
-    const newPaymentMethodRef = db.collection('workspaces').doc(workspaceId).collection('paymentMethods').doc()
+    const newPaymentMethodRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId).collection("paymentMethods").doc()
 
     const newPaymentMethodData = {
       name: name.trim(),
       type: type,
-      bankId: bankId || null,
+      bankId,
       invoiceClosingDay: type === 'Crédito' ? invoiceClosingDay : null,
       invoiceDueDate: type === 'Crédito' ? invoiceDueDate : null,
       workspaceId: workspaceId,
