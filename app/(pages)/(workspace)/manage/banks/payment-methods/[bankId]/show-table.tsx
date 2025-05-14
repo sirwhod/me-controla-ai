@@ -3,10 +3,13 @@
 import { Loader } from "@/app/components/ui/loader"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { getPaymentMethods } from "@/app/http/payment-methods/get-payment-methods"
-import { PaymentMethod } from "@/app/types/financial"
+import { Bank, PaymentMethod } from "@/app/types/financial"
 import { useQuery } from "@tanstack/react-query"
 import { columns } from "./columns"
 import { DataTable } from "./data-table"
+import { getBanks } from "@/app/http/banks/get-banks"
+import { useEffect } from "react"
+import { redirect } from "next/navigation"
 
 function LoadPage() {
   return (
@@ -30,12 +33,29 @@ interface ShowTableProps {
 export function ShowTable({ bankId } : ShowTableProps) {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
 
+  const { data: banks } = useQuery<Bank[], Error>({
+      queryKey: ['banks', workspaceActive?.id],
+      queryFn: () => getBanks(workspaceActive!.id),
+      staleTime: 1000 * 60 * 5,
+      enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
+    })
+
   const { data: paymentMethods, isLoading: isPaymentMethodsLoading } = useQuery<PaymentMethod[], Error>({
     queryKey: ['payment-methods', workspaceActive?.id, bankId],
     queryFn: () => getPaymentMethods({workspaceId: workspaceActive!.id, bankId}),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
+
+  useEffect(() => {
+    if (banks) {
+      const bankExistInWorkspace = banks.find((bank) => bank.id === bankId)
+
+      if (!bankExistInWorkspace) {
+        redirect('/manage/banks')
+      }
+    }
+  }, [banks])
 
   return (
     <>

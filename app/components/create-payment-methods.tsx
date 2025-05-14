@@ -110,7 +110,7 @@ export function CreatePaymentMethod({ bankId }: CreatePaymentMethodProps) {
                     <RadioGroup
                         value={field.value}
                         onValueChange={field.onChange}
-                        className="flex w-full"
+                        className="grid grid-cols-2 md:grid-cols-4 w-full"
                       >
                         <div className="w-full">
                           <RadioGroupItem
