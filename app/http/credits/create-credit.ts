@@ -14,7 +14,7 @@ export async function createCredit(
     date,
     bankId,
     categoryId,
-    paymentMethodId,
+    paymentMethod,
     proofUrl,
     status
   }: CreateCredit
@@ -34,7 +34,7 @@ export async function createCredit(
       date,
       bankId,
       categoryId,
-      paymentMethodId,
+      paymentMethod,
       proofUrl,
       status
     }

@@ -8,7 +8,7 @@ interface UpdateBankResponse {
 export async function updateBanks(
   workspaceId: string, 
   bankId: string,
-  {name, code, iconUrl}: UpdateBank
+  {name, code, iconUrl, invoiceClosingDay, invoiceDueDate}: UpdateBank
 ): Promise<UpdateBankResponse> {
   if (!workspaceId) {
     return {
@@ -27,7 +27,9 @@ export async function updateBanks(
     {
       name,
       code,
-      iconUrl
+      iconUrl,
+      invoiceClosingDay,
+      invoiceDueDate
     }
   )
 

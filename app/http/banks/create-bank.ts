@@ -1,17 +1,17 @@
 import { api } from '@/app/lib/axios'
-import { CreateBank } from '@/app/types/financial'
 
 interface CreateBankResponse {
   message: string;
   bankId: string; // O ID do banco criado
 }
 
-interface CreateBankFn extends CreateBank {
-  workspaceId: string
+interface CreateBankFn {
+  payload: FormData;
+  workspaceId: string;
 }
 
 export async function createBank(
-  {workspaceId, name, code, iconUrl}: CreateBankFn
+  { workspaceId, payload }: CreateBankFn
 ): Promise<CreateBankResponse> {
   if (!workspaceId) {
     return {
@@ -22,10 +22,14 @@ export async function createBank(
 
   const response = await api.post<CreateBankResponse>(
     `/workspaces/${workspaceId}/banks`,
+    payload,
     {
-      name,
-      code,
-      iconUrl
+      headers: {
+        'Content-Type': undefined // Ou null. Isso pode fazer o Axios remover o header global e detectar FormData.
+                                 // Alguns preferem 'Content-Type': 'multipart/form-data' aqui,
+                                 // mas deixar o Axios lidar com o boundary é geralmente melhor.
+                                 // Se isso não funcionar, tente omitir completamente a chave 'Content-Type' aqui.
+      }
     }
   )
 

@@ -14,7 +14,7 @@ export async function updateCredit(
     date,
     bankId,
     categoryId,
-    paymentMethodId,
+    paymentMethod,
     proofUrl,
     status
   }: UpdateCredit
@@ -39,7 +39,7 @@ export async function updateCredit(
       date,
       bankId,
       categoryId,
-      paymentMethodId,
+      paymentMethod,
       proofUrl,
       status
     }

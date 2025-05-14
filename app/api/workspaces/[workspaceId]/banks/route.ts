@@ -1,5 +1,7 @@
+"use server"
+
 import { auth } from '@/app/lib/auth'
-import { db } from '@/app/lib/firebase'
+import { db, getDownloadURLFromPath, storage } from '@/app/lib/firebase'
 import { createBankSchema } from '@/app/types/financial'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -67,8 +69,17 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
     //    return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     // }
 
-    const body = await req.json()
-    const validationResult = createBankSchema.safeParse(body)
+    const formData = await req.formData()
+    const imageFile = formData.get('imageFile') as File | null
+
+    const bankDataFromForm = {
+      name: formData.get('name') as string,
+      code: formData.get('code') as string,
+      invoiceClosingDay: formData.get('invoiceClosingDay') as string | null, // Vem como string
+      invoiceDueDate: formData.get('invoiceDueDate') as string | null,     // Vem como string
+    }
+
+    const validationResult = createBankSchema.safeParse(bankDataFromForm)
 
     if (!validationResult.success) {
       return NextResponse.json({
@@ -77,15 +88,47 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
       }, { status: 400 })
     }
 
-    const { name, code, iconUrl } = validationResult.data
+    const { name, code, invoiceClosingDay, invoiceDueDate } = validationResult.data
+    let uploadedIconUrl: string | undefined = undefined
+
+    if (imageFile) {
+      // Validação básica do arquivo no backend (opcional, já que o frontend validou)
+      if (imageFile.size > 10 * 1024 * 1024) { // 10MB
+        return NextResponse.json({ message: 'Arquivo muito grande (máx 10MB).' }, { status: 400 });
+      }
+      const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!acceptedTypes.includes(imageFile.type)) {
+        return NextResponse.json({ message: 'Tipo de arquivo inválido.' }, { status: 400 });
+      }
+
+      // Fazer upload para o Firebase Storage usando o SDK Admin
+      const fileBuffer = Buffer.from(await imageFile.arrayBuffer());
+      const iconPath = `bank_icons/${workspaceId}/${Date.now()}_${imageFile.name}`;
+      
+      const storageFile = storage.file(iconPath); // storage é o bucket do firebaseAdmin
+      await storageFile.save(fileBuffer, {
+        metadata: { contentType: imageFile.type },
+      });
+
+      // Obter a URL de download (usando sua função ou gerando uma URL pública/assinada)
+      // Se sua getDownloadURLFromPath já usa o 'storage.file(path)' e retorna a URL, ótimo.
+      uploadedIconUrl = await getDownloadURLFromPath(iconPath); 
+      if (!uploadedIconUrl) {
+         // Lidar com o caso em que a URL não pôde ser gerada, talvez por um erro na função
+         console.error("Não foi possível gerar a URL de download para:", iconPath);
+         // Você pode decidir continuar sem iconUrl ou retornar um erro
+      }
+    }
 
     const newBankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc() // Firestore gera ID
 
     const newBankData = {
       name: name.trim(),
-      code: code?.trim() || null,
-      iconUrl: iconUrl?.trim() || null,
+      code: code?.trim(),
+      iconUrl: uploadedIconUrl, // URL da imagem do Storage
       workspaceId: workspaceId,
+      invoiceClosingDay: invoiceClosingDay ?? null, // Zod já converteu para número ou null
+      invoiceDueDate: invoiceDueDate ?? null,     // Zod já converteu para número ou null
       createdAt: new Date(),
       updatedAt: new Date(),
     }

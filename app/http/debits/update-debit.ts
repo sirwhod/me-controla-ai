@@ -17,7 +17,7 @@ export async function updateDebit(
     currentInstallment,
     endDate,
     frequency,
-    paymentMethodId,
+    paymentMethod,
     proofUrl,
     startDate,
     totalInstallments
@@ -46,7 +46,7 @@ export async function updateDebit(
       currentInstallment,
       endDate,
       frequency,
-      paymentMethodId,
+      paymentMethod,
       proofUrl,
       startDate,
       totalInstallments

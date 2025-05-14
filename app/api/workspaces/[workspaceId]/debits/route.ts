@@ -70,7 +70,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       date,
       type,
       bankId,
-      paymentMethodId,
+      paymentMethod,
       categoryId,
       proofUrl,
       frequency,
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       year: year,
       type: type,
       bankId: bankId || null,
-      paymentMethodId: paymentMethodId || null,
+      paymentMethod: paymentMethod || null,
       categoryId: categoryId || null,
       proofUrl: proofUrl?.trim() || null,
       workspaceId: workspaceId,
@@ -108,20 +108,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
     // Specific logic for each type
     switch (type) {
       case 'Comum':
-        if (paymentMethodId && dateObj) {
-          const paymentMethodDoc = await db.collection('workspaces').doc(workspaceId).collection('paymentMethods').doc(paymentMethodId).get()
-          const paymentMethodData = paymentMethodDoc.data()
-          if (paymentMethodData?.type === 'Crédito' && paymentMethodData?.invoiceClosingDay) {
-            const closingDay = paymentMethodData.invoiceClosingDay
-            const transactionDay = dateObj.getDate()
-            if (transactionDay > closingDay) {
-              
-              const nextMonthDate = new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 1)
-              newDebitData.month = nextMonthDate.toLocaleString('pt-BR', { month: 'long' })
-              newDebitData.year = nextMonthDate.getFullYear()
-            }
-          }
-        }
         break
 
       case 'Fixo':

@@ -12,7 +12,7 @@ export interface Debit {
   year: number; // Ex: 2025
   type: 'Comum' | 'Fixo' | 'Assinatura' | 'Parcelamento'; // Tipos de débito
   bankId: string | null; // ID do banco associado (pode ser null)
-  paymentMethodId: string | null; // ID do método de pagamento associado (pode ser null)
+  paymentMethod: 'Crédito' | 'Débito' | 'Pix' | 'Conta'; // método de pagamento associado
   categoryId: string | null; // ID da categoria associada (pode ser null)
   proofUrl: string | null; // URL do comprovante (pode ser null)
   status: string; // Status do débito (ex: 'pending', 'paid', 'overdue')
@@ -40,7 +40,9 @@ export const createDebitSchema = z.object({
     errorMap: () => ({ message: 'Tipo de débito inválido.' }),
   }),
   bankId: z.string().optional().nullable(),
-  paymentMethodId: z.string().optional().nullable(),
+  paymentMethod: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
+    errorMap: () => ({ message: 'Método de pagamento inválido.' }),
+  }),
   categoryId: z.string().optional().nullable(),
   proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
   frequency: z.enum(['monthly']).optional(),
@@ -57,7 +59,9 @@ export const updateDebitSchema = z.object({
   value: z.number().positive({ message: 'O valor deve ser positivo.' }).optional(),
   date: z.string().datetime({ message: 'Data inválida.' }).optional(),
   bankId: z.string().optional().nullable(),
-  paymentMethodId: z.string().optional().nullable(),
+  paymentMethod: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
+    errorMap: () => ({ message: 'Método de pagamento inválido.' }),
+  }).nullable(),
   categoryId: z.string().optional().nullable(),
   proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
   status: z.string().optional(),
@@ -82,7 +86,7 @@ export interface Credit {
   month: string; // Ex: "junho"
   year: number; // Ex: 2025
   bankId: string | null; // ID do banco associado (pode ser null)
-  paymentMethodId: string | null; // ID do método de pagamento associado (pode ser null)
+  paymentMethod: 'Crédito' | 'Débito' | 'Pix' | 'Conta'; // método de pagamento associado
   categoryId: string | null; // ID da categoria associada (pode ser null)
   proofUrl: string | null; // URL do comprovante (pode ser null)
   status: string; // Status do crédito (ex: 'pending', 'received')
@@ -95,7 +99,9 @@ export const createCreditSchema = z.object({
   value: z.number().positive({ message: 'O valor do crédito deve ser positivo.' }),
   date: z.string().datetime({ message: 'Data da transação inválida.' }),
   bankId: z.string().optional().nullable(),
-  paymentMethodId: z.string().optional().nullable(),
+  paymentMethod: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
+    errorMap: () => ({ message: 'Método de pagamento inválido.' }),
+  }),
   categoryId: z.string().optional().nullable(),
   proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
   status: z.string().optional(),
@@ -108,7 +114,9 @@ export const updateCreditSchema = z.object({
   value: z.number().positive({ message: 'O valor deve ser positivo.' }).optional(),
   date: z.string().datetime({ message: 'Data inválida.' }).optional(),
   bankId: z.string().optional().nullable(),
-  paymentMethodId: z.string().optional().nullable(),
+  paymentMethod: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
+    errorMap: () => ({ message: 'Método de pagamento inválido.' }),
+  }).nullable(),
   categoryId: z.string().optional().nullable(),
   proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
   status: z.string().optional(),
@@ -126,12 +134,31 @@ export interface Bank {
   iconUrl: string | null; // URL do ícone (pode ser null)
   createdAt: Date | null; // Data de criação (Timestamp convertido)
   updatedAt: Date | null; // Data de atualização (Timestamp convertido)
+  invoiceClosingDay: string | null; // Dia de fechamento (para Crédito, pode ser null)
+  invoiceDueDate: string | null; // Dia de vencimento (para Crédito, pode ser null)
 }
+
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export const createBankSchema = z.object({
   name: z.string().min(1, { message: 'O nome do banco é obrigatório.' }),
   code: z.string().optional(),
   iconUrl: z.string().url('URL do ícone inválida.').optional().or(z.literal('')),
+  imageFile: z
+    .custom<FileList>()
+    .refine((files) => files && files.length > 0, "A imagem do logo é obrigatória.") // Garante que um arquivo foi selecionado
+    .refine(
+      (files) => files?.[0]?.size <= MAX_FILE_SIZE_BYTES,
+      `O tamanho máximo da imagem é ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB.`
+    )
+    .refine(
+      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
+      "Tipo de arquivo inválido. Apenas .jpg, .jpeg, .png e .webp são permitidos."
+    )
+    .optional(),
+  invoiceClosingDay: z.string().min(1).max(31).optional(),
+  invoiceDueDate: z.string().min(1).max(31).optional(),
 })
 
 export type CreateBank = z.infer<typeof createBankSchema>
@@ -140,47 +167,11 @@ export const updateBankSchema = z.object({
   name: z.string().min(1, { message: 'O nome do banco não pode ser vazio.' }).optional(),
   code: z.string().optional().nullable(),
   iconUrl: z.string().url('URL do ícone inválida.').optional().or(z.literal('')).nullable(),
-})
-
-export type UpdateBank = z.infer<typeof updateBankSchema>
-
-// --- Interface para Método de Pagamento (PaymentMethod) ---
-// Corresponde ao documento em 'workspaces/{workspaceId}/paymentMethods/{paymentMethodId}'
-export interface PaymentMethod {
-  id: string; // O ID do documento do Firestore
-  workspaceId: string; // ID do workspace pai
-  name: string;
-  type: 'Crédito' | 'Débito' | 'Pix' | 'Conta'; // Tipo de método
-  bankId: string | null; // ID do banco associado (pode ser null)
-  invoiceClosingDay: number | null; // Dia de fechamento (para Crédito, pode ser null)
-  invoiceDueDate: number | null; // Dia de vencimento (para Crédito, pode ser null)
-  createdAt: Date | null; // Data de criação (Timestamp convertido)
-  updatedAt: Date | null; // Data de atualização (Timestamp convertido)
-}
-
-export const createPaymentMethodSchema = z.object({
-  name: z.string().min(1, { message: 'O nome do método de pagamento é obrigatório.' }),
-  type: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
-    errorMap: () => ({ message: 'Tipo de método de pagamento inválido.' }),
-  }),
-  bankId: z.string().optional().nullable(),
   invoiceClosingDay: z.string().min(1).max(31).optional(),
   invoiceDueDate: z.string().min(1).max(31).optional(),
 })
 
-export type CreatePaymentMethod = z.infer<typeof createPaymentMethodSchema>
-
-export const updatePaymentMethodSchema = z.object({
-  name: z.string().min(1, { message: 'O nome do método de pagamento não pode ser vazio.' }).optional(),
-  type: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
-    errorMap: () => ({ message: 'Tipo de método de pagamento inválido.' }),
-  }).optional(),
-  bankId: z.string().optional().nullable(),
-  invoiceClosingDay: z.number().int().min(1).max(31).optional().nullable(),
-  invoiceDueDate: z.number().int().min(1).max(31).optional().nullable(),
-})
-
-export type UpdatePaymentMethod = z.infer<typeof updatePaymentMethodSchema>
+export type UpdateBank = z.infer<typeof updateBankSchema>
 
 // --- Interface para Categoria (Category) ---
 // Corresponde ao documento em 'workspaces/{workspaceId}/categories/{categoryId}'
