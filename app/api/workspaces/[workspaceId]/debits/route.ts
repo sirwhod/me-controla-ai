@@ -1,3 +1,4 @@
+import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member';
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { createDebitSchema, Debit } from '@/app/types/financial'
@@ -15,6 +16,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
 
     if (!session?.user) {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
+    }
+
+    const isMember = await checkIsWorkspaceMember({
+      workspaceId, 
+      workspaceIds: session.user.workspaceIds
+    })
+    
+    if (!isMember) {
+        return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
     
     const debitsQuery = db.collection('workspaces').doc(workspaceId).collection('debits')
@@ -52,6 +62,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
 
     if (!session?.user) {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
+    }
+
+    const isMember = await checkIsWorkspaceMember({
+      workspaceId, 
+      workspaceIds: session.user.workspaceIds
+    })
+    
+    if (!isMember) {
+       return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
     const body = await req.json()

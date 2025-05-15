@@ -1,3 +1,4 @@
+import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member';
 import { auth } from '@/app/lib/auth'
 import { db, getDownloadURLFromPath, storage } from '@/app/lib/firebase'
 import { createCategorySchema } from '@/app/types/financial'
@@ -16,6 +17,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Catego
 
     if (!session?.user) {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
+    }
+
+    const isMember = await checkIsWorkspaceMember({
+      workspaceId, 
+      workspaceIds: session.user.workspaceIds
+    })
+    
+    if (!isMember) {
+        return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
     const categoriesQuery = db.collection('workspaces').doc(workspaceId).collection('categories')
@@ -51,6 +61,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Categ
 
     if (!session?.user) {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
+    }
+
+    const isMember = await checkIsWorkspaceMember({
+      workspaceId, 
+      workspaceIds: session.user.workspaceIds
+    })
+    
+    if (!isMember) {
+       return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
     const formData = await req.formData()

@@ -1,3 +1,4 @@
+import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { updateCategorySchema } from '@/app/types/financial'
@@ -17,6 +18,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Catego
 
     if (!session?.user) {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
+    }
+
+    const isMember = await checkIsWorkspaceMember({
+      workspaceId, 
+      workspaceIds: session.user.workspaceIds
+    })
+    
+    if (!isMember) {
+        return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
     const categoryRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc(categoryId)
@@ -56,6 +66,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cate
 
     if (!session?.user) {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
+    }
+
+    const isMember = await checkIsWorkspaceMember({
+      workspaceId, 
+      workspaceIds: session.user.workspaceIds
+    })
+    
+    if (!isMember) {
+       return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
     const body = await req.json()
@@ -99,6 +118,15 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Cat
 
     if (!session?.user) {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
+    }
+
+    const isMember = await checkIsWorkspaceMember({
+      workspaceId, 
+      workspaceIds: session.user.workspaceIds
+    })
+    
+    if (!isMember) {
+       return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
     const categoryRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc(categoryId)

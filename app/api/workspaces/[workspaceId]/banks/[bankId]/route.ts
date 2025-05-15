@@ -1,3 +1,4 @@
+import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member';
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { updateBankSchema } from '@/app/types/financial';
@@ -15,8 +16,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<BankRo
     const bankId = searchParams.bankId
 
     const session = await auth()
+
     if (!session?.user) {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
+    }
+
+    const isMember = await checkIsWorkspaceMember({
+      workspaceId, 
+      workspaceIds: session.user.workspaceIds
+    })
+    
+    if (!isMember) {
+        return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
     const bankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId)
@@ -54,8 +65,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Bank
     const bankId = searchParams.bankId
 
     const session = await auth()
+
     if (!session?.user) {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
+    }
+
+    const isMember = await checkIsWorkspaceMember({
+      workspaceId, 
+      workspaceIds: session.user.workspaceIds
+    })
+    
+    if (!isMember) {
+       return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
     const body = await req.json()
@@ -97,8 +118,18 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Ban
     const bankId = searchParams.bankId
 
     const session = await auth()
+
     if (!session?.user) {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
+    }
+
+    const isMember = await checkIsWorkspaceMember({
+      workspaceId, 
+      workspaceIds: session.user.workspaceIds
+    })
+    
+    if (!isMember) {
+       return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
     const bankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId)

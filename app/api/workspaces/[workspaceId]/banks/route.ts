@@ -1,5 +1,6 @@
 "use server"
 
+import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { auth } from '@/app/lib/auth'
 import { db, getDownloadURLFromPath, storage } from '@/app/lib/firebase'
 import { createBankSchema } from '@/app/types/financial'
@@ -22,11 +23,14 @@ export async function GET(req: NextRequest, { params }: {params: Promise<BankRou
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
     }
 
-    // TODO: Criar função de validação
-    // const isMember = await checkIsWorkspaceMember(workspaceId, session.user.id) // Função utilitária
-    // if (!isMember) {
-    //    return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
-    // }
+    const isMember = await checkIsWorkspaceMember({
+      workspaceId, 
+      workspaceIds: session.user.workspaceIds
+    })
+
+    if (!isMember) {
+       return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
+    }
 
     const banksQuery = db.collection('workspaces').doc(workspaceId).collection('banks')
       .orderBy('name', 'asc')
@@ -63,11 +67,14 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
     }
 
-    // TODO: Criar função de validação
-    // const isMember = await checkIsWorkspaceMember(workspaceId, session.user.id) // Função utilitária
-    // if (!isMember) {
-    //    return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
-    // }
+    const isMember = await checkIsWorkspaceMember({
+      workspaceId, 
+      workspaceIds: session.user.workspaceIds
+    })
+    
+    if (!isMember) {
+       return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
+    }
 
     const formData = await req.formData()
     const imageFile = formData.get('imageFile') as File | null
