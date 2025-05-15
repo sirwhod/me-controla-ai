@@ -115,7 +115,7 @@ export function CreateCategory() {
     <Dialog open={modalIsOpen} onOpenChange={handleModalOpenChange}>
       <DialogTrigger asChild>
         <Button onClick={() => setModalIsOpen(true)} variant="default">
-          <PlusCircle />
+          <PlusCircle className="w-4 h-4 mr-2" />
           Nova Categoria
         </Button>
       </DialogTrigger>
@@ -176,35 +176,34 @@ export function CreateCategory() {
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={form.control}
-              name="imageFile"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  {/* O RHFImageUploadField pode ter seu próprio label, ou você pode adicionar um FormLabel aqui se preferir */}
-                  {/* <FormLabel>Logo do Categoria</FormLabel> */} 
-                  <FormControl>
-                    <ImageUploadField
-                      name={field.name}
-                      setValue={form.setValue}
-                      formValue={field.value} // Passa o valor atual do FileList
-                      error={fieldState.error}
-                      label="Logo da Categoria" // Passa o label para o componente customizado
-                    />
-                  </FormControl>
-                  <FormMessage /> {/* Exibirá erros do Zod para imageFile */}
-                </FormItem>
-              )}
-            />
-
             {/* Seus campos existentes */}
-            <div className="flex flex-row gap-2 w-full">
+            <div className="flex flex-row gap-6 items-end w-full">
+              <FormField
+                control={form.control}
+                name="imageFile"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    {/* O RHFImageUploadField pode ter seu próprio label, ou você pode adicionar um FormLabel aqui se preferir */}
+                    {/* <FormLabel>Logo do Categoria</FormLabel> */} 
+                    <FormControl>
+                      <ImageUploadField
+                        name={field.name}
+                        setValue={form.setValue}
+                        formValue={field.value} // Passa o valor atual do FileList
+                        error={fieldState.error}
+                        // label="Logo da Categoria" // Passa o label para o componente customizado
+                        className="h-36 w-36"
+                      />
+                    </FormControl>
+                    <FormMessage /> {/* Exibirá erros do Zod para imageFile */}
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
-                  <FormItem className="w-full">
+                  <FormItem className="w-full flex flex-col gap-2">
                     <FormLabel>Categoria</FormLabel>
                     <FormControl>
                       <Input className="w-full" placeholder="Alimentação" {...field} />
@@ -229,7 +228,7 @@ export function CreateCategory() {
                   </>
                 ) : (
                   <>
-                    <PlusCircle className="h-4 w-4 mr-2" />
+                    <PlusCircle className="w-4 h-4 mr-2" />
                     Criar Categoria
                   </>
                 )}

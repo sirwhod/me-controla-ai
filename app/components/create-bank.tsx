@@ -126,7 +126,7 @@ export function CreateBank() {
     <Dialog open={modalIsOpen} onOpenChange={handleModalOpenChange}>
       <DialogTrigger asChild>
         <Button onClick={() => setModalIsOpen(true)} variant="default">
-          <PlusCircle />
+          <PlusCircle className="w-4 h-4 mr-2" />
           Novo Banco
         </Button>
       </DialogTrigger>
@@ -140,57 +140,63 @@ export function CreateBank() {
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleCreateBankSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="imageFile"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  {/* O RHFImageUploadField pode ter seu próprio label, ou você pode adicionar um FormLabel aqui se preferir */}
-                  {/* <FormLabel>Logo do Banco</FormLabel> */} 
-                  <FormControl>
-                    <ImageUploadField
-                      name={field.name}
-                      setValue={form.setValue}
-                      formValue={field.value} // Passa o valor atual do FileList
-                      error={fieldState.error}
-                      label="Logo do Banco" // Passa o label para o componente customizado
-                    />
-                  </FormControl>
-                  <FormMessage /> {/* Exibirá erros do Zod para imageFile */}
-                </FormItem>
-              )}
-            />
 
-            {/* Seus campos existentes */}
-            <div className="flex flex-row gap-2 w-full">
-              <FormField
-                control={form.control}
-                name="code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Código</FormLabel>
-                    <FormControl>
-                      <Input placeholder="000" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem className="w-full">
-                    <FormLabel>Banco</FormLabel>
-                    <FormControl>
-                      <Input className="w-full" placeholder="Itaú" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="flex flex-row gap-6 flex-nowrap">
+                <FormField
+                  control={form.control}
+                  name="imageFile"
+                  render={({ field, fieldState }) => (
+                    <FormItem>
+                      {/* O RHFImageUploadField pode ter seu próprio label, ou você pode adicionar um FormLabel aqui se preferir */}
+                      {/* <FormLabel>Logo do Banco</FormLabel> */} 
+                      <FormControl>
+                        <ImageUploadField
+                          name={field.name}
+                          setValue={form.setValue}
+                          formValue={field.value} // Passa o valor atual do FileList
+                          error={fieldState.error}
+                          // label="Logo do Banco" // Passa o label para o componente customizado
+                          className="h-36 w-36"
+                        />
+                      </FormControl>
+                      <FormMessage /> {/* Exibirá erros do Zod para imageFile */}
+                    </FormItem>
+                  )}
+                />
+                {/* Seus campos existentes */}
+                <div className="flex flex-col gap-7 w-full">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>Banco</FormLabel>
+                        <FormControl>
+                          <Input className="w-full" placeholder="Itaú" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="code"
+                    render={({ field }) => (
+                      <FormItem
+                        className="w-2/3 md:w-1/3"
+                      >
+                        <FormLabel>Código</FormLabel>
+                        <FormControl>
+                          <Input placeholder="000" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
             </div>
-            
+
             <Separator />
             {/* Seus campos de dados do crédito ... */}
             <div className="flex flex-col gap-4">

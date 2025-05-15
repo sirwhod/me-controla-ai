@@ -8,13 +8,14 @@ import { useCallback, useState, useEffect } from "react"
 import { cn } from "@/app/lib/utils"
 import { UseFormSetValue, FieldError } from "react-hook-form"
 
-interface ImageUploadFieldProps {
+interface ImageUploadFieldProps extends React.ComponentProps<"div"> {
   name: string // Nome do campo para react-hook-form
   setValue: UseFormSetValue<any> // Função setValue do form
   clearErrors?: (name?: string | string[]) => void // Função clearErrors do form
   formValue?: FileList | null // Valor atual do campo vindo do react-hook-form
   error?: FieldError
   label?: string // Label opcional para o campo
+  legendFileName?: boolean //
 }
 
 export function ImageUploadField({
@@ -23,7 +24,10 @@ export function ImageUploadField({
   clearErrors,
   formValue,
   error,
-  label
+  label,
+  className,
+  legendFileName = false,
+  ...props
 }: ImageUploadFieldProps) {
   const [isDragging, setIsDragging] = useState(false)
 
@@ -108,7 +112,9 @@ export function ImageUploadField({
             "flex h-48 cursor-pointer flex-col items-center justify-center gap-3 rounded-md border-2 border-dashed bg-muted/20 p-4 text-center transition-colors hover:bg-muted/50",
             isDragging && "border-primary bg-primary/10",
             error && "border-destructive bg-destructive/10", // Estilo de erro
+            className
           )}
+          {...props}
         >
           <div className={cn("rounded-full p-2 shadow-sm border", error ? "bg-destructive/20 border-destructive" : "bg-background")}>
             <ImagePlus className={cn("h-5 w-5", error ? "text-destructive-foreground" : "text-muted-foreground")} />
@@ -122,7 +128,7 @@ export function ImageUploadField({
         </div>
       ) : (
         <div className="relative">
-          <div className="group relative h-48 overflow-hidden rounded-md border">
+          <div className={cn("group relative h-48 overflow-hidden rounded-md border", className)} {...props}>
             <NextImage
               src={previewUrl}
               alt={fileName || "Prévia da imagem"}
@@ -154,8 +160,8 @@ export function ImageUploadField({
               </Button>
             </div>
           </div>
-          {fileName && (
-            <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+          {legendFileName && fileName && (
+            <div className={cn("mt-1.5 flex items-center gap-2 text-xs text-muted-foreground", className)} {...props}>
               <span className="truncate flex-1" title={fileName}>{fileName}</span>
               <button
                 type="button"
