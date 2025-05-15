@@ -125,7 +125,7 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
     const newBankData = {
       name: name.trim(),
       code: code?.trim(),
-      iconUrl: uploadedIconUrl, // URL da imagem do Storage
+      iconUrl: uploadedIconUrl ?? null, // URL da imagem do Storage
       workspaceId: workspaceId,
       invoiceClosingDay: invoiceClosingDay ?? null, // Zod já converteu para número ou null
       invoiceDueDate: invoiceDueDate ?? null,     // Zod já converteu para número ou null

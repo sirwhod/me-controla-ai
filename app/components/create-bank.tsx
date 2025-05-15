@@ -65,11 +65,16 @@ export function CreateBank() {
     formData.append("name", data.name)
     formData.append("code", data.code ?? "")
     
-    if (data.invoiceClosingDay !== undefined && data.invoiceClosingDay !== null) {
-      formData.append("invoiceClosingDay", String(data.invoiceClosingDay))
+    if (data.invoiceClosingDay !== undefined && data.invoiceClosingDay !== null && !isNaN(Number(data.invoiceClosingDay))) {
+      formData.append("invoiceClosingDay", String(data.invoiceClosingDay));
+    } else {
+      formData.append("invoiceClosingDay", "0");
     }
-    if (data.invoiceDueDate !== undefined && data.invoiceDueDate !== null) {
-      formData.append("invoiceDueDate", String(data.invoiceDueDate))
+
+    if (data.invoiceDueDate !== undefined && data.invoiceDueDate !== null && !isNaN(Number(data.invoiceDueDate))) {
+      formData.append("invoiceDueDate", String(data.invoiceDueDate));
+    } else {
+      formData.append("invoiceDueDate", "0");
     }
 
       // PONTO CRÍTICO AQUI:

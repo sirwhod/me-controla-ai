@@ -108,7 +108,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Categ
     const newCategoryData = {
       name: name.trim(),
       type: type,
-      iconUrl: uploadedIconUrl, // URL da imagem do Storage
+      iconUrl: uploadedIconUrl ?? null, // URL da imagem do Storage
       workspaceId: workspaceId,
       createdAt: new Date(),
       updatedAt: new Date(),
