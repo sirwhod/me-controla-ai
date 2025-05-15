@@ -26,7 +26,7 @@ export const columns: ColumnDef<Bank>[] = [
         <div className="w-full flex flex-row gap-4 items-center">
           {/* Image */}
           {iconUrl ? (
-            <Image src={iconUrl} alt="" width={36} height={36} />
+            <Image src={iconUrl} alt="" width={36} height={36} className="h-10 w-10 rounded-sm" />
           ) : (
             <div className="bg-primary p-2 rounded-sm">
               <Landmark className="h-6 w-6 text-foreground" />
