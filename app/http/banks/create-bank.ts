@@ -25,10 +25,7 @@ export async function createBank(
     payload,
     {
       headers: {
-        'Content-Type': undefined // Ou null. Isso pode fazer o Axios remover o header global e detectar FormData.
-                                 // Alguns preferem 'Content-Type': 'multipart/form-data' aqui,
-                                 // mas deixar o Axios lidar com o boundary é geralmente melhor.
-                                 // Se isso não funcionar, tente omitir completamente a chave 'Content-Type' aqui.
+        'Content-Type': undefined
       }
     }
   )

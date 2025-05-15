@@ -1,17 +1,20 @@
 import { api } from '@/app/lib/axios'
-import { CreateCategory } from '@/app/types/financial'
 
 interface CreateCategoryResponse {
   message: string;
   categoryId: string; // O ID do categoria criada
 }
 
+interface CreateCategoryProps {
+  payload: FormData;
+  workspaceId: string;
+}
+
 export async function createCategory(
-  workspaceId: string, 
   {
-    name,
-    type
-  }: CreateCategory
+    workspaceId,
+    payload
+  }: CreateCategoryProps
 ): Promise<CreateCategoryResponse> {
   if (!workspaceId) {
     return {
@@ -22,9 +25,11 @@ export async function createCategory(
 
   const response = await api.post<CreateCategoryResponse>(
     `/workspaces/${workspaceId}/categories`,
+    payload,
     {
-      name,
-      type
+      headers: {
+        'Content-Type': undefined
+      }
     }
   )
 

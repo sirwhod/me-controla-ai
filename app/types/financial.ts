@@ -179,6 +179,7 @@ export interface Category {
   id: string; // O ID do documento do Firestore
   workspaceId: string; // ID do workspace pai
   name: string;
+  iconUrl: string | null; // URL do ícone (pode ser null)
   type: 'expense' | 'income'; // Tipo de categoria
   createdAt: Date | null; // Data de criação (Timestamp convertido)
   updatedAt: Date | null; // Data de atualização (Timestamp convertido)
@@ -186,6 +187,19 @@ export interface Category {
 
 export const createCategorySchema = z.object({
   name: z.string().min(1, { message: 'O nome da categoria é obrigatório.' }),
+  iconUrl: z.string().url('URL do ícone inválida.').optional().or(z.literal('')),
+  imageFile: z
+    .custom<FileList>()
+    .refine((files) => files && files.length > 0, "A imagem do logo é obrigatória.") // Garante que um arquivo foi selecionado
+    .refine(
+      (files) => files?.[0]?.size <= MAX_FILE_SIZE_BYTES,
+      `O tamanho máximo da imagem é ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB.`
+    )
+    .refine(
+      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
+      "Tipo de arquivo inválido. Apenas .jpg, .jpeg, .png e .webp são permitidos."
+    )
+    .optional(),
   type: z.enum(['expense', 'income'], {
     errorMap: () => ({ message: 'Tipo de categoria inválido. Deve ser "expense" ou "income".' }),
   }),
@@ -195,6 +209,19 @@ export type CreateCategory = z.infer<typeof createCategorySchema>
 
 export const updateCategorySchema = z.object({
   name: z.string().min(1, { message: 'O nome da categoria não pode ser vazio.' }).optional(),
+  iconUrl: z.string().url('URL do ícone inválida.').optional().or(z.literal('')),
+  imageFile: z
+    .custom<FileList>()
+    .refine((files) => files && files.length > 0, "A imagem do logo é obrigatória.") // Garante que um arquivo foi selecionado
+    .refine(
+      (files) => files?.[0]?.size <= MAX_FILE_SIZE_BYTES,
+      `O tamanho máximo da imagem é ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB.`
+    )
+    .refine(
+      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
+      "Tipo de arquivo inválido. Apenas .jpg, .jpeg, .png e .webp são permitidos."
+    )
+    .optional(),
   type: z.enum(['expense', 'income'], {
     errorMap: () => ({ message: 'Tipo de categoria inválido. Deve ser "expense" ou "income".' }),
   }).optional(),
