@@ -1,7 +1,7 @@
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member';
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
-import { createDebitSchema, Debit } from '@/app/types/financial'
+import { createDebitSchema, Debit, TypeDebit } from '@/app/types/financial'
 import { NextRequest, NextResponse } from 'next/server'
 
 interface DebitsRouteParams {
@@ -112,8 +112,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       date: dateObj,
       month: month,
       year: year,
-      type: type,
+      type: type as TypeDebit,
       bankId: bankId || null,
+      bankName: "", 
+      bankImageUrl: "", 
+      categoryName: "", 
+      categoryUrl: "",
       paymentMethod: paymentMethod || null,
       categoryId: categoryId || null,
       proofUrl: proofUrl?.trim() || null,

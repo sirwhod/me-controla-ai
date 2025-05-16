@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 // --- Interface para Débito (Debit) ---
+export type TypeDebit = 'Comum' | 'Fixo' | 'Assinatura' | 'Parcelamento'
+
 export interface Debit {
   id?: string; // O ID do documento do Firestore
   workspaceId: string;
@@ -12,8 +14,12 @@ export interface Debit {
   year: number; // Ex: 2025
   type: 'Comum' | 'Fixo' | 'Assinatura' | 'Parcelamento'; // Tipos de débito
   bankId: string | null; // ID do banco associado (pode ser null)
+  bankName: string | null; // Nome do banco associado (pode ser null)
+  bankImageUrl: string | null; // Imagem do banco associado (pode ser null)
   paymentMethod: 'Crédito' | 'Débito' | 'Pix' | 'Conta'; // método de pagamento associado
   categoryId: string | null; // ID da categoria associada (pode ser null)
+  categoryName: string | null; // Nome da categoria associada (pode ser null)
+  categoryUrl: string | null; // Imagem da categoria associada (pode ser null)
   proofUrl: string | null; // URL do comprovante (pode ser null)
   status: string; // Status do débito (ex: 'pending', 'paid', 'overdue')
   createdAt: Date | null; // Convertido de Timestamp para Date
@@ -38,7 +44,7 @@ export const createDebitSchema = z.object({
   date: z.string().datetime({ message: 'Data da transação inválida.' }),
   type: z.enum(['Comum', 'Fixo', 'Assinatura', 'Parcelamento'], {
     errorMap: () => ({ message: 'Tipo de débito inválido.' }),
-  }),
+  }).optional(),
   bankId: z.string().optional().nullable(),
   paymentMethod: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
     errorMap: () => ({ message: 'Método de pagamento inválido.' }),

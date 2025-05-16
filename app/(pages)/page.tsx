@@ -1,9 +1,6 @@
+import { Logo } from "../components/logo"
 import { Button } from "../components/ui/button"
 import Link from "next/link"
-
-
-import Logo from "@/public/logo.svg"
-import Image from "next/image"
 
 export default function Home() {
   return (
@@ -12,7 +9,7 @@ export default function Home() {
         <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">Seja Bem-vindo!</h1>
         <p className="leading-7 [&:not(:first-child)]:mt-6">A primeira versão da landing page do MeControla.AI</p>
         <div className="flex flex-row gap-2 items-center justify-center">
-          <Image src={Logo} alt="" width={32} height={32} />
+          <Logo className="text-primary w-8 h-8" />
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-medium">MeControla.AI</span>
             <span className="truncate text-xs">

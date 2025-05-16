@@ -7,7 +7,7 @@ import { redirect } from "next/navigation"
 import Image from "next/image"
 
 import Placeholder from "@/public/placeholder.svg"
-import Logo from "@/public/logo.svg"
+import { Logo } from "@/app/components/logo"
 
 export default function LoginPage() {
   const { status } = useSession()
@@ -22,8 +22,8 @@ export default function LoginPage() {
     <div className="flex flex-col gap-4 p-6 md:p-10">
       <div className="flex justify-center gap-2 md:justify-start">
         <a href="#" className="flex items-center gap-2 font-medium">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Image src={Logo} alt="" width={24} height={24} />
+          <div className="flex h-6 w-6 items-center justify-center rounded-md">
+            <Logo className="text-primary" />
           </div>
           MeControla.AI
         </a>

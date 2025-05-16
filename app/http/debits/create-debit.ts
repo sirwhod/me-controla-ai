@@ -6,8 +6,11 @@ interface CreateDebitResponse {
   debitId: string; // O ID do débito criada
 }
 
-export async function createDebit(
+interface CreateDebitProps extends CreateDebit {
   workspaceId: string, 
+}
+
+export async function createDebit(
   {
     date,
     description,
@@ -21,8 +24,9 @@ export async function createDebit(
     paymentMethod,
     proofUrl,
     startDate,
-    totalInstallments
-  }: CreateDebit
+    totalInstallments,
+    workspaceId
+  }: CreateDebitProps
 ): Promise<CreateDebitResponse> {
   if (!workspaceId) {
     return {

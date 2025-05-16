@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Débitos
 
-## Getting Started
+- Campos:
 
-First, run the development server:
+## Default:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+  | Campo | Descrição | 
+  | Type | -- |
+  | Description | -- |
+  | Value | -- |
+  | Date | -- |
+  | BankId | -- |
+  | CategoryId | -- |
+  | paymentMethod | -- |
+  | proofUrl | -- |
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+#### Regra padrão:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+ - Caso o paymentMethod === "Crédito", é preciso utilizar um cálculo para entender se a data de fechamento do cartão já passou, caso tenha passado, é preciso registrar no mês seguinte, caso não, Registra no mês atual.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Caso: type === "Comum":
 
-## Learn More
+Não abre nenhum campo adicional
 
-To learn more about Next.js, take a look at the following resources:
+### Caso: type === "Fixo":
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+  | Campo | Descrição |
+  | startDate | -- | 
+  | frequêncy | -- | 
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+#### Regra padrão:
 
-## Deploy on Vercel
+  - Replicar débito até o fim do ano vigente.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Caso: type === "Parcelamento":
+
+  | Campo | Descrição |
+  | startDate | -- | 
+  | totalInstallments | -- | 
+  | currentInstallment | -- | 
+
+#### Regra padrão:
+
+  - Permitir somete paymentMethod === 'Crédito' | 'Conta'
+  - Replicar débito aumentando o mês a cada parcela.
+      - quantidade de parcela restante é igual ao calculo: totalInstallments - currentInstallment
+
+### Caso: type === "Assinatura":
+
+  | Campo | Descrição |
+  | startDate | -- | 
+
+#### Regra padrão:
+
+  - Permitir somete paymentMethod === 'Crédito' | 'Conta'
+  - Replicar débito até o fim do ano vigente.

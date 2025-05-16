@@ -8,8 +8,6 @@ import {
   Settings2,
 } from "lucide-react"
 
-import Logo from "@/public/logo.svg"
-
 import { NavMain } from "@/app/components/nav-main"
 import { NavSecondary } from "@/app/components/nav-secondary"
 import { NavUser } from "@/app/components/nav-user"
@@ -23,7 +21,7 @@ import {
   SidebarMenuItem,
 } from "@/app/components/ui/sidebar"
 import { useWorkspace } from "../hooks/use-workspace"
-import Image from "next/image"
+import { Logo } from "./logo"
 
 const data = {
   navMain: [
@@ -35,11 +33,11 @@ const data = {
       items: [
         {
           title: "Despesas",
-          url: "/debits",
+          url: "/dashboard/debits",
         },
         {
           title: "Receitas",
-          url: "/credits",
+          url: "/dashboard/credits",
         },
       ],
     },
@@ -87,7 +85,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <div>
-                <Image src={Logo} alt="" width={32} height={32} />
+                <Logo className="text-primary min-w-8 min-h-8" />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">MeControla.AI</span>
                   <span className="truncate text-xs">
