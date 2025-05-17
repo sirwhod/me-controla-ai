@@ -6,8 +6,8 @@ import { Button } from "@/app/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu"
 import { Category } from "@/app/types/financial"
 import { ColumnDef } from "@tanstack/react-table"
-import { ChartBarStacked, MoreHorizontal } from "lucide-react"
-import Image from "next/image"
+import { MoreHorizontal } from "lucide-react"
+import { DynamicIcon, IconName } from "lucide-react/dynamic"
 
 export const columns: ColumnDef<Category>[] = [
   {
@@ -18,19 +18,16 @@ export const columns: ColumnDef<Category>[] = [
       )
     },
     cell: ({ row }) => {
-      const iconUrl = row.original.iconUrl
+      const icon = row.original.icon as IconName
       const name = row.original.name
 
       return (
-        <div className="w-full flex flex-row gap-4 items-center">
+        <div className="w-full flex flex-row gap-2 items-center">
           {/* Image */}
-          {iconUrl ? (
-              <Image src={iconUrl} alt="" width={36} height={36} className="h-10 w-10 rounded-sm" />
-            ) : (
-              <div className="bg-primary p-2 rounded-sm">
-                <ChartBarStacked className="h-6 w-6 text-foreground" />
-              </div>
-            )}
+          <DynamicIcon
+            name={icon}
+            size={16}
+          />
           <div className="flex flex-col gap-0 items-start justify-self-start">
             <strong>{name}</strong>
           </div>
