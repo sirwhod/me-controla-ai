@@ -150,19 +150,57 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       status: 'pending',
     }
 
+    let newDebitRef: any = null;
+
     // Specific logic for each type
     switch (type) {
       case 'Comum':
+        newDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+        await newDebitRef.set(newDebitData)
+
         break
 
       case 'Fixo':
         if (!frequency || !startDate) {
-            return NextResponse.json({ message: 'Frequência e Data de Início são obrigatórios para débito Fixo.' }, { status: 400 })
+          return NextResponse.json({ message: 'Frequência e Data de Início são obrigatórios para débito Fixo.' }, { status: 400 })
         }
         newDebitData.isTemplate = true
         newDebitData.frequency = frequency
         newDebitData.startDate = startDateObj
         newDebitData.endDate = endDateObj
+
+        // Criação de débitos mensais até o fim do ano atual
+        const debitsToCreate = []
+        const now = new Date()
+        const year = now.getFullYear()
+        let current = new Date(startDateObj!)
+
+        // Garante que começa no mês do startDate
+        current.setDate(1)
+        while (current.getFullYear() === year && current <= new Date(year, 11, 31)) {
+          // Cria uma cópia dos dados para cada mês
+          const debitForMonth = {
+            ...newDebitData,
+            date: new Date(current),
+            month: current.toLocaleString('pt-BR', { month: 'long' }),
+            year: current.getFullYear(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
+          debitsToCreate.push(debitForMonth)
+          // Próximo mês
+          current.setMonth(current.getMonth() + 1)
+        }
+
+        // Salva todos os débitos no Firestore
+        const batch = db.batch()
+        debitsToCreate.forEach(debit => {
+          const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+          batch.set(ref, debit)
+        })
+        await batch.commit()
+
+        return NextResponse.json({ message: 'Débitos fixos criados com sucesso!', count: debitsToCreate.length }, { status: 201 })
         break
 
       case 'Assinatura':
@@ -174,6 +212,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         newDebitData.startDate = startDateObj
         newDebitData.endDate = endDateObj
         newDebitData.isActive = true
+
+        newDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+
+        await newDebitRef.set(newDebitData)
+
         break
 
       case 'Parcelamento':
@@ -187,13 +230,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         newDebitData.startDate = startDateObj
         newDebitData.totalInstallments = totalInstallments
         newDebitData.currentInstallment = currentInstallment
+
+        newDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+
+        await newDebitRef.set(newDebitData)
+
         break
     }
-
-    const newDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc() // Firestore generates ID
-
-
-    await newDebitRef.set(newDebitData)
 
     if (type === 'Parcelamento' && newDebitData.currentInstallment === 1) {
         await newDebitRef.update({ originalDebitId: newDebitRef.id })

@@ -1,4 +1,4 @@
-import { Banknote, BanknoteArrowDown, CalendarSync, CreditCard, Landmark, Pin, PlusCircle, Trash } from "lucide-react"
+import { Banknote, BanknoteArrowDown, CalendarIcon, CalendarSync, CreditCard, Landmark, Pin, PlusCircle, Trash } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
 import {
   Dialog,
@@ -28,6 +28,10 @@ import { getCategories } from "../http/categories/get-categories"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
 import Image from "next/image"
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
+import { cn } from "../lib/utils"
+import { format } from "date-fns"
+import { Calendar } from "./ui/calendar"
 
 type CreateDebitFormData = CreateDebitProps
 
@@ -106,6 +110,12 @@ export function CreateDebit() {
     form.setValue("date", new Date().toISOString())
   },[modalIsOpen])
 
+  useEffect(() => {
+    if (form.watch("type") === "Fixo") {
+      form.setValue("frequency", "monthly")
+    }
+  },[form.watch("type")])
+
   return (
     <Dialog open={modalIsOpen} onOpenChange={handleModalOpenChange}>
       <DialogTrigger asChild>
@@ -159,7 +169,6 @@ export function CreateDebit() {
             </div>
             )}
             
-
             {form.watch("type") === undefined && (
               <>
                 <Label>Selecione um tipo de despesa</Label>
@@ -242,6 +251,49 @@ export function CreateDebit() {
                   )}
                 />
               </>
+            )}
+
+            {form.watch("type") === "Fixo" && (
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data de Inicio</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Selecione uma data</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : new Date()}
+                          onSelect={date => {
+                            field.onChange(date ? date.toISOString() : '')
+                          }}
+                          captionLayout="dropdown"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
 
             {form.watch("type") && (
@@ -441,6 +493,8 @@ export function CreateDebit() {
                 />
               </>
             )}
+
+            
 
             <DialogFooter className="justify-between">
               {/* Ajuste no DialogClose e Button */}
