@@ -246,7 +246,7 @@ export function CreateDebit() {
 
             {form.watch("type") && (
               <>
-                <div className="flex flex-row gap-2 w-full">
+                <div className="flex flex-col md:flex-row gap-2 w-full">
                   <FormField
                     control={form.control}
                     name="description"
@@ -280,83 +280,83 @@ export function CreateDebit() {
                     )}
                   />
                 </div>
-                <div className="flex flex-row gap-2 w-full">
-                    <FormField
-                      control={form.control}
-                      name="categoryId"
-                      render={({ field }) => (
-                        <FormItem className="w-full">
-                          <FormLabel>Categoria</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value ?? ''}>
-                            <FormControl>
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Selecione uma categoria." />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {isCategoriesLoading && (
-                                <SelectItem value="">Carregando...</SelectItem>
-                              )}
-                              {!isCategoriesLoading && categories?.length === 0 && (
-                                <SelectItem value="">Nenhuma categoria encontrada.</SelectItem>
-                              )}
-                              {!isCategoriesLoading && categories?.map((category) => (
-                                <SelectItem key={category.id} value={category.id}>
-                                  <DynamicIcon
-                                    name={category.icon as IconName}
-                                    size={16}
+                <div className="flex flex-col md:flex-row gap-2 w-full">
+                  <FormField
+                    control={form.control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>Categoria</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value ?? ''}>
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Selecione uma categoria." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {isCategoriesLoading && (
+                              <SelectItem value="">Carregando...</SelectItem>
+                            )}
+                            {!isCategoriesLoading && categories?.length === 0 && (
+                              <SelectItem value="">Nenhuma categoria encontrada.</SelectItem>
+                            )}
+                            {!isCategoriesLoading && categories?.map((category) => (
+                              <SelectItem key={category.id} value={category.id}>
+                                <DynamicIcon
+                                  name={category.icon as IconName}
+                                  size={16}
+                                />
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bankId"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>Banco</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value ?? ''}>
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Selecione um banco." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {isBanksLoading && (
+                              <SelectItem value="">Carregando...</SelectItem>
+                            )}
+                            {!isBanksLoading && banks?.length === 0 && (
+                              <SelectItem value="">Nenhum banco encontrado.</SelectItem>
+                            )}
+                            {!isBanksLoading && banks?.map((bank) => (
+                              <SelectItem key={bank.id} value={bank.id}>
+                                {
+                                  bank.iconUrl ? 
+                                  <Image 
+                                    src={bank.iconUrl} 
+                                    alt={bank.name} 
+                                    width={16} 
+                                    height={16} 
+                                  /> : 
+                                  <Landmark 
+                                    className="h-4 w-4 text-foreground" 
                                   />
-                                  {category.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="bankId"
-                      render={({ field }) => (
-                        <FormItem className="w-full">
-                          <FormLabel>Banco</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value ?? ''}>
-                            <FormControl>
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Selecione um banco." />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {isBanksLoading && (
-                                <SelectItem value="">Carregando...</SelectItem>
-                              )}
-                              {!isBanksLoading && banks?.length === 0 && (
-                                <SelectItem value="">Nenhum banco encontrado.</SelectItem>
-                              )}
-                              {!isBanksLoading && banks?.map((bank) => (
-                                <SelectItem key={bank.id} value={bank.id}>
-                                  {
-                                    bank.iconUrl ? 
-                                    <Image 
-                                      src={bank.iconUrl} 
-                                      alt={bank.name} 
-                                      width={16} 
-                                      height={16} 
-                                    /> : 
-                                    <Landmark 
-                                      className="h-4 w-4 text-foreground" 
-                                    />
-                                  }
-                                  {bank.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                                }
+                                {bank.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
                 <FormField
                   control={form.control}
