@@ -2,6 +2,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { createDebitSchema, Debit, TypeDebit } from '@/app/types/financial'
+import { DocumentReference } from 'firebase-admin/firestore';
 import { NextRequest, NextResponse } from 'next/server'
 
 interface DebitsRouteParams {
@@ -150,17 +151,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       status: 'pending',
     }
 
-    let newDebitRef: any = null;
+    let newDebitRef: DocumentReference | null = null;
 
     // Specific logic for each type
     switch (type) {
-      case 'Comum':
+      case 'Comum': {
         newDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
         await newDebitRef.set(newDebitData)
-
         break
+      }
 
-      case 'Fixo':
+      case 'Fixo': {
         if (!frequency || !startDate) {
           return NextResponse.json({ message: 'Frequência e Data de Início são obrigatórios para débito Fixo.' }, { status: 400 })
         }
@@ -169,16 +170,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         newDebitData.startDate = startDateObj
         newDebitData.endDate = endDateObj
 
-        // Criação de débitos mensais até o fim do ano atual
         const debitsToCreate = []
         const now = new Date()
         const year = now.getFullYear()
-        let current = new Date(startDateObj!)
-
-        // Garante que começa no mês do startDate
+        const current = new Date(startDateObj!)
         current.setDate(1)
         while (current.getFullYear() === year && current <= new Date(year, 11, 31)) {
-          // Cria uma cópia dos dados para cada mês
           const debitForMonth = {
             ...newDebitData,
             date: new Date(current),
@@ -188,11 +185,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
             updatedAt: new Date(),
           }
           debitsToCreate.push(debitForMonth)
-          // Próximo mês
           current.setMonth(current.getMonth() + 1)
         }
 
-        // Salva todos os débitos no Firestore
         const batch = db.batch()
         debitsToCreate.forEach(debit => {
           const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
@@ -201,8 +196,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         await batch.commit()
 
         return NextResponse.json({ message: 'Débitos fixos criados com sucesso!', count: debitsToCreate.length }, { status: 201 })
+      }
 
-      case 'Assinatura':
+      case 'Assinatura': {
         if (!frequency || !startDate) {
           return NextResponse.json({ message: 'Frequência e Data de Início são obrigatórios para débito Assinatura.' }, { status: 400 })
         }
@@ -212,9 +208,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         newDebitData.endDate = endDateObj
         newDebitData.isActive = true
 
-        // Criação de débitos mensais para 12 meses a partir do startDate
         const assinaturaDebitsToCreate = []
-        let assinaturaCurrent = new Date(startDateObj!)
+        const assinaturaCurrent = new Date(startDateObj!)
         assinaturaCurrent.setDate(1)
         for (let i = 0; i < 12; i++) {
           const debitForMonth = {
@@ -229,7 +224,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
           assinaturaCurrent.setMonth(assinaturaCurrent.getMonth() + 1)
         }
 
-        // Salva todos os débitos no Firestore
         const assinaturaBatch = db.batch()
         assinaturaDebitsToCreate.forEach(debit => {
           const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
@@ -238,9 +232,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         await assinaturaBatch.commit()
 
         return NextResponse.json({ message: 'Débitos de assinatura criados com sucesso!', count: assinaturaDebitsToCreate.length }, { status: 201 })
+      }
 
-      case 'Parcelamento':
-        console.log({ totalInstallments, currentInstallment, startDate })
+      case 'Parcelamento': {
         if (!startDate || !totalInstallments || !currentInstallment) {
           return NextResponse.json({ message: 'Data de Início, Total de Parcelas e Parcela Atual são obrigatórios para débito Parcelamento.' }, { status: 400 })
         }
@@ -251,9 +245,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         newDebitData.startDate = startDateObj
         newDebitData.totalInstallments = totalInstallments
 
-        // Criação das parcelas
         const parcelasToCreate = []
-        let parcelaDate = new Date(startDateObj!)
+        const parcelaDate = new Date(startDateObj!)
         parcelaDate.setDate(1)
         for (let i = 1; i <= totalInstallments; i++) {
           const parcelaData = {
@@ -271,11 +264,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
           parcelaDate.setMonth(parcelaDate.getMonth() + 1)
         }
 
-        // Salva todas as parcelas no Firestore
         const parcelamentoBatch = db.batch()
         const firstRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
         parcelasToCreate.forEach((parcela, idx) => {
-          // Usa o mesmo id para a primeira parcela, os outros são novos
           const ref = idx === 0 ? firstRef : db.collection('workspaces').doc(workspaceId).collection('debits').doc()
           parcela.originalDebitId = firstRef.id
           parcelamentoBatch.set(ref, parcela)
@@ -283,9 +274,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         await parcelamentoBatch.commit()
 
         return NextResponse.json({ message: 'Parcelamento criado com sucesso!', count: parcelasToCreate.length, originalDebitId: firstRef.id }, { status: 201 })
+      }
     }
 
-    return NextResponse.json({ message: 'Débito criado com sucesso!', debitId: newDebitRef.id }, { status: 201 })
+    if (newDebitRef) {
+      return NextResponse.json({ message: 'Débito criado com sucesso!', debitId: newDebitRef.id }, { status: 201 })
+    } else {
+      return NextResponse.json({ message: 'Erro ao criar débito.' }, { status: 500 })
+    }
 
   } catch (error) {
     const searchParams = await params
