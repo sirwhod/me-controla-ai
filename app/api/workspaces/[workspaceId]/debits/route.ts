@@ -201,11 +201,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         await batch.commit()
 
         return NextResponse.json({ message: 'Débitos fixos criados com sucesso!', count: debitsToCreate.length }, { status: 201 })
-        break
 
       case 'Assinatura':
         if (!frequency || !startDate) {
-            return NextResponse.json({ message: 'Frequência e Data de Início são obrigatórios para débito Assinatura.' }, { status: 400 })
+          return NextResponse.json({ message: 'Frequência e Data de Início são obrigatórios para débito Assinatura.' }, { status: 400 })
         }
         newDebitData.isTemplate = true
         newDebitData.frequency = frequency
@@ -213,11 +212,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         newDebitData.endDate = endDateObj
         newDebitData.isActive = true
 
-        newDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+        // Criação de débitos mensais para 12 meses a partir do startDate
+        const assinaturaDebitsToCreate = []
+        let assinaturaCurrent = new Date(startDateObj!)
+        assinaturaCurrent.setDate(1)
+        for (let i = 0; i < 12; i++) {
+          const debitForMonth = {
+            ...newDebitData,
+            date: new Date(assinaturaCurrent),
+            month: assinaturaCurrent.toLocaleString('pt-BR', { month: 'long' }),
+            year: assinaturaCurrent.getFullYear(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
+          assinaturaDebitsToCreate.push(debitForMonth)
+          assinaturaCurrent.setMonth(assinaturaCurrent.getMonth() + 1)
+        }
 
-        await newDebitRef.set(newDebitData)
+        // Salva todos os débitos no Firestore
+        const assinaturaBatch = db.batch()
+        assinaturaDebitsToCreate.forEach(debit => {
+          const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+          assinaturaBatch.set(ref, debit)
+        })
+        await assinaturaBatch.commit()
 
-        break
+        return NextResponse.json({ message: 'Débitos de assinatura criados com sucesso!', count: assinaturaDebitsToCreate.length }, { status: 201 })
 
       case 'Parcelamento':
         if (!startDate || !totalInstallments || !currentInstallment) {

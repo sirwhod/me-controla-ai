@@ -111,7 +111,7 @@ export function CreateDebit() {
   },[modalIsOpen])
 
   useEffect(() => {
-    if (form.watch("type") === "Fixo") {
+    if (form.watch("type") === "Fixo" || form.watch("type") === "Assinatura") {
       form.setValue("frequency", "monthly")
     }
   },[form.watch("type")])
@@ -254,6 +254,49 @@ export function CreateDebit() {
             )}
 
             {form.watch("type") === "Fixo" && (
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data de Inicio</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Selecione uma data</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : new Date()}
+                          onSelect={date => {
+                            field.onChange(date ? date.toISOString() : '')
+                          }}
+                          captionLayout="dropdown"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {form.watch("type") === "Assinatura" && (
               <FormField
                 control={form.control}
                 name="startDate"
@@ -493,8 +536,6 @@ export function CreateDebit() {
                 />
               </>
             )}
-
-            
 
             <DialogFooter className="justify-between">
               {/* Ajuste no DialogClose e Button */}
