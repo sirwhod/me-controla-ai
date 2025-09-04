@@ -114,6 +114,9 @@ export function CreateDebit() {
     if (form.watch("type") === "Fixo" || form.watch("type") === "Assinatura") {
       form.setValue("frequency", "monthly")
     }
+    if (form.watch("type") === "Parcelamento") {
+      form.setValue("currentInstallment", 1)
+    }
   },[form.watch("type")])
 
   return (
@@ -337,6 +340,72 @@ export function CreateDebit() {
                   </FormItem>
                 )}
               />
+            )}
+
+            {form.watch("type") === "Parcelamento" && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Data de Inicio</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Selecione uma data</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value ? new Date(field.value) : new Date()}
+                            onSelect={date => {
+                              field.onChange(date ? date.toISOString() : '')
+                            }}
+                            captionLayout="dropdown"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex flex-col md:flex-row gap-2 w-full">
+                  <FormField
+                    control={form.control}
+                    name="totalInstallments"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>Total de Parcelas</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder="12"
+                            {...field}
+                            value={field.value ?? 1}
+                            onChange={e => field.onChange(e.target.value === "1" ? 1 : Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </>
             )}
 
             {form.watch("type") && (

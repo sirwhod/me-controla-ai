@@ -240,26 +240,49 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         return NextResponse.json({ message: 'Débitos de assinatura criados com sucesso!', count: assinaturaDebitsToCreate.length }, { status: 201 })
 
       case 'Parcelamento':
+        console.log({ totalInstallments, currentInstallment, startDate })
         if (!startDate || !totalInstallments || !currentInstallment) {
-             return NextResponse.json({ message: 'Data de Início, Total de Parcelas e Parcela Atual são obrigatórios para débito Parcelamento.' }, { status: 400 })
+          return NextResponse.json({ message: 'Data de Início, Total de Parcelas e Parcela Atual são obrigatórios para débito Parcelamento.' }, { status: 400 })
         }
         if (currentInstallment !== 1) {
-             return NextResponse.json({ message: 'Ao criar um parcelamento, a parcela atual deve ser 1.' }, { status: 400 })
+          return NextResponse.json({ message: 'Ao criar um parcelamento, a parcela atual deve ser 1.' }, { status: 400 })
         }
         newDebitData.isTemplate = false
         newDebitData.startDate = startDateObj
         newDebitData.totalInstallments = totalInstallments
-        newDebitData.currentInstallment = currentInstallment
 
-        newDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+        // Criação das parcelas
+        const parcelasToCreate = []
+        let parcelaDate = new Date(startDateObj!)
+        parcelaDate.setDate(1)
+        for (let i = 1; i <= totalInstallments; i++) {
+          const parcelaData = {
+            ...newDebitData,
+            currentInstallment: i,
+            date: new Date(parcelaDate),
+            month: parcelaDate.toLocaleString('pt-BR', { month: 'long' }),
+            year: parcelaDate.getFullYear(),
+            description: `Parcela ${i}/${totalInstallments} - ${newDebitData.description}`,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            originalDebitId: '', // será preenchido depois
+          }
+          parcelasToCreate.push(parcelaData)
+          parcelaDate.setMonth(parcelaDate.getMonth() + 1)
+        }
 
-        await newDebitRef.set(newDebitData)
+        // Salva todas as parcelas no Firestore
+        const parcelamentoBatch = db.batch()
+        const firstRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+        parcelasToCreate.forEach((parcela, idx) => {
+          // Usa o mesmo id para a primeira parcela, os outros são novos
+          const ref = idx === 0 ? firstRef : db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+          parcela.originalDebitId = firstRef.id
+          parcelamentoBatch.set(ref, parcela)
+        })
+        await parcelamentoBatch.commit()
 
-        break
-    }
-
-    if (type === 'Parcelamento' && newDebitData.currentInstallment === 1) {
-        await newDebitRef.update({ originalDebitId: newDebitRef.id })
+        return NextResponse.json({ message: 'Parcelamento criado com sucesso!', count: parcelasToCreate.length, originalDebitId: firstRef.id }, { status: 201 })
     }
 
     return NextResponse.json({ message: 'Débito criado com sucesso!', debitId: newDebitRef.id }, { status: 201 })
