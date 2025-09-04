@@ -11,7 +11,7 @@ import {
   DialogTrigger,
 } from "@/app/components/ui/dialog"
 import { useForm } from "react-hook-form"
-import { Debit, CreateDebit as CreateDebitProps, createDebitSchema } from "../types/financial" 
+import { Debit, CreateDebit as CreateDebitProps, createDebitSchema, Bank, Category } from "../types/financial" 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form"
@@ -19,10 +19,15 @@ import { useMutation, useQuery } from "@tanstack/react-query"
 import { createDebit } from "../http/debits/create-debit"
 import { useWorkspace } from "../hooks/use-workspace"
 import { getDebits } from "../http/debits/get-debits"
-import { useState } from "react" 
+import { useEffect, useState } from "react" 
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { Label } from "./ui/label"
 import { Input } from "./ui/input"
+import { getBanks } from "../http/banks/get-banks"
+import { getCategories } from "../http/categories/get-categories"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+import { DynamicIcon, IconName } from "lucide-react/dynamic"
+import Image from "next/image"
 
 type CreateDebitFormData = CreateDebitProps
 
@@ -34,7 +39,7 @@ export function CreateDebit() {
     resolver: zodResolver(createDebitSchema),
     defaultValues: {
       description: "",
-      date: new Date().toString(),
+      date: new Date().toISOString(),
       bankId: "",
       categoryId: "",
       proofUrl: "",
@@ -51,6 +56,20 @@ export function CreateDebit() {
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
+
+  const { data: banks, isLoading: isBanksLoading } = useQuery<Bank[], Error>({
+      queryKey: ['banks', workspaceActive?.id],
+      queryFn: () => getBanks(workspaceActive!.id),
+      staleTime: 1000 * 60 * 5,
+      enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
+    })
+
+  const { data: categories, isLoading: isCategoriesLoading } = useQuery<Category[], Error>({
+      queryKey: ['categories', workspaceActive?.id],
+      queryFn: () => getCategories(workspaceActive!.id),
+      staleTime: 1000 * 60 * 5,
+      enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
+    })
 
   async function handleCreateDebitSubmit(data: CreateDebitProps) {
     if (!workspaceActive || isWorkspaceLoading || workspaceError) {
@@ -82,6 +101,10 @@ export function CreateDebit() {
       form.reset()
     }
   }
+
+  useEffect(() => {
+    form.setValue("date", new Date().toISOString())
+  },[modalIsOpen])
 
   return (
     <Dialog open={modalIsOpen} onOpenChange={handleModalOpenChange}>
@@ -231,7 +254,7 @@ export function CreateDebit() {
                       <FormItem className="w-full">
                         <FormLabel>Descrição</FormLabel>
                         <FormControl>
-                          <Input placeholder="shadcn" {...field} />
+                          <Input placeholder="Adicione uma descrição." {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -244,12 +267,96 @@ export function CreateDebit() {
                       <FormItem className="w-full">
                         <FormLabel>Valor</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="R$ 100,00" {...field} />
+                          <Input 
+                            type="number" 
+                            placeholder="R$ 100,00"
+                            {...field}
+                            value={field.value ?? ''}
+                            onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                </div>
+                <div className="flex flex-row gap-2 w-full">
+                    <FormField
+                      control={form.control}
+                      name="categoryId"
+                      render={({ field }) => (
+                        <FormItem className="w-full">
+                          <FormLabel>Categoria</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value ?? ''}>
+                            <FormControl>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecione uma categoria." />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {isCategoriesLoading && (
+                                <SelectItem value="">Carregando...</SelectItem>
+                              )}
+                              {!isCategoriesLoading && categories?.length === 0 && (
+                                <SelectItem value="">Nenhuma categoria encontrada.</SelectItem>
+                              )}
+                              {!isCategoriesLoading && categories?.map((category) => (
+                                <SelectItem key={category.id} value={category.id}>
+                                  <DynamicIcon
+                                    name={category.icon as IconName}
+                                    size={16}
+                                  />
+                                  {category.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="bankId"
+                      render={({ field }) => (
+                        <FormItem className="w-full">
+                          <FormLabel>Banco</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value ?? ''}>
+                            <FormControl>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecione um banco." />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {isBanksLoading && (
+                                <SelectItem value="">Carregando...</SelectItem>
+                              )}
+                              {!isBanksLoading && banks?.length === 0 && (
+                                <SelectItem value="">Nenhum banco encontrado.</SelectItem>
+                              )}
+                              {!isBanksLoading && banks?.map((bank) => (
+                                <SelectItem key={bank.id} value={bank.id}>
+                                  {
+                                    bank.iconUrl ? 
+                                    <Image 
+                                      src={bank.iconUrl} 
+                                      alt={bank.name} 
+                                      width={16} 
+                                      height={16} 
+                                    /> : 
+                                    <Landmark 
+                                      className="h-4 w-4 text-foreground" 
+                                    />
+                                  }
+                                  {bank.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                 </div>
                 <FormField
                   control={form.control}

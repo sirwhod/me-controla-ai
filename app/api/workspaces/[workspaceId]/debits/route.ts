@@ -106,6 +106,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
     const month = dateObj.toLocaleString('pt-BR', { month: 'long' })
     const year = dateObj.getFullYear()
 
+    if (!bankId) {
+      return NextResponse.json({ message: 'Banco não encontrado' }, { status: 404 })
+    }
+
+    const bankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId)
+    const bankDoc = await bankRef.get()
+
+    if (!bankDoc.exists) {
+      return NextResponse.json({ message: 'Banco não encontrado' }, { status: 404 })
+    }
+
+    if (!categoryId) {
+      return NextResponse.json({ message: 'Categoria não encontrada' }, { status: 404 })
+    }
+
+    const categoryRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc(categoryId)
+    const categoryDoc = await categoryRef.get()
+
+    if (!categoryDoc.exists) {
+      return NextResponse.json({ message: 'Categoria não encontrada' }, { status: 404 })
+    }
+
     const newDebitData: Debit = {
       description: description.trim(),
       value: value,
@@ -114,10 +136,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       year: year,
       type: type as TypeDebit,
       bankId: bankId || null,
-      bankName: "", 
-      bankImageUrl: "", 
-      categoryName: "", 
-      categoryUrl: "",
+      bankName: bankDoc.data()?.name || "",
+      bankImageUrl: bankDoc.data()?.iconUrl || "",
+      categoryName: categoryDoc.data()?.name || "",
+      categoryUrl: categoryDoc.data()?.icon || "",
       paymentMethod: paymentMethod || null,
       categoryId: categoryId || null,
       proofUrl: proofUrl?.trim() || null,
