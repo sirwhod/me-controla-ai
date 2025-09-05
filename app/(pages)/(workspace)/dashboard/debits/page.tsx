@@ -28,9 +28,7 @@ import { Input } from "@/app/components/ui/input"
 import { Button } from "@/app/components/ui/button"
 import { getBanks } from "@/app/http/banks/get-banks"
 import { getCategories } from "@/app/http/categories/get-categories"
-import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover"
-import { Banknote, ChevronDownIcon, CreditCard, Landmark } from "lucide-react"
-import { Calendar } from "@/app/components/ui/calendar"
+import { Banknote, CreditCard, Landmark } from "lucide-react"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
 import Image from "next/image"
 
@@ -78,14 +76,14 @@ export default function Page() {
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
 
-  const { data: banks, isLoading: isBanksLoading } = useQuery<Bank[], Error>({
+  const { data: banks } = useQuery<Bank[], Error>({
       queryKey: ['banks', workspaceActive?.id],
       queryFn: () => getBanks(workspaceActive!.id),
       staleTime: 1000 * 60 * 5,
       enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
     })
 
-  const { data: categories, isLoading: isCategoriesLoading } = useQuery<Category[], Error>({
+  const { data: categories } = useQuery<Category[], Error>({
       queryKey: ['categories', workspaceActive?.id],
       queryFn: () => getCategories(workspaceActive!.id),
       staleTime: 1000 * 60 * 5,

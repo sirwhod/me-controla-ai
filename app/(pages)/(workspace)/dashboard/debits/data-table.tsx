@@ -21,9 +21,7 @@ import {
   TableRow,
 } from "@/app/components/ui/table"
 import { useState } from "react"
-import { Input } from "@/app/components/ui/input"
 import { DataTablePagination } from "@/app/components/table/pagination"
-import { CreateDebit } from "@/app/components/create-debit"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
