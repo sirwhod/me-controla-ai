@@ -56,25 +56,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="flex-col space-y-4">
-      <div className="flex items-center gap-2 justify-between">
-        <Input
-          placeholder="Filtrar Bancos..."
-          value={(table.getColumn("bankName")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("bankName")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <Input
-          placeholder="Filtrar Método de pagamento..."
-          value={(table.getColumn("paymentMethod")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("paymentMethod")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <CreateDebit />
-      </div>
+      
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -112,14 +94,14 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  Nenhum débito cadastrado.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} footerText="Banco(s) encontrado(s)." />
+      <DataTablePagination table={table} footerText="Débito(s) encontrado(s)." />
     </div>
   )
 }
