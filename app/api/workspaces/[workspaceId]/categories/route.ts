@@ -2,6 +2,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { createCategorySchema } from '@/app/types/financial';
+import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { IconName } from 'lucide-react/dynamic';
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -22,7 +23,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Catego
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -39,8 +41,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Catego
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt ? data.createdAt.toDate() : null,
-        updatedAt: data.updatedAt ? data.updatedAt.toDate() : null,
+        createdAt: serializeFirestoreDate(data.createdAt),
+        updatedAt: serializeFirestoreDate(data.updatedAt),
       }
     })
 
@@ -66,26 +68,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Categ
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
-       return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
+        return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
-    const formData = await req.formData()
-
-    const rawName = formData.get('name')
-    const rawType = formData.get('type')
-    const rawIcon = formData.get('icon')
-
-    const categoryDataFromForm = {
-      name: typeof rawName === 'string' ? rawName : '',
-      type: typeof rawType === 'string' ? rawType : '',
-      icon: typeof rawIcon === 'string' ? (rawIcon as IconName) : undefined,
-    }
-
-    const validationResult = createCategorySchema.safeParse(categoryDataFromForm)
+    const body = await req.json()
+    const validationResult = createCategorySchema.safeParse(body)
 
     if (!validationResult.success) {
       return NextResponse.json({
@@ -94,15 +86,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Categ
       }, { status: 400 })
     }
 
-    const { name, type, icon } = validationResult.data
+    const { name, icon, type } = validationResult.data
 
     const newCategoryRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc()
 
     const newCategoryData = {
       name: name.trim(),
-      type: type,
-      icon: icon,
+      icon: (icon as IconName) || null,
+      type: type || 'expense',
       workspaceId: workspaceId,
+      userId: session.user.id,
       createdAt: new Date(),
       updatedAt: new Date(),
     }

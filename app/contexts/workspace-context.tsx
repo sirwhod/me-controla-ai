@@ -31,27 +31,24 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (workspaces && workspaces.length > 0) {
-      const sortedWorkspaces = [...workspaces].sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
-
-        return dateA - dateB
-      })
-
-      if (activeWorkspaceId === null) {
-          setActiveWorkspaceId(sortedWorkspaces[0].id)
+      const currentExists = workspaces.some((w) => w.id === activeWorkspaceId)
+      if (!activeWorkspaceId || !currentExists) {
+        setActiveWorkspaceId(workspaces[0].id)
       }
     }
   }, [workspaces, activeWorkspaceId])
 
-  const workspaceActive = workspaces?.find((wsp) => wsp.id === activeWorkspaceId)
+  // Fallback imediato para evitar render sem caixinha ativa selecionada
+  const workspaceActive =
+    workspaces?.find((wsp) => wsp.id === activeWorkspaceId) ||
+    (workspaces && workspaces.length > 0 ? workspaces[0] : undefined)
 
   const contextValue: WorkspaceContextValue = {
     workspaces,
     isLoading,
     error,
     refetch,
-    activeWorkspaceId,
+    activeWorkspaceId: workspaceActive?.id || activeWorkspaceId,
     setActiveWorkspaceId,
     workspaceActive,
   }

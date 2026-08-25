@@ -2,6 +2,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { createCreditSchema } from '@/app/types/financial'
+import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { NextRequest, NextResponse } from 'next/server'
 
 interface CreditsRouteParams {
@@ -20,7 +21,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -37,9 +39,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
       return {
         id: doc.id,
         ...data,
-        date: data.date ? data.date.toDate() : null,
-        createdAt: data.createdAt ? data.createdAt.toDate() : null,
-        updatedAt: data.updatedAt ? data.updatedAt.toDate() : null,
+        date: serializeFirestoreDate(data.date),
+        createdAt: serializeFirestoreDate(data.createdAt),
+        updatedAt: serializeFirestoreDate(data.updatedAt),
       }
     })
 
@@ -64,7 +66,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -119,7 +122,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       }
     }
 
-    const newCreditRef = db.collection('workspaces').doc(workspaceId).collection('credits').doc() // Firestore generates ID
+    const newCreditRef = db.collection('workspaces').doc(workspaceId).collection('credits').doc()
 
     const newCreditData = {
       description: description.trim(),

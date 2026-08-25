@@ -4,6 +4,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { auth } from '@/app/lib/auth'
 import { db, getDownloadURLFromPath, storage } from '@/app/lib/firebase'
 import { createBankSchema } from '@/app/types/financial'
+import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { NextRequest, NextResponse } from 'next/server'
 
 interface BankRouteParams {
@@ -15,8 +16,6 @@ export async function GET(req: NextRequest, { params }: {params: Promise<BankRou
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
 
-    console.log('workspaceId', workspaceId)
-
     const session = await auth()
 
     if (!session?.user) {
@@ -25,7 +24,8 @@ export async function GET(req: NextRequest, { params }: {params: Promise<BankRou
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
 
     if (!isMember) {
@@ -42,8 +42,8 @@ export async function GET(req: NextRequest, { params }: {params: Promise<BankRou
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt ? data.createdAt.toDate() : null,
-        updatedAt: data.updatedAt ? data.updatedAt.toDate() : null,
+        createdAt: serializeFirestoreDate(data.createdAt),
+        updatedAt: serializeFirestoreDate(data.updatedAt),
       }
     })
 
@@ -69,7 +69,8 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {

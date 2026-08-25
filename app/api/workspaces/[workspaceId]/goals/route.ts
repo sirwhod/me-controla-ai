@@ -2,6 +2,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { createGoalSchema } from '@/app/types/financial'
+import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { NextRequest, NextResponse } from 'next/server'
 
 interface GoalsRouteParams {
@@ -20,7 +21,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<GoalsR
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -37,10 +39,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<GoalsR
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt ? data.createdAt.toDate() : null,
-        updatedAt: data.updatedAt ? data.updatedAt.toDate() : null,
-        startDate: data.startDate ? data.startDate.toDate() : null,
-        endDate: data.endDate ? data.endDate.toDate() : null,
+        createdAt: serializeFirestoreDate(data.createdAt),
+        updatedAt: serializeFirestoreDate(data.updatedAt),
+        startDate: serializeFirestoreDate(data.startDate),
+        endDate: serializeFirestoreDate(data.endDate),
       }
     })
 
@@ -65,11 +67,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Goals
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
-       return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
+        return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
     const body = await req.json()
@@ -82,14 +85,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Goals
       }, { status: 400 })
     }
 
-    const { name, targetAmount, startDate, endDate, description } = validationResult.data
-
-    const startDateObj = new Date(startDate)
-    const endDateObj = endDate ? new Date(endDate) : null
-
-    if (startDateObj && endDateObj && endDateObj < startDateObj) {
-        return NextResponse.json({ message: 'Data de término não pode ser anterior à data de início.' }, { status: 400 })
-    }
+    const {
+      name,
+      targetAmount,
+      startDate,
+      endDate,
+      description,
+      userId: targetUserId,
+    } = validationResult.data
 
     const newGoalRef = db.collection('workspaces').doc(workspaceId).collection('goals').doc()
 
@@ -97,11 +100,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Goals
       name: name.trim(),
       targetAmount: targetAmount,
       currentAmount: 0,
-      startDate: startDateObj,
-      endDate: endDateObj,
+      startDate: new Date(startDate),
+      endDate: endDate ? new Date(endDate) : null,
       description: description?.trim() || null,
-      userId: session.user.id,
       workspaceId: workspaceId,
+      userId: targetUserId || session.user.id,
       createdAt: new Date(),
       updatedAt: new Date(),
     }

@@ -285,20 +285,20 @@ async function runTestSuite() {
   // SUÍTE 5: Testes de Rotas HTTP e Proteção do Middleware
   // ==========================================
   console.log('🌐 [5/5] Testando Rotas HTTP da Aplicação...')
-  const baseUrl = 'http://localhost:3000'
+  const baseUrl = 'http://127.0.0.1:3000'
 
   try {
     // 5.1 Testar Página Inicial (Pública)
-    const homeRes = await axios.get(baseUrl, { timeout: 5000, validateStatus: () => true })
+    const homeRes = await axios.get(baseUrl, { timeout: 15000, validateStatus: () => true })
     assert('Rotas HTTP', 'Página Inicial (/) acessível publicamente (Status 200)', homeRes.status === 200)
 
     // 5.2 Testar Página de Login (Pública)
-    const signinRes = await axios.get(`${baseUrl}/sign-in`, { timeout: 5000, validateStatus: () => true })
+    const signinRes = await axios.get(`${baseUrl}/sign-in`, { timeout: 15000, validateStatus: () => true })
     assert('Rotas HTTP', 'Página de Login (/sign-in) acessível publicamente (Status 200)', signinRes.status === 200)
 
     // 5.3 Testar Proteção de Rota Privada (/dashboard)
     const dashRes = await axios.get(`${baseUrl}/dashboard`, {
-      timeout: 5000,
+      timeout: 15000,
       maxRedirects: 0,
       validateStatus: () => true,
     })

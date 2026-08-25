@@ -2,6 +2,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { createDebitSchema, Debit, TypeDebit } from '@/app/types/financial'
+import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { DocumentReference } from 'firebase-admin/firestore';
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -21,7 +22,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -38,11 +40,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
       return {
         id: doc.id,
         ...data,
-        date: data.date ? data.date.toDate() : null,
-        createdAt: data.createdAt ? data.createdAt.toDate() : null,
-        updatedAt: data.updatedAt ? data.updatedAt.toDate() : null,
-        startDate: data.startDate ? data.startDate.toDate() : null,
-        endDate: data.endDate ? data.endDate.toDate() : null,
+        date: serializeFirestoreDate(data.date),
+        createdAt: serializeFirestoreDate(data.createdAt),
+        updatedAt: serializeFirestoreDate(data.updatedAt),
+        startDate: serializeFirestoreDate(data.startDate),
+        endDate: serializeFirestoreDate(data.endDate),
       }
     })
 
@@ -67,7 +69,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
