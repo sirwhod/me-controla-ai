@@ -603,6 +603,18 @@ export function CreateDebit() {
                     </FormItem>
                   )}
                 />
+
+                {form.watch("paymentMethod") === "Crédito" && (() => {
+                  const selectedBank = banks?.find(b => b.id === form.watch("bankId"))
+                  if (selectedBank?.invoiceClosingDay && selectedBank.invoiceClosingDay !== "0") {
+                    return (
+                      <p className="text-xs text-purple-600 dark:text-purple-400 bg-purple-500/10 p-2.5 rounded-md border border-purple-500/20">
+                        💡 <strong>Fatura do Cartão:</strong> Fechamento no dia {selectedBank.invoiceClosingDay}. Compras realizadas após esse dia serão automaticamente computadas na fatura do mês seguinte.
+                      </p>
+                    )
+                  }
+                  return null
+                })()}
               </>
             )}
 
