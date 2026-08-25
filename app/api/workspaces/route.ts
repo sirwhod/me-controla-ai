@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   try {
     const session = await auth()
 
@@ -24,7 +23,7 @@ export async function GET(_req: NextRequest) {
       db.collection('workspaces').where('ownerId', '==', userId).get(),
     ])
 
-    const workspaceMap = new Map<string, any>()
+    const workspaceMap = new Map<string, Record<string, unknown>>()
 
     memberSnap.docs.forEach((doc) => {
       workspaceMap.set(doc.id, { id: doc.id, ...doc.data() })
