@@ -1,11 +1,9 @@
 import NextAuth, { DefaultSession } from "next-auth"
-import Google from "next-auth/providers/google"
+import { authConfig } from "@/auth.config"
 import { db, firebaseCert } from "./firebase"
 import { FirestoreAdapter } from "@auth/firebase-adapter"
-
 import { Timestamp } from "firebase-admin/firestore"
 import { TRIAL_DAYS } from "./config"
-
 
 declare module "next-auth" {
   interface Session {
@@ -30,14 +28,10 @@ declare module "next-auth" {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  trustHost: true,
+  ...authConfig,
   adapter: FirestoreAdapter({
     credential: firebaseCert
   }),
-  providers: [Google({
-    clientId: process.env.AUTH_GOOGLE_ID ?? '',
-    clientSecret: process.env.AUTH_GOOGLE_SECRET ?? '',
-  })],
   events: {
     createUser: async ({ user }) => {
       if (!user.id) return;
@@ -73,6 +67,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
   callbacks: {
+    ...authConfig.callbacks,
     async session({ session, user }) {
       if (!session.user) return session;
 
