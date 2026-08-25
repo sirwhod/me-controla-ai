@@ -122,7 +122,7 @@ export function ImageUploadField({
           <div>
             <p className="text-sm font-medium">Clique ou arraste a imagem</p>
             <p className="text-xs text-muted-foreground">
-              PNG, JPG, WEBP (Máx. 10MB)
+              PNG, JPG, WEBP (Máx. 5MB)
             </p>
           </div>
         </div>

@@ -99,8 +99,8 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
     let uploadedIconUrl: string | undefined = undefined
 
     if (imageFile) {
-      if (imageFile.size > 10 * 1024 * 1024) { // 10MB
-        return NextResponse.json({ message: 'Arquivo muito grande (máx 10MB).' }, { status: 400 });
+      if (imageFile.size > 5 * 1024 * 1024) { // 5MB
+        return NextResponse.json({ message: 'Arquivo muito grande (máx 5MB).' }, { status: 400 });
       }
       const acceptedTypes: Record<string, string> = {
         'image/jpeg': 'jpg',

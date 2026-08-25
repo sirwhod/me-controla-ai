@@ -42,9 +42,18 @@ export interface Debit {
   lastGeneratedMonthYear?: string; // Para Modelos Fixo/Assinatura: Último período gerado (string "Mês Ano")
 }
 
+const safeUrlSchema = z.string().url('URL inválida.').refine((url) => {
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}, { message: 'URL deve utilizar protocolo HTTP ou HTTPS seguro.' }).optional().or(z.literal('')).nullable()
+
 export const createDebitSchema = z.object({
-  description: z.string().min(1, { message: 'A descrição do débito é obrigatória.' }),
-  value: z.number().positive({ message: 'O valor do débito deve ser positivo.' }),
+  description: z.string().trim().min(1, { message: 'A descrição do débito é obrigatória.' }).max(255, { message: 'Descrição não pode exceder 255 caracteres.' }),
+  value: z.number().positive({ message: 'O valor do débito deve ser positivo.' }).max(1_000_000_000, { message: 'Valor excede o limite máximo.' }),
   date: z.string().datetime({ message: 'Data da transação inválida.' }),
   type: z.enum(['Comum', 'Fixo', 'Assinatura', 'Parcelamento'], {
     errorMap: () => ({ message: 'Tipo de débito inválido.' }),
@@ -54,7 +63,7 @@ export const createDebitSchema = z.object({
     errorMap: () => ({ message: 'Método de pagamento inválido.' }),
   }),
   categoryId: z.string().optional().nullable(),
-  proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
+  proofUrl: safeUrlSchema,
   frequency: z.enum(['monthly']).optional(),
   startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
   endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
@@ -65,16 +74,16 @@ export const createDebitSchema = z.object({
 export type CreateDebit = z.infer<typeof createDebitSchema>
 
 export const updateDebitSchema = z.object({
-  description: z.string().min(1, { message: 'A descrição não pode ser vazia.' }).optional(),
-  value: z.number().positive({ message: 'O valor deve ser positivo.' }).optional(),
+  description: z.string().trim().min(1, { message: 'A descrição não pode ser vazia.' }).max(255, { message: 'Descrição não pode exceder 255 caracteres.' }).optional(),
+  value: z.number().positive({ message: 'O valor deve ser positivo.' }).max(1_000_000_000, { message: 'Valor excede o limite máximo.' }).optional(),
   date: z.string().datetime({ message: 'Data inválida.' }).optional(),
   bankId: z.string().optional().nullable(),
   paymentMethod: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
     errorMap: () => ({ message: 'Método de pagamento inválido.' }),
   }).nullable(),
   categoryId: z.string().optional().nullable(),
-  proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
-  status: z.string().optional(),
+  proofUrl: safeUrlSchema,
+  status: z.string().max(50).optional(),
   frequency: z.enum(['monthly']).optional(),
   startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
   endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
@@ -109,31 +118,31 @@ export interface Credit {
 }
 
 export const createCreditSchema = z.object({
-  description: z.string().min(1, { message: 'A descrição do crédito é obrigatória.' }),
-  value: z.number().positive({ message: 'O valor do crédito deve ser positivo.' }),
+  description: z.string().trim().min(1, { message: 'A descrição do crédito é obrigatória.' }).max(255, { message: 'Descrição não pode exceder 255 caracteres.' }),
+  value: z.number().positive({ message: 'O valor do crédito deve ser positivo.' }).max(1_000_000_000, { message: 'Valor excede o limite máximo.' }),
   date: z.string().datetime({ message: 'Data da transação inválida.' }),
   bankId: z.string().optional().nullable(),
   paymentMethod: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
     errorMap: () => ({ message: 'Método de pagamento inválido.' }),
   }),
   categoryId: z.string().optional().nullable(),
-  proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
-  status: z.string().optional(),
+  proofUrl: safeUrlSchema,
+  status: z.string().max(50).optional(),
 })
 
 export type CreateCredit = z.infer<typeof createCreditSchema>
 
 export const updateCreditSchema = z.object({
-  description: z.string().min(1, { message: 'A descrição não pode ser vazia.' }).optional(),
-  value: z.number().positive({ message: 'O valor deve ser positivo.' }).optional(),
+  description: z.string().trim().min(1, { message: 'A descrição não pode ser vazia.' }).max(255, { message: 'Descrição não pode exceder 255 caracteres.' }).optional(),
+  value: z.number().positive({ message: 'O valor deve ser positivo.' }).max(1_000_000_000, { message: 'Valor excede o limite máximo.' }).optional(),
   date: z.string().datetime({ message: 'Data inválida.' }).optional(),
   bankId: z.string().optional().nullable(),
   paymentMethod: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
     errorMap: () => ({ message: 'Método de pagamento inválido.' }),
   }).nullable(),
   categoryId: z.string().optional().nullable(),
-  proofUrl: z.string().url('URL do comprovante inválida.').optional().or(z.literal('')).nullable(),
-  status: z.string().optional(),
+  proofUrl: safeUrlSchema,
+  status: z.string().max(50).optional(),
 })
 
 export type UpdateCredit = z.infer<typeof updateCreditSchema>
@@ -156,12 +165,12 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export const createBankSchema = z.object({
-  name: z.string().min(1, { message: 'O nome do banco é obrigatório.' }),
-  code: z.string().optional(),
-  iconUrl: z.string().url('URL do ícone inválida.').optional().or(z.literal('')),
+  name: z.string().trim().min(1, { message: 'O nome do banco é obrigatório.' }).max(100, { message: 'Nome do banco não pode exceder 100 caracteres.' }),
+  code: z.string().trim().max(20, { message: 'Código não pode exceder 20 caracteres.' }).optional(),
+  iconUrl: safeUrlSchema,
   imageFile: z
     .custom<FileList>()
-    .refine((files) => files && files.length > 0, "A imagem do logo é obrigatória.") // Garante que um arquivo foi selecionado
+    .refine((files) => files && files.length > 0, "A imagem do logo é obrigatória.")
     .refine(
       (files) => files?.[0]?.size <= MAX_FILE_SIZE_BYTES,
       `O tamanho máximo da imagem é ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB.`
@@ -178,9 +187,9 @@ export const createBankSchema = z.object({
 export type CreateBank = z.infer<typeof createBankSchema>
 
 export const updateBankSchema = z.object({
-  name: z.string().min(1, { message: 'O nome do banco não pode ser vazio.' }).optional(),
-  code: z.string().optional().nullable(),
-  iconUrl: z.string().url('URL do ícone inválida.').optional().or(z.literal('')).nullable(),
+  name: z.string().trim().min(1, { message: 'O nome do banco não pode ser vazio.' }).max(100, { message: 'Nome do banco não pode exceder 100 caracteres.' }).optional(),
+  code: z.string().trim().max(20, { message: 'Código não pode exceder 20 caracteres.' }).optional().nullable(),
+  iconUrl: safeUrlSchema,
   invoiceClosingDay: z.string().regex(/^([1-9]|[12][0-9]|3[01])$/, { message: 'O dia de fechamento deve ser entre 1 e 31.' }).optional().or(z.literal('')).nullable(),
   invoiceDueDate: z.string().regex(/^([1-9]|[12][0-9]|3[01])$/, { message: 'O dia de vencimento deve ser entre 1 e 31.' }).optional().or(z.literal('')).nullable(),
 })
@@ -201,7 +210,7 @@ export interface Category {
 }
 
 export const createCategorySchema = z.object({
-  name: z.string().min(1, { message: 'O nome da categoria é obrigatório.' }),
+  name: z.string().trim().min(1, { message: 'O nome da categoria é obrigatório.' }).max(100, { message: 'Nome da categoria não pode exceder 100 caracteres.' }),
   icon: z.custom<IconName>(
     (val) => typeof val === 'string' && iconNames.includes(val as IconName),
     { message: 'Por favor, selecione um ícone válido.' },
@@ -214,7 +223,7 @@ export const createCategorySchema = z.object({
 export type CreateCategory = z.infer<typeof createCategorySchema>
 
 export const updateCategorySchema = z.object({
-  name: z.string().min(1, { message: 'O nome da categoria não pode ser vazio.' }).optional(),
+  name: z.string().trim().min(1, { message: 'O nome da categoria não pode ser vazio.' }).max(100, { message: 'Nome da categoria não pode exceder 100 caracteres.' }).optional(),
   icon: z.custom<IconName>(
     (val) => typeof val === 'string' && iconNames.includes(val as IconName),
     { message: 'Por favor, selecione um ícone válido.' },
@@ -244,24 +253,23 @@ export interface Goal {
 }
 
 export const createGoalSchema = z.object({
-  name: z.string().min(1, { message: 'O nome da meta é obrigatório.' }),
-  targetAmount: z.number().positive({ message: 'O valor alvo da meta deve ser positivo.' }),
-  startDate: z.string().datetime({ message: 'Data de início inválida.' }), // Recebe como string ISO 8601
+  name: z.string().trim().min(1, { message: 'O nome da meta é obrigatório.' }).max(100, { message: 'Nome da meta não pode exceder 100 caracteres.' }),
+  targetAmount: z.number().positive({ message: 'O valor alvo da meta deve ser positivo.' }).max(1_000_000_000, { message: 'Valor excede o limite permitido.' }),
+  startDate: z.string().datetime({ message: 'Data de início inválida.' }),
   endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')),
-  description: z.string().optional().or(z.literal('')),
+  description: z.string().trim().max(500, { message: 'Descrição não pode exceder 500 caracteres.' }).optional().or(z.literal('')),
   userId: z.string().optional().nullable(),
 })
 
 export type CreateGoal = z.infer<typeof createGoalSchema>
 
 export const updateGoalSchema = z.object({
-  name: z.string().min(1, { message: 'O nome da meta não pode ser vazio.' }).optional(),
-  targetAmount: z.number().positive({ message: 'O valor alvo da meta deve ser positivo.' }).optional(),
-  currentAmount: z.number().min(0, { message: 'O progresso atual não pode ser negativo.' }).optional(),
+  name: z.string().trim().min(1, { message: 'O nome da meta não pode ser vazio.' }).max(100, { message: 'Nome da meta não pode exceder 100 caracteres.' }).optional(),
+  targetAmount: z.number().positive({ message: 'O valor alvo da meta deve ser positivo.' }).max(1_000_000_000, { message: 'Valor excede o limite permitido.' }).optional(),
+  currentAmount: z.number().min(0, { message: 'O progresso atual não pode ser negativo.' }).max(1_000_000_000, { message: 'Valor excede o limite permitido.' }).optional(),
   startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
   endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
-  description: z.string().optional().or(z.literal('')).nullable(),
+  description: z.string().trim().max(500, { message: 'Descrição não pode exceder 500 caracteres.' }).optional().or(z.literal('')).nullable(),
   userId: z.string().optional().nullable(),
 })
-
 export type UpdateGoal = z.infer<typeof updateGoalSchema>
