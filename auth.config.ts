@@ -3,6 +3,9 @@ import Google from "next-auth/providers/google"
 
 export const authConfig = {
   trustHost: true,
+  session: {
+    strategy: "jwt",
+  },
   pages: {
     signIn: '/sign-in',
     error: '/sign-in',
@@ -24,9 +27,29 @@ export const authConfig = {
 
       if (isProtected) {
         if (isLoggedIn) return true
-        return false // Redireciona automaticamente para /sign-in
+        return false // Redireciona para /sign-in
       }
       return true
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+        token.createdAt = user.createdAt
+        token.isTrial = user.isTrial
+        token.isSubscribed = user.isSubscribed
+        token.workspaceIds = user.workspaceIds || []
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (session.user && token) {
+        session.user.id = (token.id as string) || (token.sub as string)
+        session.user.createdAt = (token.createdAt as number) || Date.now()
+        session.user.isTrial = (token.isTrial as boolean) ?? true
+        session.user.isSubscribed = (token.isSubscribed as boolean) ?? false
+        session.user.workspaceIds = (token.workspaceIds as string[]) || []
+      }
+      return session
     },
   },
 } satisfies NextAuthConfig

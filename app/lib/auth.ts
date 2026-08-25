@@ -32,6 +32,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: FirestoreAdapter({
     credential: firebaseCert
   }),
+  session: {
+    strategy: "jwt",
+  },
   events: {
     createUser: async ({ user }) => {
       if (!user.id) return;
@@ -68,16 +71,52 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   callbacks: {
     ...authConfig.callbacks,
-    async session({ session, user }) {
-      if (!session.user) return session;
+    async jwt({ token, user, trigger, session }) {
+      if (user) {
+        token.id = user.id
+        token.createdAt = user.createdAt
+        token.isTrial = user.isTrial
+        token.isSubscribed = user.isSubscribed
+        token.workspaceIds = user.workspaceIds || []
+      }
 
-      const userCreatedAt = user.createdAt ? Number(user.createdAt) : Date.now();
-      const trialDurationMillis = 1000 * 60 * 60 * 24 * TRIAL_DAYS;
+      if (trigger === "update" && session?.user?.workspaceIds) {
+        token.workspaceIds = session.user.workspaceIds
+      }
 
-      session.user.createdAt = userCreatedAt;
-      session.user.isTrial = userCreatedAt > (Date.now() - trialDurationMillis);
-      session.user.isSubscribed = user.isSubscribed ?? false;
-      session.user.workspaceIds = user.workspaceIds ?? [];
+      const userId = (token.id as string) || (token.sub as string);
+      if (userId && (!token.workspaceIds || (token.workspaceIds as string[]).length === 0)) {
+        try {
+          const userDoc = await db.collection("users").doc(userId).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            token.workspaceIds = userData?.workspaceIds || [];
+            if (userData?.createdAt) {
+              token.createdAt = userData.createdAt;
+            }
+            if (userData?.isSubscribed !== undefined) {
+              token.isSubscribed = userData.isSubscribed;
+            }
+          }
+        } catch (e) {
+          console.error("Erro ao carregar dados do usuário no JWT callback:", e);
+        }
+      }
+
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token) {
+        const userId = (token.id as string) || (token.sub as string);
+        const createdAt = (token.createdAt as number) || Date.now();
+        const trialDurationMillis = 1000 * 60 * 60 * 24 * TRIAL_DAYS;
+
+        session.user.id = userId;
+        session.user.createdAt = createdAt;
+        session.user.isTrial = createdAt > (Date.now() - trialDurationMillis);
+        session.user.isSubscribed = (token.isSubscribed as boolean) ?? false;
+        session.user.workspaceIds = (token.workspaceIds as string[]) || [];
+      }
 
       return session;
     },
