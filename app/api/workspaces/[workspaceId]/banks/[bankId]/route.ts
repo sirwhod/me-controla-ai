@@ -96,6 +96,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Bank
     }
 
     const bankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId)
+    const bankDoc = await bankRef.get()
+
+    if (!bankDoc.exists) {
+      return NextResponse.json({ message: 'Banco não encontrado' }, { status: 404 })
+    }
 
     await bankRef.update({
         ...updateData,

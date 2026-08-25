@@ -3,26 +3,28 @@ import { CreateCredit } from '@/app/types/financial'
 
 interface CreateCreditResponse {
   message: string;
-  creditId: string; // O ID do categoria criada
+  creditId: string;
 }
 
-export async function createCredit(
-  workspaceId: string, 
-  {
-    description,
-    value,
-    date,
-    bankId,
-    categoryId,
-    paymentMethod,
-    proofUrl,
-    status
-  }: CreateCredit
-): Promise<CreateCreditResponse> {
+export interface CreateCreditProps extends CreateCredit {
+  workspaceId: string;
+}
+
+export async function createCredit({
+  workspaceId,
+  description,
+  value,
+  date,
+  bankId,
+  categoryId,
+  paymentMethod,
+  proofUrl,
+  status,
+}: CreateCreditProps): Promise<CreateCreditResponse> {
   if (!workspaceId) {
     return {
-      message: "O Id da Caixinha é nescessário para a criação do crédito.",
-      creditId: ""
+      message: "O Id da Caixinha é necessário para a criação do crédito.",
+      creditId: "",
     }
   }
 
@@ -36,7 +38,7 @@ export async function createCredit(
       categoryId,
       paymentMethod,
       proofUrl,
-      status
+      status,
     }
   )
 

@@ -1,7 +1,7 @@
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member';
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
-import { UpdateCredit, updateCreditSchema } from '@/app/types/financial';
+import { updateCreditSchema } from '@/app/types/financial';
 import { NextRequest, NextResponse } from 'next/server'
 
 interface CreditsRouteParams {
@@ -95,17 +95,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
     }
 
     const creditRef = db.collection('workspaces').doc(workspaceId).collection('credits').doc(creditId)
+    const creditDoc = await creditRef.get()
 
-    const dataToUpdate: UpdateCredit = { ...updateData }
-    if (dataToUpdate.date && typeof dataToUpdate.date === 'string') {
-        dataToUpdate.date = new Date(dataToUpdate.date).toDateString()
+    if (!creditDoc.exists) {
+      return NextResponse.json({ message: 'Crédito não encontrado' }, { status: 404 })
     }
 
+    const dataToUpdate: Record<string, unknown> = {
+      ...updateData,
+      updatedAt: new Date(),
+    }
 
-    await creditRef.update({
-        ...dataToUpdate,
-        updatedAt: new Date(),
-    })
+    if (updateData.date) {
+      const dateObj = new Date(updateData.date)
+      dataToUpdate.date = dateObj
+      dataToUpdate.month = dateObj.toLocaleString('pt-BR', { month: 'long' })
+      dataToUpdate.year = dateObj.getFullYear()
+    }
+
+    await creditRef.update(dataToUpdate)
 
     return NextResponse.json({ message: 'Crédito atualizado com sucesso!' }, { status: 200 })
 

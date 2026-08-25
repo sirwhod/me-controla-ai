@@ -3,24 +3,25 @@ import { CreateGoal } from '@/app/types/financial'
 
 interface CreateGoalResponse {
   message: string;
-  goalId: string; // O ID do categoria criada
+  goalId: string;
 }
 
-export async function createGoal(
-  workspaceId: string, 
-  {
-    name,
-    description,
-    startDate,
-    endDate,
-    targetAmount,
-    userId
-  }: CreateGoal
-): Promise<CreateGoalResponse> {
+export interface CreateGoalProps extends CreateGoal {
+  workspaceId: string;
+}
+
+export async function createGoal({
+  workspaceId,
+  name,
+  description,
+  startDate,
+  endDate,
+  targetAmount,
+}: CreateGoalProps): Promise<CreateGoalResponse> {
   if (!workspaceId) {
     return {
-      message: "O Id da Caixinha é nescessário para a criação da meta.",
-      goalId: ""
+      message: "O Id da Caixinha é necessário para a criação da meta.",
+      goalId: "",
     }
   }
 
@@ -32,7 +33,6 @@ export async function createGoal(
       startDate,
       endDate,
       targetAmount,
-      userId
     }
   )
 

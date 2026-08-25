@@ -4,24 +4,29 @@ interface DeleteGoalResponse {
   message: string;
 }
 
-export async function deleteGoal(
-  workspaceId: string, 
-  goalId: string,
-): Promise<DeleteGoalResponse> {
+export interface DeleteGoalProps {
+  workspaceId: string;
+  goalId: string;
+}
+
+export async function deleteGoal({
+  workspaceId,
+  goalId,
+}: DeleteGoalProps): Promise<DeleteGoalResponse> {
   if (!workspaceId) {
     return {
-      message: "O Id da Caixinha é nescessário para a exclusão da meta."
+      message: "O Id da Caixinha é necessário para a exclusão da meta.",
     }
   }
 
   if (!goalId) {
     return {
-      message: "O Id da meta é nescessário para a exclusão da meta."
+      message: "O Id da meta é necessário para a exclusão da meta.",
     }
   }
 
   const response = await api.delete<DeleteGoalResponse>(
-    `/workspaces/${workspaceId}/goals/${goalId}`,
+    `/workspaces/${workspaceId}/goals/${goalId}`
   )
 
   return response.data

@@ -96,8 +96,12 @@ export interface Credit {
   month: string; // Ex: "junho"
   year: number; // Ex: 2025
   bankId: string | null; // ID do banco associado (pode ser null)
+  bankName?: string | null;
+  bankImageUrl?: string | null;
   paymentMethod: 'Crédito' | 'Débito' | 'Pix' | 'Conta'; // método de pagamento associado
   categoryId: string | null; // ID da categoria associada (pode ser null)
+  categoryName?: string | null;
+  categoryUrl?: string | null;
   proofUrl: string | null; // URL do comprovante (pode ser null)
   status: string; // Status do crédito (ex: 'pending', 'received')
   createdAt: Date | null; // Convertido de Timestamp para Date

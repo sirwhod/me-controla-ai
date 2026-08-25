@@ -78,7 +78,7 @@ export default function Page() {
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   <BreadcrumbPage>
-                    Bancos
+                    Categorias
                   </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>

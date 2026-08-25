@@ -1,7 +1,7 @@
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member';
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
-import { UpdateDebit, updateDebitSchema } from '@/app/types/financial';
+import { updateDebitSchema } from '@/app/types/financial';
 import { NextRequest, NextResponse } from 'next/server'
 
 interface CreditsRouteParams {
@@ -97,26 +97,35 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
     }
 
     const debitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc(debitId)
+    const debitDoc = await debitRef.get()
 
-    const dataToUpdate: UpdateDebit = { ...updateData }
-
-    if (dataToUpdate.date && typeof dataToUpdate.date === 'string') {
-        dataToUpdate.date = new Date(dataToUpdate.date).toDateString()
-    }
-     if (dataToUpdate.startDate && typeof dataToUpdate.startDate === 'string') {
-        dataToUpdate.startDate = new Date(dataToUpdate.startDate).toDateString()
-    }
-    if (dataToUpdate.endDate && typeof dataToUpdate.endDate === 'string') {
-         dataToUpdate.endDate = dataToUpdate.endDate.trim() === '' ? null : new Date(dataToUpdate.endDate).toDateString()
-    } else if (dataToUpdate.endDate === null) {
-         dataToUpdate.endDate = null
+    if (!debitDoc.exists) {
+      return NextResponse.json({ message: 'Débito não encontrado' }, { status: 404 })
     }
 
+    const dataToUpdate: Record<string, unknown> = {
+      ...updateData,
+      updatedAt: new Date(),
+    }
 
-    await debitRef.update({
-        ...dataToUpdate,
-        updatedAt: new Date(),
-    })
+    if (updateData.date) {
+      const dateObj = new Date(updateData.date)
+      dataToUpdate.date = dateObj
+      dataToUpdate.month = dateObj.toLocaleString('pt-BR', { month: 'long' })
+      dataToUpdate.year = dateObj.getFullYear()
+    }
+
+    if (updateData.startDate) {
+      dataToUpdate.startDate = new Date(updateData.startDate)
+    }
+
+    if (updateData.endDate) {
+      dataToUpdate.endDate = updateData.endDate.trim() === '' ? null : new Date(updateData.endDate)
+    } else if (updateData.endDate === null) {
+      dataToUpdate.endDate = null
+    }
+
+    await debitRef.update(dataToUpdate)
 
     return NextResponse.json({ message: 'Débito atualizado com sucesso!' }, { status: 200 })
 

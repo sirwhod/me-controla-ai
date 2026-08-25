@@ -97,6 +97,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
     const month = dateObj.toLocaleString('pt-BR', { month: 'long' }) 
     const year = dateObj.getFullYear()
 
+    let bankName = ""
+    let bankImageUrl = ""
+    if (bankId) {
+      const bankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId)
+      const bankDoc = await bankRef.get()
+      if (bankDoc.exists) {
+        bankName = bankDoc.data()?.name || ""
+        bankImageUrl = bankDoc.data()?.iconUrl || ""
+      }
+    }
+
+    let categoryName = ""
+    let categoryUrl = ""
+    if (categoryId) {
+      const categoryRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc(categoryId)
+      const categoryDoc = await categoryRef.get()
+      if (categoryDoc.exists) {
+        categoryName = categoryDoc.data()?.name || ""
+        categoryUrl = categoryDoc.data()?.icon || ""
+      }
+    }
+
     const newCreditRef = db.collection('workspaces').doc(workspaceId).collection('credits').doc() // Firestore generates ID
 
     const newCreditData = {
@@ -106,8 +128,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       month: month,
       year: year,
       bankId: bankId || null,
+      bankName: bankName || null,
+      bankImageUrl: bankImageUrl || null,
       paymentMethod: paymentMethod || null,
       categoryId: categoryId || null,
+      categoryName: categoryName || null,
+      categoryUrl: categoryUrl || null,
       proofUrl: proofUrl?.trim() || null,
       status: status || 'pending',
       workspaceId: workspaceId,

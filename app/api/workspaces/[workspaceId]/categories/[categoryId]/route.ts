@@ -94,6 +94,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cate
     }
 
     const categoryRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc(categoryId)
+    const categoryDoc = await categoryRef.get()
+
+    if (!categoryDoc.exists) {
+      return NextResponse.json({ message: 'Categoria não encontrada' }, { status: 404 })
+    }
 
     await categoryRef.update({
         ...updateData,

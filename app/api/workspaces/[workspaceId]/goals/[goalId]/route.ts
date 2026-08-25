@@ -1,7 +1,7 @@
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member';
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
-import { UpdateGoal, updateGoalSchema } from '@/app/types/financial';
+import { updateGoalSchema } from '@/app/types/financial';
 import { NextRequest, NextResponse } from 'next/server'
 
 interface GoalsRouteParams {
@@ -105,22 +105,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Goal
     }
 
     const goalRef = db.collection('workspaces').doc(workspaceId).collection('goals').doc(goalId)
+    const goalDoc = await goalRef.get()
 
-    const dataToUpdate: UpdateGoal = { ...updateData }
-    if (dataToUpdate.startDate && typeof dataToUpdate.startDate === 'string') {
-        dataToUpdate.startDate = new Date(dataToUpdate.startDate).toDateString()
-    }
-    if (dataToUpdate.endDate && typeof dataToUpdate.endDate === 'string') {
-         dataToUpdate.endDate = dataToUpdate.endDate.trim() === '' ? null : new Date(dataToUpdate.endDate).toDateString()
-    } else if (dataToUpdate.endDate === null) {
-         dataToUpdate.endDate = null
+    if (!goalDoc.exists) {
+      return NextResponse.json({ message: 'Meta não encontrada' }, { status: 404 })
     }
 
+    const dataToUpdate: Record<string, unknown> = {
+      ...updateData,
+      updatedAt: new Date(),
+    }
 
-    await goalRef.update({
-        ...dataToUpdate,
-        updatedAt: new Date(),
-    })
+    if (updateData.startDate) {
+      dataToUpdate.startDate = new Date(updateData.startDate)
+    }
+
+    if (updateData.endDate) {
+      dataToUpdate.endDate = updateData.endDate.trim() === '' ? null : new Date(updateData.endDate)
+    } else if (updateData.endDate === null) {
+      dataToUpdate.endDate = null
+    }
+
+    await goalRef.update(dataToUpdate)
 
     return NextResponse.json({ message: 'Meta atualizada com sucesso!' }, { status: 200 })
 

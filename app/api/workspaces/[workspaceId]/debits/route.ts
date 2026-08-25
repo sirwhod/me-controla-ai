@@ -104,9 +104,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
     const startDateObj = startDate ? new Date(startDate) : null
     const endDateObj = endDate ? new Date(endDate) : null
 
-    const month = dateObj.toLocaleString('pt-BR', { month: 'long' })
-    const year = dateObj.getFullYear()
-
     if (!bankId) {
       return NextResponse.json({ message: 'Banco não encontrado' }, { status: 404 })
     }
@@ -128,6 +125,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
     if (!categoryDoc.exists) {
       return NextResponse.json({ message: 'Categoria não encontrada' }, { status: 404 })
     }
+
+    // Regra de Fechamento de Fatura de Cartão de Crédito
+    const bankClosingDay = bankDoc.data()?.invoiceClosingDay
+    const getInvoiceDate = (baseDate: Date) => {
+      if (paymentMethod === 'Crédito' && bankClosingDay) {
+        const closingDay = parseInt(bankClosingDay, 10)
+        if (!isNaN(closingDay) && baseDate.getDate() > closingDay) {
+          // Compra após o fechamento: entra na fatura do mês subsequente
+          return new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 1)
+        }
+      }
+      return baseDate
+    }
+
+    const invoiceDate = getInvoiceDate(dateObj)
+    const month = invoiceDate.toLocaleString('pt-BR', { month: 'long' })
+    const year = invoiceDate.getFullYear()
 
     const newDebitData: Debit = {
       description: description.trim(),
@@ -171,11 +185,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         newDebitData.endDate = endDateObj
 
         const debitsToCreate = []
-        const now = new Date()
-        const year = now.getFullYear()
-        const current = new Date(startDateObj!)
-        current.setDate(1)
-        while (current.getFullYear() === year && current <= new Date(year, 11, 31)) {
+        const baseStartDate = getInvoiceDate(startDateObj!)
+        const currentYear = baseStartDate.getFullYear()
+        const current = new Date(baseStartDate.getFullYear(), baseStartDate.getMonth(), 1)
+        while (current.getFullYear() === currentYear && current <= new Date(currentYear, 11, 31)) {
           const debitForMonth = {
             ...newDebitData,
             date: new Date(current),
@@ -209,8 +222,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         newDebitData.isActive = true
 
         const assinaturaDebitsToCreate = []
-        const assinaturaCurrent = new Date(startDateObj!)
-        assinaturaCurrent.setDate(1)
+        const baseAssinaturaDate = getInvoiceDate(startDateObj!)
+        const assinaturaCurrent = new Date(baseAssinaturaDate.getFullYear(), baseAssinaturaDate.getMonth(), 1)
         for (let i = 0; i < 12; i++) {
           const debitForMonth = {
             ...newDebitData,
@@ -246,8 +259,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         newDebitData.totalInstallments = totalInstallments
 
         const parcelasToCreate = []
-        const parcelaDate = new Date(startDateObj!)
-        parcelaDate.setDate(1)
+        const baseParcelaDate = getInvoiceDate(startDateObj!)
+        const parcelaDate = new Date(baseParcelaDate.getFullYear(), baseParcelaDate.getMonth(), 1)
         for (let i = 1; i <= totalInstallments; i++) {
           const parcelaData = {
             ...newDebitData,

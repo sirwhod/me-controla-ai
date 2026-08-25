@@ -4,24 +4,29 @@ interface DeleteCreditResponse {
   message: string;
 }
 
-export async function deleteCredit(
-  workspaceId: string, 
-  creditId: string,
-): Promise<DeleteCreditResponse> {
+export interface DeleteCreditProps {
+  workspaceId: string;
+  creditId: string;
+}
+
+export async function deleteCredit({
+  workspaceId,
+  creditId,
+}: DeleteCreditProps): Promise<DeleteCreditResponse> {
   if (!workspaceId) {
     return {
-      message: "O Id da Caixinha é nescessário para a exclusão do crédito."
+      message: "O Id da Caixinha é necessário para a exclusão do crédito.",
     }
   }
 
   if (!creditId) {
     return {
-      message: "O Id do crédito é nescessário para a exclusão do crédito."
+      message: "O Id do crédito é necessário para a exclusão do crédito.",
     }
   }
 
   const response = await api.delete<DeleteCreditResponse>(
-    `/workspaces/${workspaceId}/credits/${creditId}`,
+    `/workspaces/${workspaceId}/credits/${creditId}`
   )
 
   return response.data
