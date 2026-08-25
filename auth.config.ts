@@ -12,11 +12,14 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
-      const isProtected = nextUrl.pathname.startsWith('/dashboard') || nextUrl.pathname.startsWith('/manage')
+      const isProtected =
+        nextUrl.pathname.startsWith('/dashboard') ||
+        nextUrl.pathname.startsWith('/manage') ||
+        nextUrl.pathname.startsWith('/api/workspaces')
 
       if (isProtected) {
         if (isLoggedIn) return true
-        return false // Redireciona usuários não autenticados para a página inicial/login
+        return false // Bloqueia e redireciona requisições não autenticadas
       }
       return true
     },

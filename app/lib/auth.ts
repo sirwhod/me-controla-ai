@@ -71,8 +71,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, user }) {
       if (!session.user) return session;
 
-      session.user.createdAt = user.createdAt;
-      session.user.isTrial = new Date(user.createdAt).getTime() > new Date().getTime() - 1000 * 60 * 60 * 24 * TRIAL_DAYS || false;
+      const userCreatedAt = user.createdAt ? Number(user.createdAt) : Date.now();
+      const trialDurationMillis = 1000 * 60 * 60 * 24 * TRIAL_DAYS;
+
+      session.user.createdAt = userCreatedAt;
+      session.user.isTrial = userCreatedAt > (Date.now() - trialDurationMillis);
       session.user.isSubscribed = user.isSubscribed ?? false;
       session.user.workspaceIds = user.workspaceIds ?? [];
 
