@@ -459,10 +459,10 @@ export function CreateDebit() {
                           </FormControl>
                           <SelectContent>
                             {isCategoriesLoading && (
-                              <SelectItem value="">Carregando...</SelectItem>
+                              <div className="p-2 text-xs text-muted-foreground text-center">Carregando categorias...</div>
                             )}
-                            {!isCategoriesLoading && categories?.length === 0 && (
-                              <SelectItem value="">Nenhuma categoria encontrada.</SelectItem>
+                            {!isCategoriesLoading && (!categories || categories.length === 0) && (
+                              <div className="p-2 text-xs text-muted-foreground text-center">Nenhuma categoria encontrada.</div>
                             )}
                             {!isCategoriesLoading && categories?.map((category) => (
                               <SelectItem key={category.id} value={category.id}>
@@ -493,10 +493,10 @@ export function CreateDebit() {
                           </FormControl>
                           <SelectContent>
                             {isBanksLoading && (
-                              <SelectItem value="">Carregando...</SelectItem>
+                              <div className="p-2 text-xs text-muted-foreground text-center">Carregando bancos...</div>
                             )}
-                            {!isBanksLoading && banks?.length === 0 && (
-                              <SelectItem value="">Nenhum banco encontrado.</SelectItem>
+                            {!isBanksLoading && (!banks || banks.length === 0) && (
+                              <div className="p-2 text-xs text-muted-foreground text-center">Nenhum banco encontrado.</div>
                             )}
                             {!isBanksLoading && banks?.map((bank) => (
                               <SelectItem key={bank.id} value={bank.id}>
