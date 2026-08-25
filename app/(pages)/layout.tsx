@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/app/globals.css";
 import { ThemeProvider } from "../components/theme-provider";
@@ -21,11 +21,14 @@ export const metadata: Metadata = {
   title: "MeControla.AI",
   description: "Aplicativo de gestão financeira.",
   icons: {
-    icon: Logo.src
+    icon: Logo.src,
   },
-  themeColor: [ // Define as cores do tema para a meta tag inicial
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' }, // Sua cor para o tema claro
-    { media: '(prefers-color-scheme: dark)', color: '#000000' },  // Sua cor para o tema escuro
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
 };
 
@@ -35,22 +38,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
-      <html lang="en" suppressHydrationWarning>
-        <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
           <SessionProvider>
             {children}
           </SessionProvider>
           <Toaster />
-        </body>
-      </html>
-    </ThemeProvider>
+        </ThemeProvider>
+      </body>
+    </html>
   );
 }
