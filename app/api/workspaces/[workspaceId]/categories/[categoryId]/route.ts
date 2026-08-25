@@ -2,6 +2,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { updateCategorySchema } from '@/app/types/financial'
+import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { NextRequest, NextResponse } from 'next/server'
 
 interface CategoryRouteParams {
@@ -22,7 +23,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Catego
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -40,8 +42,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Catego
     const formattedCategory = {
       id: categoryDoc.id,
       ...categoryData,
-      createdAt: categoryData?.createdAt ? categoryData.createdAt.toDate() : null,
-      updatedAt: categoryData?.updatedAt ? categoryData.updatedAt.toDate() : null,
+      createdAt: serializeFirestoreDate(categoryData?.createdAt),
+      updatedAt: serializeFirestoreDate(categoryData?.updatedAt),
     }
 
     return NextResponse.json(formattedCategory, { status: 200 })
@@ -70,7 +72,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cate
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -100,10 +103,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cate
       return NextResponse.json({ message: 'Categoria não encontrada' }, { status: 404 })
     }
 
-    await categoryRef.update({
-        ...updateData,
-        updatedAt: new Date(),
-    })
+    const dataToUpdate: Record<string, unknown> = {
+      ...updateData,
+      updatedAt: new Date(),
+    }
+
+    await categoryRef.update(dataToUpdate)
 
     return NextResponse.json({ message: 'Categoria atualizada com sucesso!' }, { status: 200 })
 
@@ -127,7 +132,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Cat
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {

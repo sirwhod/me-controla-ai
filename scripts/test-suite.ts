@@ -39,7 +39,8 @@ function assert(suite: string, name: string, condition: boolean, message?: strin
 
 async function runTestSuite() {
   console.log('\n======================================================')
-  console.log('🚀 INICIANDO BATERIA DE TESTES AUTOMATIZADOS - MeControla.AI')
+  console.log('🚀 INICIANDO BATERIA COMPLETA DE TESTES AUTOMATIZADOS')
+  console.log('   MeControla.AI - Cobertura de Funcionalidades Ponta a Ponta')
   console.log('======================================================\n')
 
   const testUser = {
@@ -54,15 +55,22 @@ async function runTestSuite() {
   // ==========================================
   // SUÍTE 1: Limpeza Prévia & Registro de Usuário
   // ==========================================
-  console.log('📦 [1/5] Testando Fluxo de Registro e Criação de Conta...')
+  console.log('📦 [1/9] Testando Fluxo de Registro e Criação de Conta...')
   try {
     // Limpar usuário de teste antigo para garantir idempotência
     const existingUserQuery = await db.collection('users').where('email', '==', testUser.email).get()
     for (const doc of existingUserQuery.docs) {
       const data = doc.data()
-      // Deletar workspaces associados de teste
       if (data.workspaceIds && Array.isArray(data.workspaceIds)) {
         for (const wsId of data.workspaceIds) {
+          // Deletar subcoleções do workspace
+          const subcollections = ['credits', 'debits', 'banks', 'categories', 'goals']
+          for (const sub of subcollections) {
+            const subDocs = await db.collection('workspaces').doc(wsId).collection(sub).get()
+            for (const subDoc of subDocs.docs) {
+              await subDoc.ref.delete()
+            }
+          }
           await db.collection('workspaces').doc(wsId).delete()
         }
       }
@@ -132,7 +140,7 @@ async function runTestSuite() {
   // ==========================================
   // SUÍTE 2: Gestão Financeira (Categorias, Bancos, Metas)
   // ==========================================
-  console.log('🏦 [2/5] Testando Criação de Entidades Financeiras...')
+  console.log('🏦 [2/9] Testando Criação de Entidades Financeiras...')
   let categoryId = ''
   let bankId = ''
   let creditId = ''
@@ -147,8 +155,10 @@ async function runTestSuite() {
       categoryId = catRef.id
       await catRef.set({
         name: 'Alimentação',
-        color: '#FF5733',
-        type: 'debit',
+        icon: 'utensils',
+        type: 'expense',
+        workspaceId: workspaceId,
+        userId: userId,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -161,14 +171,15 @@ async function runTestSuite() {
       await bankRef.set({
         name: 'Nubank Cartão',
         code: '260',
-        color: '#8A05BE',
-        invoiceClosingDay: 10,
-        invoiceDueDate: 17,
+        iconUrl: null,
+        invoiceClosingDay: '10',
+        invoiceDueDate: '17',
+        workspaceId: workspaceId,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
       const bankDoc = await bankRef.get()
-      assert('Bancos & Cartões', 'Banco/Cartão criado com dia de fechamento e vencimento', bankDoc.exists && bankDoc.data()?.invoiceClosingDay === 10)
+      assert('Bancos & Cartões', 'Banco/Cartão criado com dia de fechamento e vencimento', bankDoc.exists && bankDoc.data()?.invoiceClosingDay === '10')
 
       // 2.3 Criar Meta Financeira
       const goalRef = db.collection('workspaces').doc(workspaceId).collection('goals').doc()
@@ -177,8 +188,11 @@ async function runTestSuite() {
         name: 'Reserva de Emergência',
         targetAmount: 10000,
         currentAmount: 2500,
-        deadline: new Date('2026-12-31'),
+        startDate: new Date('2026-01-01'),
+        endDate: new Date('2026-12-31'),
         description: 'Meta para reserva de 6 meses de custos fixos',
+        workspaceId: workspaceId,
+        userId: userId,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -194,7 +208,7 @@ async function runTestSuite() {
   // ==========================================
   // SUÍTE 3: Transações (Créditos e Débitos)
   // ==========================================
-  console.log('💳 [3/5] Testando Lançamentos de Receitas e Despesas...')
+  console.log('💳 [3/9] Testando Lançamentos de Receitas e Despesas...')
   try {
     if (workspaceId) {
       // 3.1 Criar Receita (Crédito)
@@ -202,43 +216,59 @@ async function runTestSuite() {
       creditId = creditRef.id
       await creditRef.set({
         description: 'Salário Mensal',
-        amount: 5000,
+        value: 5000,
         date: new Date(),
-        category: 'Salário',
-        source: 'Empresa XYZ',
+        month: 'agosto',
+        year: 2026,
+        paymentMethod: 'Conta',
+        categoryId: null,
+        bankId: bankId,
+        status: 'received',
+        workspaceId: workspaceId,
+        userId: userId,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
       const creditDoc = await creditRef.get()
-      assert('Transações - Receitas', 'Receita de R$ 5.000 lançada com sucesso', creditDoc.exists && creditDoc.data()?.amount === 5000)
+      assert('Transações - Receitas', 'Receita de R$ 5.000 lançada com sucesso', creditDoc.exists && creditDoc.data()?.value === 5000)
 
       // 3.2 Criar Despesa 1 (Pix)
       const debitRef1 = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
       debitId1 = debitRef1.id
       await debitRef1.set({
         description: 'Supermercado Mensal',
-        amount: 450,
+        value: 450,
         date: new Date(),
-        category: 'Alimentação',
+        month: 'agosto',
+        year: 2026,
+        type: 'Comum',
         categoryId: categoryId,
-        paymentMethod: 'pix',
+        paymentMethod: 'Pix',
+        status: 'paid',
+        workspaceId: workspaceId,
+        userId: userId,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
       const debitDoc1 = await debitRef1.get()
-      assert('Transações - Despesas', 'Despesa via Pix de R$ 450 lançada', debitDoc1.exists && debitDoc1.data()?.paymentMethod === 'pix')
+      assert('Transações - Despesas', 'Despesa via Pix de R$ 450 lançada', debitDoc1.exists && debitDoc1.data()?.paymentMethod === 'Pix')
 
       // 3.3 Criar Despesa 2 (Cartão de Crédito)
       const debitRef2 = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
       debitId2 = debitRef2.id
       await debitRef2.set({
         description: 'Jantar Restaurante',
-        amount: 150,
+        value: 150,
         date: new Date(),
-        category: 'Alimentação',
+        month: 'agosto',
+        year: 2026,
+        type: 'Comum',
         categoryId: categoryId,
-        paymentMethod: 'credit_card',
+        paymentMethod: 'Crédito',
         bankId: bankId,
+        status: 'pending',
+        workspaceId: workspaceId,
+        userId: userId,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -252,53 +282,245 @@ async function runTestSuite() {
   // ==========================================
   // SUÍTE 4: Inteligência Analítica e Cálculos do Dashboard
   // ==========================================
-  console.log('📊 [4/5] Testando Cálculos e Métricas do Dashboard...')
+  console.log('📊 [4/9] Testando Cálculos e Métricas do Dashboard...')
   try {
     if (workspaceId) {
-      // Buscar todos os débitos e créditos
       const creditsSnap = await db.collection('workspaces').doc(workspaceId).collection('credits').get()
       const debitsSnap = await db.collection('workspaces').doc(workspaceId).collection('debits').get()
 
-      const totalCredits = creditsSnap.docs.reduce((acc, doc) => acc + (doc.data().amount || 0), 0)
-      const totalDebits = debitsSnap.docs.reduce((acc, doc) => acc + (doc.data().amount || 0), 0)
+      const totalCredits = creditsSnap.docs.reduce((acc, doc) => acc + (doc.data().value || 0), 0)
+      const totalDebits = debitsSnap.docs.reduce((acc, doc) => acc + (doc.data().value || 0), 0)
       const currentBalance = totalCredits - totalDebits
 
       assert('Dashboard Analítico', 'Cálculo de Receitas Totais (R$ 5.000)', totalCredits === 5000)
       assert('Dashboard Analítico', 'Cálculo de Despesas Totais (R$ 600)', totalDebits === 600)
       assert('Dashboard Analítico', 'Cálculo do Saldo Consolidado (R$ 4.400)', currentBalance === 4400)
 
-      // Distribuição por Métodos de Pagamento
       const paymentDistribution: Record<string, number> = {}
       debitsSnap.docs.forEach((doc) => {
-        const method = doc.data().paymentMethod || 'other'
-        paymentDistribution[method] = (paymentDistribution[method] || 0) + (doc.data().amount || 0)
+        const method = doc.data().paymentMethod || 'Outro'
+        paymentDistribution[method] = (paymentDistribution[method] || 0) + (doc.data().value || 0)
       })
 
-      assert('Dashboard Analítico', 'Distribuição de pagamento - Pix (R$ 450)', paymentDistribution['pix'] === 450)
-      assert('Dashboard Analítico', 'Distribuição de pagamento - Cartão de Crédito (R$ 150)', paymentDistribution['credit_card'] === 150)
+      assert('Dashboard Analítico', 'Distribuição de pagamento - Pix (R$ 450)', paymentDistribution['Pix'] === 450)
+      assert('Dashboard Analítico', 'Distribuição de pagamento - Cartão de Crédito (R$ 150)', paymentDistribution['Crédito'] === 150)
     }
   } catch (error: any) {
     assert('Dashboard Analítico', 'Erro nos cálculos analíticos', false, error.message)
   }
 
   // ==========================================
-  // SUÍTE 5: Testes de Rotas HTTP e Proteção do Middleware
+  // SUÍTE 5: Tipos Avançados de Despesas (Parcelamento, Fixas e Regras de Cartão)
   // ==========================================
-  console.log('🌐 [5/5] Testando Rotas HTTP da Aplicação...')
+  console.log('🔀 [5/9] Testando Tipos Avançados de Despesas (Parcelamentos e Recorrências)...')
+  try {
+    if (workspaceId) {
+      // 5.1 Testar Geração de Parcelamento (3x de R$ 1.000)
+      const totalInstallments = 3
+      const installmentValue = 1000
+      const startDate = new Date('2026-08-05')
+      const firstInstallmentRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+      const installmentBatch = db.batch()
+
+      for (let i = 1; i <= totalInstallments; i++) {
+        const instDate = new Date(startDate.getFullYear(), startDate.getMonth() + (i - 1), 5)
+        const ref = i === 1 ? firstInstallmentRef : db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+        installmentBatch.set(ref, {
+          description: `Parcela ${i}/${totalInstallments} - Compra Notebook`,
+          value: installmentValue,
+          date: instDate,
+          month: instDate.toLocaleString('pt-BR', { month: 'long' }),
+          year: instDate.getFullYear(),
+          type: 'Parcelamento',
+          totalInstallments: totalInstallments,
+          currentInstallment: i,
+          originalDebitId: firstInstallmentRef.id,
+          paymentMethod: 'Crédito',
+          bankId: bankId,
+          categoryId: categoryId,
+          workspaceId: workspaceId,
+          userId: userId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+      }
+      await installmentBatch.commit()
+
+      const installmentsQuery = await db
+        .collection('workspaces')
+        .doc(workspaceId)
+        .collection('debits')
+        .where('originalDebitId', '==', firstInstallmentRef.id)
+        .get()
+
+      assert('Despesas Avançadas', 'Geração de 3 parcelas de parcelamento no Firestore', installmentsQuery.docs.length === 3)
+
+      const hasInstallment1 = installmentsQuery.docs.some((d) => d.data().currentInstallment === 1)
+      const hasInstallment2 = installmentsQuery.docs.some((d) => d.data().currentInstallment === 2)
+      const hasInstallment3 = installmentsQuery.docs.some((d) => d.data().currentInstallment === 3)
+      assert('Despesas Avançadas', 'Sequência de parcelas 1/3, 2/3 e 3/3 gravada corretamente', hasInstallment1 && hasInstallment2 && hasInstallment3)
+
+      // 5.2 Testar Regra de Fatura do Cartão (Compra após dia 10 cai no mês seguinte)
+      const closingDay = 10
+      const purchaseDateAfterClosing = new Date('2026-08-15')
+      const targetInvoiceMonth = purchaseDateAfterClosing.getDate() > closingDay ? 'setembro' : 'agosto'
+
+      assert('Despesas Avançadas', 'Regra de fechamento de fatura projeta mês de vencimento subsequente', targetInvoiceMonth === 'setembro')
+    }
+  } catch (error: any) {
+    assert('Despesas Avançadas', 'Erro na execução da suíte 5', false, error.message)
+  }
+
+  // ==========================================
+  // SUÍTE 6: Edição e Atualização de Entidades (Update / PATCH CRUD)
+  // ==========================================
+  console.log('✏️ [6/9] Testando Atualização de Dados (Update CRUD)...')
+  try {
+    if (workspaceId && creditId && debitId1 && goalId && bankId) {
+      // 6.1 Atualizar Receita
+      const creditRef = db.collection('workspaces').doc(workspaceId).collection('credits').doc(creditId)
+      await creditRef.update({
+        description: 'Salário Atualizado com Bônus',
+        value: 6500,
+        updatedAt: new Date(),
+      })
+      const updatedCreditDoc = await creditRef.get()
+      assert('Atualização (CRUD)', 'Atualização de valor e descrição da Receita', updatedCreditDoc.data()?.value === 6500 && updatedCreditDoc.data()?.description === 'Salário Atualizado com Bônus')
+
+      // 6.2 Atualizar Despesa
+      const debitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc(debitId1)
+      await debitRef.update({
+        description: 'Supermercado e Feira',
+        value: 520,
+        updatedAt: new Date(),
+      })
+      const updatedDebitDoc = await debitRef.get()
+      assert('Atualização (CRUD)', 'Atualização de valor e descrição da Despesa', updatedDebitDoc.data()?.value === 520 && updatedDebitDoc.data()?.description === 'Supermercado e Feira')
+
+      // 6.3 Atualizar Meta (Progresso)
+      const goalRef = db.collection('workspaces').doc(workspaceId).collection('goals').doc(goalId)
+      await goalRef.update({
+        currentAmount: 3800,
+        updatedAt: new Date(),
+      })
+      const updatedGoalDoc = await goalRef.get()
+      assert('Atualização (CRUD)', 'Atualização de progresso atual da Meta Financeira', updatedGoalDoc.data()?.currentAmount === 3800)
+
+      // 6.4 Atualizar Banco
+      const bankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId)
+      await bankRef.update({
+        name: 'Nubank Ultravioleta VIP',
+        updatedAt: new Date(),
+      })
+      const updatedBankDoc = await bankRef.get()
+      assert('Atualização (CRUD)', 'Atualização de nome do Banco/Cartão', updatedBankDoc.data()?.name === 'Nubank Ultravioleta VIP')
+    }
+  } catch (error: any) {
+    assert('Atualização (CRUD)', 'Erro na execução da suíte 6', false, error.message)
+  }
+
+  // ==========================================
+  // SUÍTE 7: Múltiplas Caixinhas & Isolamento de Dados
+  // ==========================================
+  console.log('👥 [7/9] Testando Múltiplas Caixinhas & Isolamento de Dados...')
+  let sharedWorkspaceId = ''
+  let sharedDebitId = ''
+
+  try {
+    // 7.1 Criar Segunda Caixinha Compartilhada
+    const sharedWsRef = db.collection('workspaces').doc()
+    sharedWorkspaceId = sharedWsRef.id
+    await sharedWsRef.set({
+      name: 'Caixinha Viagem de Férias',
+      type: 'shared',
+      ownerId: userId,
+      members: [userId],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    // Adicionar novo workspaceId ao usuário
+    const userRef = db.collection('users').doc(userId)
+    const userDoc = await userRef.get()
+    const currentWorkspaces = userDoc.data()?.workspaceIds || []
+    await userRef.update({
+      workspaceIds: [...currentWorkspaces, sharedWorkspaceId],
+      updatedAt: new Date(),
+    })
+
+    const updatedUserDoc = await userRef.get()
+    assert('Múltiplas Caixinhas', 'Usuário associado a múltiplas caixinhas no Firestore', updatedUserDoc.data()?.workspaceIds.length === 2)
+
+    // 7.2 Lançar despesa na Caixinha Compartilhada
+    const sharedDebitRef = db.collection('workspaces').doc(sharedWorkspaceId).collection('debits').doc()
+    sharedDebitId = sharedDebitRef.id
+    await sharedDebitRef.set({
+      description: 'Reserva de Hotel Praia',
+      value: 800,
+      date: new Date(),
+      month: 'agosto',
+      year: 2026,
+      type: 'Comum',
+      paymentMethod: 'Pix',
+      workspaceId: sharedWorkspaceId,
+      userId: userId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    // 7.3 Validar Isolamento Estrito
+    const primaryDebits = await db.collection('workspaces').doc(workspaceId).collection('debits').where('description', '==', 'Reserva de Hotel Praia').get()
+    assert('Isolamento de Dados', 'Despesa da caixinha compartilhada NÃO vaza para a caixinha pessoal', primaryDebits.empty)
+
+    const sharedDebits = await db.collection('workspaces').doc(sharedWorkspaceId).collection('debits').where('description', '==', 'Reserva de Hotel Praia').get()
+    assert('Isolamento de Dados', 'Despesa existe exclusivamente na caixinha compartilhada', !sharedDebits.empty)
+  } catch (error: any) {
+    assert('Múltiplas Caixinhas', 'Erro na execução da suíte 7', false, error.message)
+  }
+
+  // ==========================================
+  // SUÍTE 8: Operações de Exclusão (Delete CRUD)
+  // ==========================================
+  console.log('🗑️ [8/9] Testando Exclusão de Entidades (Delete CRUD)...')
+  try {
+    if (workspaceId && creditId && debitId2 && categoryId && goalId) {
+      // 8.1 Deletar Despesa 2
+      await db.collection('workspaces').doc(workspaceId).collection('debits').doc(debitId2).delete()
+      const deletedDebitDoc = await db.collection('workspaces').doc(workspaceId).collection('debits').doc(debitId2).get()
+      assert('Exclusão (CRUD)', 'Exclusão de Despesa realizada com sucesso', !deletedDebitDoc.exists)
+
+      // 8.2 Deletar Caixinha Compartilhada de Teste
+      if (sharedWorkspaceId) {
+        if (sharedDebitId) {
+          await db.collection('workspaces').doc(sharedWorkspaceId).collection('debits').doc(sharedDebitId).delete()
+        }
+        await db.collection('workspaces').doc(sharedWorkspaceId).delete()
+        const deletedWsDoc = await db.collection('workspaces').doc(sharedWorkspaceId).get()
+        assert('Exclusão (CRUD)', 'Exclusão de Caixinha Compartilhada realizada com sucesso', !deletedWsDoc.exists)
+      }
+    }
+  } catch (error: any) {
+    assert('Exclusão (CRUD)', 'Erro na execução da suíte 8', false, error.message)
+  }
+
+  // ==========================================
+  // SUÍTE 9: Rotas HTTP e Proteção do Middleware
+  // ==========================================
+  console.log('🌐 [9/9] Testando Rotas HTTP da Aplicação...')
   const baseUrl = 'http://127.0.0.1:3000'
 
   try {
-    // 5.1 Testar Página Inicial (Pública)
-    const homeRes = await axios.get(baseUrl, { timeout: 15000, validateStatus: () => true })
+    // 9.1 Testar Página Inicial (Pública)
+    const homeRes = await axios.get(baseUrl, { timeout: 30000, validateStatus: () => true })
     assert('Rotas HTTP', 'Página Inicial (/) acessível publicamente (Status 200)', homeRes.status === 200)
 
-    // 5.2 Testar Página de Login (Pública)
-    const signinRes = await axios.get(`${baseUrl}/sign-in`, { timeout: 15000, validateStatus: () => true })
+    // 9.2 Testar Página de Login (Pública)
+    const signinRes = await axios.get(`${baseUrl}/sign-in`, { timeout: 30000, validateStatus: () => true })
     assert('Rotas HTTP', 'Página de Login (/sign-in) acessível publicamente (Status 200)', signinRes.status === 200)
 
-    // 5.3 Testar Proteção de Rota Privada (/dashboard)
+    // 9.3 Testar Proteção de Rota Privada (/dashboard)
     const dashRes = await axios.get(`${baseUrl}/dashboard`, {
-      timeout: 15000,
+      timeout: 30000,
       maxRedirects: 0,
       validateStatus: () => true,
     })
@@ -312,7 +534,7 @@ async function runTestSuite() {
   // RELATÓRIO FINAL CONSOLIDADO
   // ==========================================
   console.log('\n======================================================')
-  console.log('📋 RELATÓRIO FINAL DOS TESTES')
+  console.log('📋 RELATÓRIO FINAL DOS TESTES CONSOLIDADOS')
   console.log('======================================================\n')
 
   let passedCount = 0

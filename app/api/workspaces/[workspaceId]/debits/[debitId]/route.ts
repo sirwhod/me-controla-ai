@@ -2,6 +2,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { updateDebitSchema } from '@/app/types/financial';
+import { serializeFirestoreDate } from '@/app/lib/date-utils';
 import { NextRequest, NextResponse } from 'next/server'
 
 interface CreditsRouteParams {
@@ -22,7 +23,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -40,11 +42,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
     const formattedDebit = {
       id: debitDoc.id,
       ...debitData,
-      date: debitData?.date ? debitData.date.toDate() : null, 
-      createdAt: debitData?.createdAt ? debitData.createdAt.toDate() : null,
-      updatedAt: debitData?.updatedAt ? debitData.updatedAt.toDate() : null,
-      startDate: debitData?.startDate ? debitData.startDate.toDate() : null, 
-      endDate: debitData?.endDate ? debitData.endDate.toDate() : null,     
+      date: serializeFirestoreDate(debitData?.date), 
+      createdAt: serializeFirestoreDate(debitData?.createdAt),
+      updatedAt: serializeFirestoreDate(debitData?.updatedAt),
+      startDate: serializeFirestoreDate(debitData?.startDate), 
+      endDate: serializeFirestoreDate(debitData?.endDate),     
     }
 
     return NextResponse.json(formattedDebit, { status: 200 })
@@ -73,7 +75,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
     
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -149,7 +152,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Cre
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {

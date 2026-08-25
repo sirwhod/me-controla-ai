@@ -2,6 +2,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { updateCreditSchema } from '@/app/types/financial';
+import { serializeFirestoreDate } from '@/app/lib/date-utils';
 import { NextRequest, NextResponse } from 'next/server'
 
 interface CreditsRouteParams {
@@ -22,7 +23,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -40,9 +42,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
     const formattedCredit = {
       id: creditDoc.id,
       ...creditData,
-      date: creditData?.date ? creditData.date.toDate() : null, // Convert Timestamp to Date
-      createdAt: creditData?.createdAt ? creditData.createdAt.toDate() : null,
-      updatedAt: creditData?.updatedAt ? creditData.updatedAt.toDate() : null,
+      date: serializeFirestoreDate(creditData?.date),
+      createdAt: serializeFirestoreDate(creditData?.createdAt),
+      updatedAt: serializeFirestoreDate(creditData?.updatedAt),
     }
 
     return NextResponse.json(formattedCredit, { status: 200 })
@@ -71,7 +73,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -137,7 +140,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Cre
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {

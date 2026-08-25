@@ -2,6 +2,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { updateGoalSchema } from '@/app/types/financial';
+import { serializeFirestoreDate } from '@/app/lib/date-utils';
 import { NextRequest, NextResponse } from 'next/server'
 
 interface GoalsRouteParams {
@@ -22,7 +23,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<GoalsR
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -40,10 +42,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<GoalsR
     const formattedGoal = {
       id: goalDoc.id,
       ...goalData,
-      createdAt: goalData?.createdAt ? goalData.createdAt.toDate() : null,
-      updatedAt: goalData?.updatedAt ? goalData.updatedAt.toDate() : null,
-      startDate: goalData?.startDate ? goalData.startDate.toDate() : null,
-      endDate: goalData?.endDate ? goalData.endDate.toDate() : null,
+      createdAt: serializeFirestoreDate(goalData?.createdAt),
+      updatedAt: serializeFirestoreDate(goalData?.updatedAt),
+      startDate: serializeFirestoreDate(goalData?.startDate),
+      endDate: serializeFirestoreDate(goalData?.endDate),
     }
 
     return NextResponse.json(formattedGoal, { status: 200 })
@@ -72,7 +74,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Goal
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -90,15 +93,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Goal
     }
 
     const updateData = validationResult.data
-
-    if (updateData.startDate && updateData.endDate) {
-        const startDateObj = new Date(updateData.startDate)
-        const endDateObj = new Date(updateData.endDate)
-        if (endDateObj < startDateObj) {
-            return NextResponse.json({ message: 'Data de término não pode ser anterior à data de início.' }, { status: 400 })
-        }
-    }
-
 
     if (Object.keys(updateData).length === 0) {
         return NextResponse.json({ message: 'Nenhum dado fornecido para atualização' }, { status: 400 })
@@ -150,7 +144,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Goa
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {

@@ -2,6 +2,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { updateBankSchema } from '@/app/types/financial';
+import { serializeFirestoreDate } from '@/app/lib/date-utils';
 import { NextRequest, NextResponse } from 'next/server'
 
 interface BankRouteParams {
@@ -23,7 +24,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<BankRo
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -41,8 +43,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<BankRo
     const formattedBank = {
       id: bankDoc.id,
       ...bankData,
-      createdAt: bankData?.createdAt ? bankData.createdAt.toDate() : null,
-      updatedAt: bankData?.updatedAt ? bankData.updatedAt.toDate() : null,
+      createdAt: serializeFirestoreDate(bankData?.createdAt),
+      updatedAt: serializeFirestoreDate(bankData?.updatedAt),
     }
 
     return NextResponse.json(formattedBank, { status: 200 })
@@ -55,7 +57,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<BankRo
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<BankRouteParams> }) {
-    return PATCH(req, { params: params }) // Redireciona PUT para PATCH
+    return PATCH(req, { params: params })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<BankRouteParams> }) {
@@ -72,7 +74,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Bank
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
@@ -102,10 +105,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Bank
       return NextResponse.json({ message: 'Banco não encontrado' }, { status: 404 })
     }
 
-    await bankRef.update({
-        ...updateData,
-        updatedAt: new Date(),
-    })
+    const dataToUpdate: Record<string, unknown> = {
+      ...updateData,
+      updatedAt: new Date(),
+    }
+
+    await bankRef.update(dataToUpdate)
 
     return NextResponse.json({ message: 'Banco atualizado com sucesso!' }, { status: 200 })
 
@@ -115,7 +120,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Bank
     return NextResponse.json({ message: 'Erro interno do servidor ao atualizar banco' }, { status: 500 })
   }
 }
- 
+
 export async function DELETE(req: NextRequest, { params }: { params: Promise<BankRouteParams> }) {
   try {
     const searchParams = await params
@@ -130,7 +135,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Ban
 
     const isMember = await checkIsWorkspaceMember({
       workspaceId, 
-      workspaceIds: session.user.workspaceIds
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
     })
     
     if (!isMember) {
