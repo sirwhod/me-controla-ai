@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "lint:check": "eslint . --ext .js,.jsx,.ts,.tsx --config eslint.config.mjs",
-    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix --config eslint.config.mjs"
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix --config eslint.config.mjs",
+    "test:suite": "tsx --env-file=.env.local scripts/test-suite.ts"
   },
   "dependencies": {
     "@auth/firebase-adapter": "^2.9.0",
@@ -48,6 +49,7 @@
     "react-day-picker": "^9.9.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.3",
+    "server-only": "^0.0.1",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.2.0",
     "zod": "^3.24.4"
@@ -63,6 +65,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "eslint": "^9.26.0",
     "eslint-config-next": "15.5.24",
     "eslint-config-prettier": "^10.1.5",
@@ -72,6 +75,7 @@
     "lightningcss-wasm": "^1.33.0",
     "prettier": "^3.5.3",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "tw-animate-css": "^1.2.9",
     "typescript": "^5",
     "typescript-eslint": "^8.32.0"

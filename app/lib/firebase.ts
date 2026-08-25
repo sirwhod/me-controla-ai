@@ -1,4 +1,6 @@
-import "server-only"
+if (typeof window !== "undefined") {
+  throw new Error("This module cannot be imported from a Client Component.");
+}
 import { cert, getApps, initializeApp } from "firebase-admin/app"
 import { getFirestore } from "firebase-admin/firestore"
 import { getStorage } from "firebase-admin/storage"
