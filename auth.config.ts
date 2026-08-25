@@ -3,10 +3,15 @@ import Google from "next-auth/providers/google"
 
 export const authConfig = {
   trustHost: true,
+  pages: {
+    signIn: '/sign-in',
+    error: '/sign-in',
+  },
   providers: [
     Google({
-      clientId: process.env.AUTH_GOOGLE_ID ?? '',
-      clientSecret: process.env.AUTH_GOOGLE_SECRET ?? '',
+      clientId: process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.AUTH_GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET || '',
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
   callbacks: {
@@ -19,7 +24,7 @@ export const authConfig = {
 
       if (isProtected) {
         if (isLoggedIn) return true
-        return false // Bloqueia e redireciona requisições não autenticadas
+        return false // Redireciona automaticamente para /sign-in
       }
       return true
     },
