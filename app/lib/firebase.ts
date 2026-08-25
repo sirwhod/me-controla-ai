@@ -3,17 +3,30 @@ import { cert, getApps, initializeApp } from "firebase-admin/app"
 import { getFirestore } from "firebase-admin/firestore"
 import { getStorage } from "firebase-admin/storage"
 
-// Certifcado
+function getPrivateKey(): string | undefined {
+  const rawKey = process.env.FIREBASE_PRIVATE_KEY
+  if (!rawKey) return undefined
 
-const decodedKey = Buffer.from(
-  process.env.FIREBASE_PRIVATE_KEY!,
-  "base64"
-).toString("utf-8")
+  if (rawKey.includes("-----BEGIN PRIVATE KEY-----")) {
+    return rawKey.replace(/\\n/g, "\n")
+  }
+
+  try {
+    const decoded = Buffer.from(rawKey, "base64").toString("utf-8")
+    if (decoded.includes("-----BEGIN PRIVATE KEY-----")) {
+      return decoded.replace(/\\n/g, "\n")
+    }
+  } catch {
+    // Continua para o fallback
+  }
+
+  return rawKey.replace(/\\n/g, "\n")
+}
 
 export const firebaseCert = cert({
   projectId: process.env.FIREBASE_PROJECT_ID,
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  privateKey: decodedKey,
+  privateKey: getPrivateKey(),
 })
 
 // Instancia do app

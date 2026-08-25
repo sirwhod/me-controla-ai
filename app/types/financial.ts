@@ -58,7 +58,7 @@ export const createDebitSchema = z.object({
   frequency: z.enum(['monthly']).optional(),
   startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
   endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
-  totalInstallments: z.number().int().positive({ message: 'Total de parcelas deve ser um número positivo.' }).optional(),
+  totalInstallments: z.number().int().min(2, { message: 'Mínimo de 2 parcelas.' }).max(120, { message: 'Máximo de 120 parcelas permitido.' }).optional(),
   currentInstallment: z.number().int().min(1, { message: 'Número da parcela atual deve ser 1 ou maior.' }).optional(),
 })
 
@@ -79,7 +79,7 @@ export const updateDebitSchema = z.object({
   startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
   endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
   isActive: z.boolean().optional(),
-  totalInstallments: z.number().int().positive({ message: 'Total de parcelas deve ser positivo.' }).optional(),
+  totalInstallments: z.number().int().min(2, { message: 'Mínimo de 2 parcelas.' }).max(120, { message: 'Máximo de 120 parcelas permitido.' }).optional(),
   currentInstallment: z.number().int().min(1, { message: 'Número da parcela atual deve ser 1 ou maior.' }).optional(),
 })
 
@@ -167,8 +167,8 @@ export const createBankSchema = z.object({
       "Tipo de arquivo inválido. Apenas .jpg, .jpeg, .png e .webp são permitidos."
     )
     .optional(),
-  invoiceClosingDay: z.string().min(1).max(31).optional(),
-  invoiceDueDate: z.string().min(1).max(31).optional(),
+  invoiceClosingDay: z.string().regex(/^([1-9]|[12][0-9]|3[01])$/, { message: 'O dia de fechamento deve ser entre 1 e 31.' }).optional().or(z.literal('')),
+  invoiceDueDate: z.string().regex(/^([1-9]|[12][0-9]|3[01])$/, { message: 'O dia de vencimento deve ser entre 1 e 31.' }).optional().or(z.literal('')),
 })
 
 export type CreateBank = z.infer<typeof createBankSchema>
@@ -177,8 +177,8 @@ export const updateBankSchema = z.object({
   name: z.string().min(1, { message: 'O nome do banco não pode ser vazio.' }).optional(),
   code: z.string().optional().nullable(),
   iconUrl: z.string().url('URL do ícone inválida.').optional().or(z.literal('')).nullable(),
-  invoiceClosingDay: z.string().min(1).max(31).optional(),
-  invoiceDueDate: z.string().min(1).max(31).optional(),
+  invoiceClosingDay: z.string().regex(/^([1-9]|[12][0-9]|3[01])$/, { message: 'O dia de fechamento deve ser entre 1 e 31.' }).optional().or(z.literal('')).nullable(),
+  invoiceDueDate: z.string().regex(/^([1-9]|[12][0-9]|3[01])$/, { message: 'O dia de vencimento deve ser entre 1 e 31.' }).optional().or(z.literal('')).nullable(),
 })
 
 export type UpdateBank = z.infer<typeof updateBankSchema>

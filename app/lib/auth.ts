@@ -3,7 +3,7 @@ import Google from "next-auth/providers/google"
 import { db, firebaseCert } from "./firebase"
 import { FirestoreAdapter } from "@auth/firebase-adapter"
 
-import { FieldValue, Timestamp } from "firebase-admin/firestore"
+import { Timestamp } from "firebase-admin/firestore"
 import { TRIAL_DAYS } from "./config"
 
 
@@ -40,38 +40,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   events: {
     createUser: async ({ user }) => {
       if (!user.id) return;
-      const userRef = db.collection("users").doc(user.id);
+      try {
+        const batch = db.batch();
+        const userRef = db.collection("users").doc(user.id);
+        const newWorkspaceRef = db.collection("workspaces").doc();
 
-      await userRef.update({
-        createdAt: Timestamp.now().toMillis(),
-        workspaceIds: [],
-        isTrial: true,
-        isSubscribed: false,
-      });
+        const personalWorkspaceData = {
+          name: `Caixinha de ${user.name || user.email || 'Novo Usuário'}`,
+          ownerId: user.id,
+          members: [user.id],
+          type: 'personal',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
 
-      // --- Lógica para Criar o Workspace Pessoal Automaticamente ---
+        batch.set(newWorkspaceRef, personalWorkspaceData);
 
-      const newWorkspaceRef = db.collection('workspaces').doc();
+        batch.update(userRef, {
+          createdAt: Timestamp.now().toMillis(),
+          workspaceIds: [newWorkspaceRef.id],
+          isTrial: true,
+          isSubscribed: false,
+          updatedAt: new Date(),
+        });
 
-      const personalWorkspaceData = {
-        name: `Caixinha de ${user.name || user.email || 'Novo Usuário'}`,
-        ownerId: user.id,
-        members: [user.id],
-        type: 'personal',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      await newWorkspaceRef.set(personalWorkspaceData);
-
-      await userRef.update({
-        workspaceIds: FieldValue.arrayUnion(newWorkspaceRef.id),
-        updatedAt: new Date(),
-      });
-
-      console.log(`[Auth.js Event] Caixinha pessoal ${newWorkspaceRef.id} criado automaticamente para o usuário: ${user.id}`);
-
-      // --- Fim da Lógica para Criar o Workspace Pessoal ---
+        await batch.commit();
+        console.log(`[Auth.js Event] Caixinha pessoal ${newWorkspaceRef.id} criado automaticamente para o usuário: ${user.id}`);
+      } catch (error) {
+        console.error(`[Auth.js Event] Erro ao criar workspace inicial para usuário ${user.id}:`, error);
+      }
     },
   },
   callbacks: {

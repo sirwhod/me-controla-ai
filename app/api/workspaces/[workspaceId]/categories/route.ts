@@ -1,6 +1,7 @@
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member';
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
+import { createCategorySchema } from '@/app/types/financial';
 import { IconName } from 'lucide-react/dynamic';
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -74,20 +75,33 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Categ
 
     const formData = await req.formData()
 
+    const rawName = formData.get('name')
+    const rawType = formData.get('type')
+    const rawIcon = formData.get('icon')
+
     const categoryDataFromForm = {
-      name: formData.get('name') as string,
-      type: formData.get('type') as string,
-      icon: formData.get('icon') as IconName,
+      name: typeof rawName === 'string' ? rawName : '',
+      type: typeof rawType === 'string' ? rawType : '',
+      icon: typeof rawIcon === 'string' ? (rawIcon as IconName) : undefined,
     }
 
-    const { name, type, icon } = categoryDataFromForm
+    const validationResult = createCategorySchema.safeParse(categoryDataFromForm)
+
+    if (!validationResult.success) {
+      return NextResponse.json({
+        message: 'Dados de entrada inválidos para criar categoria.',
+        error: validationResult.error.errors.map(e => e.message).join(', '),
+      }, { status: 400 })
+    }
+
+    const { name, type, icon } = validationResult.data
 
     const newCategoryRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc()
 
     const newCategoryData = {
       name: name.trim(),
       type: type,
-      icon: icon, // URL da imagem do Storage
+      icon: icon,
       workspaceId: workspaceId,
       createdAt: new Date(),
       updatedAt: new Date(),

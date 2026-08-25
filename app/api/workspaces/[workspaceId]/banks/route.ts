@@ -99,31 +99,33 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
     let uploadedIconUrl: string | undefined = undefined
 
     if (imageFile) {
-      // Validação básica do arquivo no backend (opcional, já que o frontend validou)
       if (imageFile.size > 10 * 1024 * 1024) { // 10MB
         return NextResponse.json({ message: 'Arquivo muito grande (máx 10MB).' }, { status: 400 });
       }
-      const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-      if (!acceptedTypes.includes(imageFile.type)) {
-        return NextResponse.json({ message: 'Tipo de arquivo inválido.' }, { status: 400 });
+      const acceptedTypes: Record<string, string> = {
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/png': 'png',
+        'image/webp': 'webp',
+      };
+      const ext = acceptedTypes[imageFile.type];
+      if (!ext) {
+        return NextResponse.json({ message: 'Tipo de arquivo inválido. Permitido apenas JPEG, PNG ou WebP.' }, { status: 400 });
       }
 
-      // Fazer upload para o Firebase Storage usando o SDK Admin
+      // Fazer upload para o Firebase Storage usando o SDK Admin com nome seguro e aleatório
       const fileBuffer = Buffer.from(await imageFile.arrayBuffer());
-      const iconPath = `bank_icons/${workspaceId}/${Date.now()}_${imageFile.name}`;
+      const safeFileName = `${crypto.randomUUID()}.${ext}`;
+      const iconPath = `bank_icons/${workspaceId}/${safeFileName}`;
       
-      const storageFile = storage.file(iconPath); // storage é o bucket do firebaseAdmin
+      const storageFile = storage.file(iconPath);
       await storageFile.save(fileBuffer, {
         metadata: { contentType: imageFile.type },
       });
 
-      // Obter a URL de download (usando sua função ou gerando uma URL pública/assinada)
-      // Se sua getDownloadURLFromPath já usa o 'storage.file(path)' e retorna a URL, ótimo.
       uploadedIconUrl = await getDownloadURLFromPath(iconPath); 
       if (!uploadedIconUrl) {
-         // Lidar com o caso em que a URL não pôde ser gerada, talvez por um erro na função
          console.error("Não foi possível gerar a URL de download para:", iconPath);
-         // Você pode decidir continuar sem iconUrl ou retornar um erro
       }
     }
 

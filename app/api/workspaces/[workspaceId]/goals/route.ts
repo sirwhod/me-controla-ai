@@ -82,7 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Goals
       }, { status: 400 })
     }
 
-    const { name, targetAmount, startDate, endDate, description, userId } = validationResult.data
+    const { name, targetAmount, startDate, endDate, description } = validationResult.data
 
     const startDateObj = new Date(startDate)
     const endDateObj = endDate ? new Date(endDate) : null
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Goals
       startDate: startDateObj,
       endDate: endDateObj,
       description: description?.trim() || null,
-      userId: userId || null,
+      userId: session.user.id,
       workspaceId: workspaceId,
       createdAt: new Date(),
       updatedAt: new Date(),
