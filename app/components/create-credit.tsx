@@ -1,6 +1,6 @@
 "use client"
 
-import { Banknote, CalendarIcon, CreditCard, Landmark, PlusCircle } from "lucide-react"
+import { Banknote, CalendarIcon, CreditCard, Landmark, PlusCircle, User } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
 import {
   Dialog,
@@ -13,11 +13,11 @@ import {
   DialogTrigger,
 } from "@/app/components/ui/dialog"
 import { useForm } from "react-hook-form"
-import { Credit, CreateCredit as CreateCreditProps, createCreditSchema, Bank, Category } from "../types/financial" 
+import { Credit, CreateCredit as CreateCreditProps, createCreditSchema, Bank, Category, PersonResponsible } from "../types/financial" 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form"
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createCredit } from "../http/credits/create-credit"
 import { useWorkspace } from "../hooks/use-workspace"
 import { getCredits } from "../http/credits/get-credits"
@@ -26,20 +26,24 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { Label } from "./ui/label"
 import { Input } from "./ui/input"
 import { getBanks } from "../http/banks/get-banks"
+import { createBank } from "../http/banks/create-bank"
 import { getCategories } from "../http/categories/get-categories"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+import { createCategory } from "../http/categories/create-category"
+import { getResponsibles, createResponsible } from "../http/responsibles"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
 import Image from "next/image"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { cn } from "../lib/utils"
 import { format } from "date-fns"
 import { Calendar } from "./ui/calendar"
+import { QuickCreateSelect } from "./ui/quick-create-select"
 
 type CreateCreditFormData = CreateCreditProps
 
 export function CreateCredit() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false)
+  const queryClient = useQueryClient()
 
   const form = useForm<CreateCreditFormData>({
     resolver: zodResolver(createCreditSchema),
@@ -48,6 +52,7 @@ export function CreateCredit() {
       date: new Date().toISOString(),
       bankId: "",
       categoryId: "",
+      responsibleId: "",
       paymentMethod: "Pix",
       proofUrl: "",
       status: "received",
@@ -65,21 +70,78 @@ export function CreateCredit() {
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
 
-  const { data: banks, isLoading: isBanksLoading } = useQuery<Bank[], Error>({
+  const { data: banks = [], isLoading: isBanksLoading } = useQuery<Bank[], Error>({
     queryKey: ['banks', workspaceActive?.id],
     queryFn: () => getBanks(workspaceActive!.id),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
 
-  const { data: categories, isLoading: isCategoriesLoading } = useQuery<Category[], Error>({
+  const { data: categories = [], isLoading: isCategoriesLoading } = useQuery<Category[], Error>({
     queryKey: ['categories', workspaceActive?.id],
     queryFn: () => getCategories(workspaceActive!.id),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
 
-  const incomeCategories = categories?.filter(c => c.type === 'income') || categories
+  const { data: responsibles = [], isLoading: isResponsiblesLoading } = useQuery<PersonResponsible[], Error>({
+    queryKey: ['responsibles', workspaceActive?.id],
+    queryFn: () => getResponsibles(workspaceActive!.id),
+    staleTime: 1000 * 60 * 5,
+    enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
+  })
+
+  const handleQuickCreateCategory = async (name: string) => {
+    if (!workspaceActive) return null
+    try {
+      const res = await createCategory({
+        workspaceId: workspaceActive.id,
+        name,
+        type: 'all',
+        icon: 'tag' as IconName,
+      })
+      await queryClient.invalidateQueries({ queryKey: ['categories', workspaceActive.id] })
+      toast.success(`Categoria "${name}" criada com sucesso!`)
+      return res.categoryId
+    } catch {
+      toast.error("Erro ao criar categoria.")
+      return null
+    }
+  }
+
+  const handleQuickCreateBank = async (name: string) => {
+    if (!workspaceActive) return null
+    try {
+      const formData = new FormData()
+      formData.append("name", name)
+      const res = await createBank({
+        workspaceId: workspaceActive.id,
+        payload: formData,
+      })
+      await queryClient.invalidateQueries({ queryKey: ['banks', workspaceActive.id] })
+      toast.success(`Banco "${name}" criado com sucesso!`)
+      return res.bankId
+    } catch {
+      toast.error("Erro ao criar banco.")
+      return null
+    }
+  }
+
+  const handleQuickCreateResponsible = async (name: string) => {
+    if (!workspaceActive) return null
+    try {
+      const res = await createResponsible(workspaceActive.id, {
+        name,
+        pixKeyType: 'cpf',
+      })
+      await queryClient.invalidateQueries({ queryKey: ['responsibles', workspaceActive.id] })
+      toast.success(`Responsável "${name}" cadastrado com sucesso!`)
+      return res.responsibleId
+    } catch {
+      toast.error("Erro ao cadastrar responsável.")
+      return null
+    }
+  }
 
   async function handleCreateCreditSubmit(data: CreateCreditProps) {
     if (!workspaceActive || isWorkspaceLoading || workspaceError) {
@@ -118,6 +180,28 @@ export function CreateCredit() {
     }
   }, [modalIsOpen, form])
 
+  const categoryItems = categories.map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+    icon: cat.icon ? <DynamicIcon name={cat.icon as IconName} size={16} /> : undefined,
+  }))
+
+  const bankItems = banks.map((b) => ({
+    id: b.id,
+    name: b.name,
+    icon: b.iconUrl ? (
+      <Image src={b.iconUrl} alt={b.name} width={16} height={16} className="rounded-xs" />
+    ) : (
+      <Landmark className="h-4 w-4 text-foreground" />
+    ),
+  }))
+
+  const responsibleItems = responsibles.map((r) => ({
+    id: r.id,
+    name: r.name,
+    icon: <User className="h-4 w-4 text-muted-foreground" />,
+  }))
+
   return (
     <Dialog open={modalIsOpen} onOpenChange={handleModalOpenChange}>
       <DialogTrigger asChild>
@@ -130,7 +214,7 @@ export function CreateCredit() {
         <DialogHeader>
           <DialogTitle>Nova Receita</DialogTitle>
           <DialogDescription>
-            Adicione uma nova entrada financeira na caixinha.
+            Adicione uma nova receita para registrar suas entradas.
           </DialogDescription>
         </DialogHeader>
 
@@ -185,7 +269,7 @@ export function CreateCredit() {
                   <FormItem className="w-full">
                     <FormLabel>Descrição</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Salário, Rendimentos" {...field} />
+                      <Input placeholder="Ex: Salário, Freelance..." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -220,30 +304,18 @@ export function CreateCredit() {
                 render={({ field }) => (
                   <FormItem className="w-full">
                     <FormLabel>Categoria</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value ?? ''}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione uma categoria." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {isCategoriesLoading && (
-                          <div className="p-2 text-xs text-muted-foreground text-center">Carregando categorias...</div>
-                        )}
-                        {!isCategoriesLoading && (!incomeCategories || incomeCategories.length === 0) && (
-                          <div className="p-2 text-xs text-muted-foreground text-center">Nenhuma categoria encontrada.</div>
-                        )}
-                        {!isCategoriesLoading && incomeCategories?.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
-                            <DynamicIcon
-                              name={category.icon as IconName}
-                              size={16}
-                            />
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <QuickCreateSelect
+                        items={categoryItems}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Selecione a categoria..."
+                        searchPlaceholder="Buscar ou criar categoria..."
+                        createLabel="Criar categoria"
+                        onCreateNew={handleQuickCreateCategory}
+                        disabled={isCategoriesLoading}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -254,41 +326,47 @@ export function CreateCredit() {
                 render={({ field }) => (
                   <FormItem className="w-full">
                     <FormLabel>Banco / Conta</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value ?? ''}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione um banco." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {isBanksLoading && (
-                          <div className="p-2 text-xs text-muted-foreground text-center">Carregando bancos...</div>
-                        )}
-                        {!isBanksLoading && (!banks || banks.length === 0) && (
-                          <div className="p-2 text-xs text-muted-foreground text-center">Nenhum banco encontrado.</div>
-                        )}
-                        {!isBanksLoading && banks?.map((bank) => (
-                          <SelectItem key={bank.id} value={bank.id}>
-                            {bank.iconUrl ? (
-                              <Image
-                                src={bank.iconUrl}
-                                alt={bank.name}
-                                width={16}
-                                height={16}
-                              />
-                            ) : (
-                              <Landmark className="h-4 w-4 text-foreground" />
-                            )}
-                            {bank.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <QuickCreateSelect
+                        items={bankItems}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Selecione o banco..."
+                        searchPlaceholder="Buscar ou criar banco..."
+                        createLabel="Criar banco"
+                        onCreateNew={handleQuickCreateBank}
+                        disabled={isBanksLoading}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+
+            {/* Campo de Responsável com QuickCreate */}
+            <FormField
+              control={form.control}
+              name="responsibleId"
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <FormLabel>Responsável (opcional)</FormLabel>
+                  <FormControl>
+                    <QuickCreateSelect
+                      items={responsibleItems}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Selecione ou crie um responsável..."
+                      searchPlaceholder="Buscar ou criar responsável..."
+                      createLabel="Criar responsável"
+                      onCreateNew={handleQuickCreateResponsible}
+                      disabled={isResponsiblesLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -306,9 +384,9 @@ export function CreateCredit() {
                         <RadioGroupItem value="Pix" id="credit-pix" className="peer sr-only" />
                         <Label
                           htmlFor="credit-pix"
-                          className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                          className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                         >
-                          <svg fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" className="mb-2 h-5 w-5">
+                          <svg fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" className="mb-2 h-5 w-5 text-emerald-600 dark:text-emerald-400">
                             <path d="M11.917 11.71a2.046 2.046 0 0 1-1.454-.602l-2.1-2.1a.4.4 0 0 0-.551 0l-2.108 2.108a2.044 2.044 0 0 1-1.454.602h-.414l2.66 2.66c.83.83 2.177.83 3.007 0l2.667-2.668h-.253zM4.25 4.282c.55 0 1.066.214 1.454.602l2.108 2.108a.39.39 0 0 0 .552 0l2.1-2.1a2.044 2.044 0 0 1 1.453-.602h.253L9.503 1.623a2.127 2.127 0 0 0-3.007 0l-2.66 2.66h.414z"/>
                             <path d="m14.377 6.496-1.612-1.612a.307.307 0 0 1-.114.023h-.733c-.379 0-.75.154-1.017.422l-2.1 2.1a1.005 1.005 0 0 1-1.425 0L5.268 5.32a1.448 1.448 0 0 0-1.018-.422h-.9a.306.306 0 0 1-.109-.021L1.623 6.496c-.83.83-.83 2.177 0 3.008l1.618 1.618a.305.305 0 0 1 .108-.022h.901c.38 0 .75-.153 1.018-.421L7.375 8.57a1.034 1.034 0 0 1 1.426 0l2.1 2.1c.267.268.638.421 1.017.421h.733c.04 0 .079.01.114.024l1.612-1.612c.83-.83.83-2.178 0-3.008z"/>
                           </svg>
@@ -319,9 +397,9 @@ export function CreateCredit() {
                         <RadioGroupItem value="Conta" id="credit-conta" className="peer sr-only" />
                         <Label
                           htmlFor="credit-conta"
-                          className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                          className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                         >
-                          <Landmark className="mb-2 h-5 w-5" />
+                          <Landmark className="mb-2 h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                           Conta
                         </Label>
                       </div>
@@ -329,9 +407,9 @@ export function CreateCredit() {
                         <RadioGroupItem value="Débito" id="credit-debito" className="peer sr-only" />
                         <Label
                           htmlFor="credit-debito"
-                          className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                          className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                         >
-                          <Banknote className="mb-2 h-5 w-5" />
+                          <Banknote className="mb-2 h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                           Débito
                         </Label>
                       </div>
@@ -339,9 +417,9 @@ export function CreateCredit() {
                         <RadioGroupItem value="Crédito" id="credit-credito" className="peer sr-only" />
                         <Label
                           htmlFor="credit-credito"
-                          className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                          className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                         >
-                          <CreditCard className="mb-2 h-5 w-5" />
+                          <CreditCard className="mb-2 h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                           Crédito
                         </Label>
                       </div>
@@ -359,8 +437,7 @@ export function CreateCredit() {
                 </Button>
               </DialogClose>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                <PlusCircle className="h-4 w-4 mr-2" />
-                {form.formState.isSubmitting ? "Criando..." : "Criar Receita"}
+                Criar Receita
               </Button>
             </DialogFooter>
           </form>

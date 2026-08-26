@@ -21,6 +21,8 @@ import { Bank } from "@/app/types/financial"
 import { Skeleton } from "@/app/components/ui/skeleton"
 import { Loader } from "@/app/components/ui/loader"
 import Link from "next/link"
+import { Button } from "@/app/components/ui/button"
+import { CreditCard as CardIcon, Landmark } from "lucide-react"
 
 function LoadPage() {
   return (
@@ -86,6 +88,22 @@ export default function Page() {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          {/* Alternador de abas Bancos / Cartões */}
+          <div className="flex items-center gap-2">
+            <Link href="/manage/banks">
+              <Button variant="secondary" size="sm" className="gap-2 font-medium shadow-xs">
+                <Landmark className="h-4 w-4 text-primary" />
+                Bancos & Contas
+              </Button>
+            </Link>
+            <Link href="/manage/cards">
+              <Button variant="outline" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
+                <CardIcon className="h-4 w-4" />
+                Cartões de Crédito
+              </Button>
+            </Link>
+          </div>
+
           <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min p-4">
             {isWorkspaceLoading || !workspaceActive  &&  (
               <LoadPage />

@@ -1,4 +1,6 @@
-import { Banknote, BanknoteArrowDown, CalendarIcon, CalendarSync, CreditCard, Landmark, Pin, PlusCircle, Trash } from "lucide-react"
+"use client"
+
+import { BanknoteArrowDown, CalendarIcon, CalendarSync, CreditCard, Landmark, Pin, PlusCircle, User } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
 import {
   Dialog,
@@ -11,11 +13,11 @@ import {
   DialogTrigger,
 } from "@/app/components/ui/dialog"
 import { useForm } from "react-hook-form"
-import { Debit, CreateDebit as CreateDebitProps, createDebitSchema, Bank, Category } from "../types/financial" 
+import { Debit, CreateDebit as CreateDebitProps, createDebitSchema, Bank, Category, CreditCard as CreditCardType, PersonResponsible } from "../types/financial" 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form"
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createDebit } from "../http/debits/create-debit"
 import { useWorkspace } from "../hooks/use-workspace"
 import { getDebits } from "../http/debits/get-debits"
@@ -24,20 +26,25 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { Label } from "./ui/label"
 import { Input } from "./ui/input"
 import { getBanks } from "../http/banks/get-banks"
+import { createBank } from "../http/banks/create-bank"
 import { getCategories } from "../http/categories/get-categories"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+import { createCategory } from "../http/categories/create-category"
+import { getCards } from "../http/cards"
+import { getResponsibles, createResponsible } from "../http/responsibles"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
 import Image from "next/image"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { cn } from "../lib/utils"
 import { format } from "date-fns"
 import { Calendar } from "./ui/calendar"
+import { QuickCreateSelect } from "./ui/quick-create-select"
 
 type CreateDebitFormData = CreateDebitProps
 
 export function CreateDebit() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false)
+  const queryClient = useQueryClient()
 
   const form = useForm<CreateDebitFormData>({
     resolver: zodResolver(createDebitSchema),
@@ -45,7 +52,10 @@ export function CreateDebit() {
       description: "",
       date: new Date().toISOString(),
       bankId: "",
+      creditCardId: "",
       categoryId: "",
+      responsibleId: "",
+      paymentMethod: "Pix",
       proofUrl: "",
     },
   })
@@ -61,19 +71,85 @@ export function CreateDebit() {
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
 
-  const { data: banks, isLoading: isBanksLoading } = useQuery<Bank[], Error>({
-      queryKey: ['banks', workspaceActive?.id],
-      queryFn: () => getBanks(workspaceActive!.id),
-      staleTime: 1000 * 60 * 5,
-      enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
-    })
+  const { data: banks = [], isLoading: isBanksLoading } = useQuery<Bank[], Error>({
+    queryKey: ['banks', workspaceActive?.id],
+    queryFn: () => getBanks(workspaceActive!.id),
+    staleTime: 1000 * 60 * 5,
+    enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
+  })
 
-  const { data: categories, isLoading: isCategoriesLoading } = useQuery<Category[], Error>({
-      queryKey: ['categories', workspaceActive?.id],
-      queryFn: () => getCategories(workspaceActive!.id),
-      staleTime: 1000 * 60 * 5,
-      enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
-    })
+  const { data: categories = [], isLoading: isCategoriesLoading } = useQuery<Category[], Error>({
+    queryKey: ['categories', workspaceActive?.id],
+    queryFn: () => getCategories(workspaceActive!.id),
+    staleTime: 1000 * 60 * 5,
+    enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
+  })
+
+  const { data: cards = [], isLoading: isCardsLoading } = useQuery<CreditCardType[], Error>({
+    queryKey: ['cards', workspaceActive?.id],
+    queryFn: () => getCards(workspaceActive!.id),
+    staleTime: 1000 * 60 * 5,
+    enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
+  })
+
+  const { data: responsibles = [], isLoading: isResponsiblesLoading } = useQuery<PersonResponsible[], Error>({
+    queryKey: ['responsibles', workspaceActive?.id],
+    queryFn: () => getResponsibles(workspaceActive!.id),
+    staleTime: 1000 * 60 * 5,
+    enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
+  })
+
+  const handleQuickCreateCategory = async (name: string) => {
+    if (!workspaceActive) return null
+    try {
+      const res = await createCategory({
+        workspaceId: workspaceActive.id,
+        name,
+        type: 'all',
+        icon: 'tag' as IconName,
+      })
+      await queryClient.invalidateQueries({ queryKey: ['categories', workspaceActive.id] })
+      toast.success(`Categoria "${name}" criada com sucesso!`)
+      return res.categoryId
+    } catch {
+      toast.error("Erro ao criar categoria.")
+      return null
+    }
+  }
+
+  const handleQuickCreateBank = async (name: string) => {
+    if (!workspaceActive) return null
+    try {
+      const formData = new FormData()
+      formData.append("name", name)
+      const res = await createBank({
+        workspaceId: workspaceActive.id,
+        payload: formData,
+      })
+      await queryClient.invalidateQueries({ queryKey: ['banks', workspaceActive.id] })
+      toast.success(`Banco "${name}" criado com sucesso!`)
+      return res.bankId
+    } catch {
+      toast.error("Erro ao criar banco.")
+      return null
+    }
+  }
+
+  const handleQuickCreateResponsible = async (name: string) => {
+    if (!workspaceActive) return null
+    try {
+      const res = await createResponsible(workspaceActive.id, {
+        name,
+        pixKeyType: 'cpf',
+      })
+      await queryClient.invalidateQueries({ queryKey: ['responsibles', workspaceActive.id] })
+      toast.success(`Responsável "${name}" cadastrado com sucesso!`)
+      return res.responsibleId
+    } catch {
+      toast.error("Erro ao cadastrar responsável.")
+      return null
+    }
+  }
 
   async function handleCreateDebitSubmit(data: CreateDebitProps) {
     if (!workspaceActive || isWorkspaceLoading || workspaceError) {
@@ -107,17 +183,40 @@ export function CreateDebit() {
   }
 
   useEffect(() => {
-    form.setValue("date", new Date().toISOString())
-  },[modalIsOpen])
+    if (modalIsOpen) {
+      form.setValue("date", new Date().toISOString())
+    }
+  }, [modalIsOpen, form])
 
-  useEffect(() => {
-    if (form.watch("type") === "Fixo" || form.watch("type") === "Assinatura") {
-      form.setValue("frequency", "monthly")
-    }
-    if (form.watch("type") === "Parcelamento") {
-      form.setValue("currentInstallment", 1)
-    }
-  },[form.watch("type")])
+  const categoryItems = categories.map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+    icon: cat.icon ? <DynamicIcon name={cat.icon as IconName} size={16} /> : undefined,
+  }))
+
+  const bankItems = banks.map((b) => ({
+    id: b.id,
+    name: b.name,
+    icon: b.iconUrl ? (
+      <Image src={b.iconUrl} alt={b.name} width={16} height={16} className="rounded-xs" />
+    ) : (
+      <Landmark className="h-4 w-4 text-foreground" />
+    ),
+  }))
+
+  const cardItems = cards.map((c) => ({
+    id: c.id,
+    name: `${c.name} ${c.bankName ? `(${c.bankName})` : ''}`,
+    icon: <CreditCard className="h-4 w-4 text-primary" />,
+  }))
+
+  const responsibleItems = responsibles.map((r) => ({
+    id: r.id,
+    name: r.name,
+    icon: <User className="h-4 w-4 text-muted-foreground" />,
+  }))
+
+  const isCreditPayment = form.watch("paymentMethod") === "Crédito"
 
   return (
     <Dialog open={modalIsOpen} onOpenChange={handleModalOpenChange}>
@@ -127,142 +226,84 @@ export function CreateDebit() {
           Nova Despesa
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova Despesa</DialogTitle>
           <DialogDescription>
-            Adicione uma nova despesa.
+            Adicione uma nova despesa para registrar seus gastos.
           </DialogDescription>
         </DialogHeader>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleCreateDebitSubmit)} className="space-y-6">
-            {form.watch("type") !== undefined && (
-              <div className="group flex flex-row justify-between">
-                <Label>
-                  {form.watch("type") === "Comum" && (
-                    <div className="flex flex-row gap-2 items-center">
-                      <BanknoteArrowDown className="h-6 w-6" />
-                      Comum
-                    </div>
-                  )}
-                  {form.watch("type") === "Fixo" && (
-                    <div className="flex flex-row gap-2 items-center">
-                      <Pin className="h-6 w-6" />
-                      Fixo
-                    </div>
-                  )}
-                  {form.watch("type") === "Parcelamento" && (
-                    <div className="flex flex-row gap-2 items-center">
-                      <CreditCard className="h-6 w-6" />
-                      Parcelas
-                    </div>
-                  )}
-                  {form.watch("type") === "Assinatura" && (
-                    <div className="flex flex-row gap-2 items-center">
-                      <CalendarSync className="h-6 w-6" />
-                      Assinatura
-                    </div>
-                  )}
-                </Label>
-                <Button onClick={() => form.setValue("type", undefined)} className="hover:text-red-500" type="button" variant="ghost" size="sm">
-                  <Trash className="h-4 w-4 mr-2" />
-                  Remover
-                </Button>
-            </div>
-            )}
-            
-            {form.watch("type") === undefined && (
-              <>
-                <Label>Selecione um tipo de despesa</Label>
-                <FormField
-                  control={form.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <RadioGroup
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            className="grid grid-cols-2 md:grid-cols-4 w-full"
-                          >
-                            <div className="w-full">
-                              <RadioGroupItem
-                                value="Comum"
-                                id="Comum"
-                                className="peer sr-only"
-                                aria-label="Workspace pessoal"
-                              />
-                              <Label
-                                htmlFor="Comum"
-                                className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                              >
-                                <BanknoteArrowDown className="mb-3 h-6 w-6" />
-                                Comum
-                              </Label>
-                            </div>
-                            <div className="w-full">
-                              <RadioGroupItem
-                                value="Fixo"
-                                id="Fixo"
-                                className="peer sr-only"
-                                aria-label="Workspace pessoal"
-                              />
-                              <Label
-                                htmlFor="Fixo"
-                                className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                              >
-                                <Pin className="mb-3 h-6 w-6" />
-                                Fixo
-                              </Label>
-                            </div>
-                            <div className="w-full">
-                              <RadioGroupItem
-                                value="Assinatura"
-                                id="Assinatura"
-                                className="peer sr-only"
-                                aria-label="Workspace pessoal"
-                              />
-                              <Label
-                                htmlFor="Assinatura"
-                                className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                              >
-                                <CalendarSync className="mb-3 h-6 w-6" />
-                                Assinatura
-                              </Label>
-                            </div>
-                            <div className="w-full">
-                              <RadioGroupItem
-                                value="Parcelamento"
-                                id="Parcelamento"
-                                className="peer sr-only"
-                                aria-label="Workspace pessoal"
-                              />
-                              <Label
-                                htmlFor="Parcelamento"
-                                className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                              >
-                                <CreditCard className="mb-3 h-6 w-6" />
-                                Parcelas
-                              </Label>
-                            </div>
-                            
-                          </RadioGroup>
-                        </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
-            )}
 
-            {form.watch("type") === "Fixo" && (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleCreateDebitSubmit)} className="space-y-4">
+            {!form.watch("type") && (
               <FormField
                 control={form.control}
-                name="startDate"
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Despesa</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        className="grid grid-cols-2 md:grid-cols-4 w-full gap-2"
+                      >
+                        <div>
+                          <RadioGroupItem value="Comum" id="Comum" className="peer sr-only" />
+                          <Label
+                            htmlFor="Comum"
+                            className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                          >
+                            <BanknoteArrowDown className="mb-2 h-5 w-5 text-rose-500" />
+                            <span className="text-xs font-medium">Comum</span>
+                          </Label>
+                        </div>
+                        <div>
+                          <RadioGroupItem value="Fixo" id="Fixo" className="peer sr-only" />
+                          <Label
+                            htmlFor="Fixo"
+                            className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                          >
+                            <Pin className="mb-2 h-5 w-5 text-amber-500" />
+                            <span className="text-xs font-medium">Fixo</span>
+                          </Label>
+                        </div>
+                        <div>
+                          <RadioGroupItem value="Assinatura" id="Assinatura" className="peer sr-only" />
+                          <Label
+                            htmlFor="Assinatura"
+                            className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                          >
+                            <CalendarSync className="mb-2 h-5 w-5 text-blue-500" />
+                            <span className="text-xs font-medium">Assinatura</span>
+                          </Label>
+                        </div>
+                        <div>
+                          <RadioGroupItem value="Parcelamento" id="Parcelamento" className="peer sr-only" />
+                          <Label
+                            htmlFor="Parcelamento"
+                            className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                          >
+                            <CreditCard className="mb-2 h-5 w-5 text-purple-500" />
+                            <span className="text-xs font-medium">Parcelado</span>
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {form.watch("type") === "Comum" && (
+              <FormField
+                control={form.control}
+                name="date"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Data de Inicio</FormLabel>
+                    <FormLabel>Data da Despesa</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -274,7 +315,7 @@ export function CreateDebit() {
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "PPP")
+                              format(new Date(field.value), "PPP")
                             ) : (
                               <span>Selecione uma data</span>
                             )}
@@ -299,13 +340,13 @@ export function CreateDebit() {
               />
             )}
 
-            {form.watch("type") === "Assinatura" && (
+            {(form.watch("type") === "Fixo" || form.watch("type") === "Assinatura" || form.watch("type") === "Parcelamento") && (
               <FormField
                 control={form.control}
                 name="startDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Data de Inicio</FormLabel>
+                    <FormLabel>Data de Início</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -317,7 +358,7 @@ export function CreateDebit() {
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "PPP")
+                              format(new Date(field.value), "PPP")
                             ) : (
                               <span>Selecione uma data</span>
                             )}
@@ -343,89 +384,47 @@ export function CreateDebit() {
             )}
 
             {form.watch("type") === "Parcelamento" && (
-              <>
+              <div className="grid grid-cols-2 gap-2 w-full">
                 <FormField
                   control={form.control}
-                  name="startDate"
+                  name="totalInstallments"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Data de Inicio</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Selecione uma data</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value ? new Date(field.value) : new Date()}
-                            onSelect={date => {
-                              field.onChange(date ? date.toISOString() : '')
-                            }}
-                            captionLayout="dropdown"
-                          />
-                        </PopoverContent>
-                      </Popover>
+                    <FormItem className="w-full">
+                      <FormLabel>Total de Parcelas</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="12"
+                          {...field}
+                          value={field.value ?? 2}
+                          onChange={e => field.onChange(Number(e.target.value) || 2)}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-2 gap-2 w-full">
-                  <FormField
-                    control={form.control}
-                    name="totalInstallments"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel>Total de Parcelas</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="12"
-                            {...field}
-                            value={field.value ?? 2}
-                            onChange={e => field.onChange(Number(e.target.value) || 2)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="currentInstallment"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel>Parcela Atual (1 a N)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            min={1}
-                            placeholder="1"
-                            {...field}
-                            value={field.value ?? 1}
-                            onChange={e => field.onChange(Number(e.target.value) || 1)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </>
+                <FormField
+                  control={form.control}
+                  name="currentInstallment"
+                  render={({ field }) => (
+                    <FormItem className="w-full">
+                      <FormLabel>Parcela Atual (1 a N)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          min={1}
+                          placeholder="1"
+                          {...field}
+                          value={field.value ?? 1}
+                          onChange={e => field.onChange(Number(e.target.value) || 1)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             )}
 
             {form.watch("type") && (
@@ -438,7 +437,7 @@ export function CreateDebit() {
                       <FormItem className="w-full">
                         <FormLabel>Descrição</FormLabel>
                         <FormControl>
-                          <Input placeholder="Adicione uma descrição." {...field} />
+                          <Input placeholder="Ex: Supermercado, Aluguel..." {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -449,11 +448,12 @@ export function CreateDebit() {
                     name="value"
                     render={({ field }) => (
                       <FormItem className="w-full">
-                        <FormLabel>Valor</FormLabel>
+                        <FormLabel>Valor (R$)</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
-                            placeholder="R$ 100,00"
+                            step="0.01"
+                            placeholder="R$ 0,00"
                             {...field}
                             value={field.value ?? ''}
                             onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
@@ -464,6 +464,69 @@ export function CreateDebit() {
                     )}
                   />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="paymentMethod"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Forma de Pagamento</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={(val) => {
+                            field.onChange(val)
+                            if (val === "Crédito") {
+                              form.setValue("bankId", "")
+                            } else {
+                              form.setValue("creditCardId", "")
+                            }
+                          }}
+                          className="grid grid-cols-2 md:grid-cols-4 w-full gap-2"
+                        >
+                          <div>
+                            <RadioGroupItem value="Pix" id="debit-pix" className="peer sr-only" />
+                            <Label
+                              htmlFor="debit-pix"
+                              className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                            >
+                              <span className="text-xs font-medium">Pix</span>
+                            </Label>
+                          </div>
+                          <div>
+                            <RadioGroupItem value="Crédito" id="debit-credito" className="peer sr-only" />
+                            <Label
+                              htmlFor="debit-credito"
+                              className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                            >
+                              <span className="text-xs font-medium">Crédito</span>
+                            </Label>
+                          </div>
+                          <div>
+                            <RadioGroupItem value="Débito" id="debit-debito" className="peer sr-only" />
+                            <Label
+                              htmlFor="debit-debito"
+                              className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                            >
+                              <span className="text-xs font-medium">Débito</span>
+                            </Label>
+                          </div>
+                          <div>
+                            <RadioGroupItem value="Conta" id="debit-conta" className="peer sr-only" />
+                            <Label
+                              htmlFor="debit-conta"
+                              className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                            >
+                              <span className="text-xs font-medium">Conta</span>
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="flex flex-col md:flex-row gap-2 w-full">
                   <FormField
                     control={form.control}
@@ -471,182 +534,110 @@ export function CreateDebit() {
                     render={({ field }) => (
                       <FormItem className="w-full">
                         <FormLabel>Categoria</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value ?? ''}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Selecione uma categoria." />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {isCategoriesLoading && (
-                              <div className="p-2 text-xs text-muted-foreground text-center">Carregando categorias...</div>
-                            )}
-                            {!isCategoriesLoading && (!categories || categories.length === 0) && (
-                              <div className="p-2 text-xs text-muted-foreground text-center">Nenhuma categoria encontrada.</div>
-                            )}
-                            {!isCategoriesLoading && categories?.map((category) => (
-                              <SelectItem key={category.id} value={category.id}>
-                                <DynamicIcon
-                                  name={category.icon as IconName}
-                                  size={16}
-                                />
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <QuickCreateSelect
+                            items={categoryItems}
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Selecione categoria..."
+                            searchPlaceholder="Buscar ou criar categoria..."
+                            createLabel="Criar categoria"
+                            onCreateNew={handleQuickCreateCategory}
+                            disabled={isCategoriesLoading}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="bankId"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel>Banco</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value ?? ''}>
+
+                  {/* Seleciona Cartão de Crédito se Crédito, ou Banco se outro método */}
+                  {isCreditPayment ? (
+                    <FormField
+                      control={form.control}
+                      name="creditCardId"
+                      render={({ field }) => (
+                        <FormItem className="w-full">
+                          <FormLabel>Cartão de Crédito</FormLabel>
                           <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Selecione um banco." />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {isBanksLoading && (
-                              <div className="p-2 text-xs text-muted-foreground text-center">Carregando bancos...</div>
-                            )}
-                            {!isBanksLoading && (!banks || banks.length === 0) && (
-                              <div className="p-2 text-xs text-muted-foreground text-center">Nenhum banco encontrado.</div>
-                            )}
-                            {!isBanksLoading && banks?.map((bank) => (
-                              <SelectItem key={bank.id} value={bank.id}>
-                                {
-                                  bank.iconUrl ? 
-                                  <Image 
-                                    src={bank.iconUrl} 
-                                    alt={bank.name} 
-                                    width={16} 
-                                    height={16} 
-                                  /> : 
-                                  <Landmark 
-                                    className="h-4 w-4 text-foreground" 
-                                  />
+                            <QuickCreateSelect
+                              items={cardItems}
+                              value={field.value}
+                              onChange={(val) => {
+                                field.onChange(val)
+                                const selectedCard = cards.find(c => c.id === val)
+                                if (selectedCard?.bankId) {
+                                  form.setValue("bankId", selectedCard.bankId)
                                 }
-                                {bank.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                              }}
+                              placeholder="Selecione o cartão..."
+                              searchPlaceholder="Buscar cartão..."
+                              disabled={isCardsLoading}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : (
+                    <FormField
+                      control={form.control}
+                      name="bankId"
+                      render={({ field }) => (
+                        <FormItem className="w-full">
+                          <FormLabel>Banco / Conta</FormLabel>
+                          <FormControl>
+                            <QuickCreateSelect
+                              items={bankItems}
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Selecione o banco..."
+                              searchPlaceholder="Buscar ou criar banco..."
+                              createLabel="Criar banco"
+                              onCreateNew={handleQuickCreateBank}
+                              disabled={isBanksLoading}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </div>
+
+                {/* Campo de Responsável com QuickCreate */}
                 <FormField
                   control={form.control}
-                  name="paymentMethod"
+                  name="responsibleId"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="w-full">
+                      <FormLabel>Responsável (opcional)</FormLabel>
                       <FormControl>
-                        <RadioGroup
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            className="grid grid-cols-2 md:grid-cols-4 w-full"
-                          >
-                            <div className="w-full">
-                              <RadioGroupItem
-                                value="Crédito"
-                                id="Crédito"
-                                className="peer sr-only"
-                                aria-label="Workspace pessoal"
-                              />
-                              <Label
-                                htmlFor="Crédito"
-                                className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                              >
-                                <CreditCard className="mb-3 h-6 w-6" />
-                                Crédito
-                              </Label>
-                            </div>
-                            <div className="w-full">
-                              <RadioGroupItem
-                                value="Débito"
-                                id="Débito"
-                                className="peer sr-only"
-                                aria-label="Workspace pessoal"
-                              />
-                              <Label
-                                htmlFor="Débito"
-                                className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                              >
-                                <Banknote className="mb-3 h-6 w-6" />
-                                Débito
-                              </Label>
-                            </div>
-                            <div className="w-full">
-                              <RadioGroupItem
-                                value="Pix"
-                                id="Pix"
-                                className="peer sr-only"
-                                aria-label="Workspace pessoal"
-                              />
-                              <Label
-                                htmlFor="Pix"
-                                className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                              >
-                                <svg fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" className="mb-3 h-6 w-6">
-                                  <path d="M11.917 11.71a2.046 2.046 0 0 1-1.454-.602l-2.1-2.1a.4.4 0 0 0-.551 0l-2.108 2.108a2.044 2.044 0 0 1-1.454.602h-.414l2.66 2.66c.83.83 2.177.83 3.007 0l2.667-2.668h-.253zM4.25 4.282c.55 0 1.066.214 1.454.602l2.108 2.108a.39.39 0 0 0 .552 0l2.1-2.1a2.044 2.044 0 0 1 1.453-.602h.253L9.503 1.623a2.127 2.127 0 0 0-3.007 0l-2.66 2.66h.414z"/>
-                                  <path d="m14.377 6.496-1.612-1.612a.307.307 0 0 1-.114.023h-.733c-.379 0-.75.154-1.017.422l-2.1 2.1a1.005 1.005 0 0 1-1.425 0L5.268 5.32a1.448 1.448 0 0 0-1.018-.422h-.9a.306.306 0 0 1-.109-.021L1.623 6.496c-.83.83-.83 2.177 0 3.008l1.618 1.618a.305.305 0 0 1 .108-.022h.901c.38 0 .75-.153 1.018-.421L7.375 8.57a1.034 1.034 0 0 1 1.426 0l2.1 2.1c.267.268.638.421 1.017.421h.733c.04 0 .079.01.114.024l1.612-1.612c.83-.83.83-2.178 0-3.008z"/>
-                                </svg>
-                                Pix
-                              </Label>
-                            </div>
-                            <div className="w-full">
-                              <RadioGroupItem
-                                value="Conta"
-                                id="Conta"
-                                className="peer sr-only"
-                                aria-label="Workspace pessoal"
-                              />
-                              <Label
-                                htmlFor="Conta"
-                                className="flex flex-col w-full items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                              >
-                                <Landmark className="mb-3 h-6 w-6" />
-                                Conta
-                              </Label>
-                            </div>
-                            
-                          </RadioGroup>
-                        </FormControl>
+                        <QuickCreateSelect
+                          items={responsibleItems}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Selecione ou crie um responsável..."
+                          searchPlaceholder="Buscar ou criar responsável..."
+                          createLabel="Criar responsável"
+                          onCreateNew={handleQuickCreateResponsible}
+                          disabled={isResponsiblesLoading}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
-                {form.watch("paymentMethod") === "Crédito" && (() => {
-                  const selectedBank = banks?.find(b => b.id === form.watch("bankId"))
-                  if (selectedBank?.invoiceClosingDay && selectedBank.invoiceClosingDay !== "0") {
-                    return (
-                      <p className="text-xs text-purple-600 dark:text-purple-400 bg-purple-500/10 p-2.5 rounded-md border border-purple-500/20">
-                        💡 <strong>Fatura do Cartão:</strong> Fechamento no dia {selectedBank.invoiceClosingDay}. Compras realizadas após esse dia serão automaticamente computadas na fatura do mês seguinte.
-                      </p>
-                    )
-                  }
-                  return null
-                })()}
               </>
             )}
 
-            <DialogFooter className="justify-between">
-              {/* Ajuste no DialogClose e Button */}
+            <DialogFooter className="justify-between pt-2">
               <DialogClose asChild>
                 <Button type="button" variant="secondary">
                   Cancelar
                 </Button>
               </DialogClose>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                <PlusCircle className="h-4 w-4 mr-2" />
                 Criar Despesa
               </Button>
             </DialogFooter>

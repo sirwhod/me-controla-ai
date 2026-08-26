@@ -123,6 +123,8 @@ export interface Credit {
   categoryName?: string | null;
   categoryUrl?: string | null;
   proofUrl: string | null; // URL do comprovante (pode ser null)
+  responsibleId?: string | null;
+  responsibleName?: string | null;
   status: string; // Status do crédito (ex: 'pending', 'received')
   createdAt: Date | null; // Convertido de Timestamp para Date
   updatedAt: Date | null; // Convertido de Timestamp para Date
@@ -137,6 +139,7 @@ export const createCreditSchema = z.object({
     errorMap: () => ({ message: 'Método de pagamento inválido.' }),
   }),
   categoryId: z.string().optional().nullable(),
+  responsibleId: z.string().optional().nullable(),
   proofUrl: safeUrlSchema,
   status: z.string().max(50).optional(),
 })
@@ -152,6 +155,7 @@ export const updateCreditSchema = z.object({
     errorMap: () => ({ message: 'Método de pagamento inválido.' }),
   }).nullable().optional(),
   categoryId: z.string().optional().nullable(),
+  responsibleId: z.string().optional().nullable(),
   proofUrl: safeUrlSchema,
   status: z.string().max(50).optional(),
 })
@@ -165,6 +169,8 @@ export interface Bank {
   name: string;
   code: string | null; // Código do banco (pode ser null)
   iconUrl: string | null; // URL do ícone (pode ser null)
+  pixKey?: string | null;
+  pixKeyType?: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random' | null;
   createdAt: Date | null; // Data de criação (Timestamp convertido)
   updatedAt: Date | null; // Data de atualização (Timestamp convertido)
   invoiceClosingDay: string | null; // Dia de fechamento (para Crédito, pode ser null)
@@ -178,6 +184,8 @@ export const createBankSchema = z.object({
   name: z.string().trim().min(1, { message: 'O nome do banco é obrigatório.' }).max(100, { message: 'Nome do banco não pode exceder 100 caracteres.' }),
   code: z.string().trim().max(20, { message: 'Código não pode exceder 20 caracteres.' }).optional(),
   iconUrl: safeUrlSchema,
+  pixKey: z.string().trim().optional().or(z.literal('')),
+  pixKeyType: z.enum(['cpf', 'cnpj', 'email', 'phone', 'random']).optional().nullable(),
   imageFile: z
     .custom<FileList>()
     .refine((files) => files && files.length > 0, "A imagem do logo é obrigatória.")
@@ -200,6 +208,8 @@ export const updateBankSchema = z.object({
   name: z.string().trim().min(1, { message: 'O nome do banco não pode ser vazio.' }).max(100, { message: 'Nome do banco não pode exceder 100 caracteres.' }).optional(),
   code: z.string().trim().max(20, { message: 'Código não pode exceder 20 caracteres.' }).optional().nullable(),
   iconUrl: safeUrlSchema,
+  pixKey: z.string().trim().optional().or(z.literal('')).nullable(),
+  pixKeyType: z.enum(['cpf', 'cnpj', 'email', 'phone', 'random']).optional().nullable(),
   invoiceClosingDay: z.string().regex(/^([1-9]|[12][0-9]|3[01])$/, { message: 'O dia de fechamento deve ser entre 1 e 31.' }).optional().or(z.literal('')).nullable(),
   invoiceDueDate: z.string().regex(/^([1-9]|[12][0-9]|3[01])$/, { message: 'O dia de vencimento deve ser entre 1 e 31.' }).optional().or(z.literal('')).nullable(),
 })
@@ -233,6 +243,18 @@ export const createCreditCardSchema = z.object({
 })
 
 export type CreateCreditCard = z.infer<typeof createCreditCardSchema>
+
+export const updateCreditCardSchema = z.object({
+  bankId: z.string().min(1, { message: 'Selecione a conta/banco emissor.' }).optional(),
+  name: z.string().trim().min(1, { message: 'Nome do cartão é obrigatório.' }).max(100).optional(),
+  last4Digits: z.string().length(4, { message: 'Informe os 4 últimos dígitos.' }).optional().or(z.literal('')).nullable(),
+  limit: z.number().positive({ message: 'Limite deve ser positivo.' }).optional().nullable(),
+  closingDay: z.number().int().min(1).max(31, { message: 'Dia de fechamento inválido (1-31).' }).optional(),
+  dueDay: z.number().int().min(1).max(31, { message: 'Dia de vencimento inválido (1-31).' }).optional(),
+  color: z.string().optional().nullable(),
+})
+
+export type UpdateCreditCard = z.infer<typeof updateCreditCardSchema>
 
 // --- Interface para Categoria Universal (Category) ---
 export interface Category {

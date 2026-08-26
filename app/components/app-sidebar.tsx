@@ -51,6 +51,10 @@ const data = {
           url: "/manage/banks",
         },
         {
+          title: "Cartões de Crédito",
+          url: "/manage/cards",
+        },
+        {
           title: "Categorias",
           url: "/manage/categories",
         },
@@ -61,6 +65,10 @@ const data = {
         {
           title: "Responsáveis",
           url: "/manage/responsibles",
+        },
+        {
+          title: "Membros & Acesso",
+          url: "/manage/members",
         },
       ],
     },

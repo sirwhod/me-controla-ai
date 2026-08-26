@@ -37,6 +37,8 @@ import { QuickCreateSelect } from "@/app/components/ui/quick-create-select"
 import { DynamicIcon, type IconName } from "lucide-react/dynamic"
 import { createCategory } from "@/app/http/categories/create-category"
 import { createBank } from "@/app/http/banks/create-bank"
+import { getResponsibles, createResponsible } from "@/app/http/responsibles"
+import { PersonResponsible } from "@/app/types/financial"
 
 interface EditCreditProps {
   credit: Credit
@@ -58,6 +60,7 @@ export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) 
       date: credit.date ? new Date(credit.date).toISOString() : new Date().toISOString(),
       bankId: credit.bankId || null,
       categoryId: credit.categoryId || null,
+      responsibleId: credit.responsibleId || null,
       paymentMethod: credit.paymentMethod || "Pix",
       status: credit.status || "received",
     },
@@ -72,6 +75,12 @@ export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) 
   const { data: banks = [] } = useQuery<Bank[]>({
     queryKey: ["banks", workspaceActive?.id],
     queryFn: () => getBanks(workspaceActive!.id),
+    enabled: !!workspaceActive && open,
+  })
+
+  const { data: responsibles = [] } = useQuery<PersonResponsible[]>({
+    queryKey: ["responsibles", workspaceActive?.id],
+    queryFn: () => getResponsibles(workspaceActive!.id),
     enabled: !!workspaceActive && open,
   })
 
@@ -95,11 +104,7 @@ export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) 
 
   const handleQuickCreateCategory = async (name: string) => {
     if (!workspaceActive) return null
-    const formData = new FormData()
-    formData.append("name", name)
-    formData.append("type", "all")
-    formData.append("icon", "tag")
-    const res = await createCategory({ workspaceId: workspaceActive.id, payload: formData })
+    const res = await createCategory({ workspaceId: workspaceActive.id, name, type: 'all', icon: 'tag' as IconName })
     await queryClient.invalidateQueries({ queryKey: ["categories", workspaceActive.id] })
     toast.success(`Categoria "${name}" criada!`)
     return res.categoryId
@@ -113,6 +118,14 @@ export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) 
     await queryClient.invalidateQueries({ queryKey: ["banks", workspaceActive.id] })
     toast.success(`Banco "${name}" criado!`)
     return res.bankId
+  }
+
+  const handleQuickCreateResponsible = async (name: string) => {
+    if (!workspaceActive) return null
+    const res = await createResponsible(workspaceActive.id, { name, pixKeyType: 'cpf' })
+    await queryClient.invalidateQueries({ queryKey: ["responsibles", workspaceActive.id] })
+    toast.success(`Responsável "${name}" cadastrado!`)
+    return res.responsibleId
   }
 
   return (
@@ -256,6 +269,31 @@ export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) 
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="responsibleId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Responsável (opcional)</FormLabel>
+                  <FormControl>
+                    <QuickCreateSelect
+                      items={responsibles.map((r) => ({
+                        id: r.id,
+                        name: r.name,
+                      }))}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Selecione responsável..."
+                      searchPlaceholder="Buscar ou criar responsável..."
+                      createLabel="Criar responsável"
+                      onCreateNew={handleQuickCreateResponsible}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter className="justify-between pt-2">
               <DialogClose asChild>

@@ -27,6 +27,7 @@ import {
   FormMessage,
 } from "@/app/components/ui/form"
 import { Input } from "@/app/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import { Bank, updateBankSchema, UpdateBank as UpdateBankProps } from "@/app/types/financial"
 import { updateBank } from "@/app/http/banks/update-bank"
 import { useWorkspace } from "@/app/hooks/use-workspace"
@@ -47,6 +48,8 @@ export function EditBank({ bank, asDropdownItem = false }: EditBankProps) {
     defaultValues: {
       name: bank.name || "",
       code: bank.code || "",
+      pixKey: bank.pixKey || "",
+      pixKeyType: bank.pixKeyType || "cpf",
       invoiceClosingDay: bank.invoiceClosingDay || "",
       invoiceDueDate: bank.invoiceDueDate || "",
     },
@@ -129,6 +132,55 @@ export function EditBank({ bank, asDropdownItem = false }: EditBankProps) {
                 </FormItem>
               )}
             />
+
+            {/* Chave PIX do Banco */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <FormField
+                control={form.control}
+                name="pixKeyType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Chave</FormLabel>
+                    <Select
+                      value={field.value || "cpf"}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="cpf">CPF</SelectItem>
+                        <SelectItem value="cnpj">CNPJ</SelectItem>
+                        <SelectItem value="email">E-mail</SelectItem>
+                        <SelectItem value="phone">Telefone</SelectItem>
+                        <SelectItem value="random">Aleatória</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="pixKey"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Chave PIX da Conta</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ex: seu@email.com ou 000.000.000-00"
+                        className="h-9"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <FormField

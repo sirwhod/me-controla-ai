@@ -91,6 +91,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       bankId,
       paymentMethod,
       categoryId,
+      responsibleId,
       proofUrl,
       status,
     } = validationResult.data
@@ -122,6 +123,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       }
     }
 
+    let responsibleName = ""
+    if (responsibleId) {
+      const respDoc = await db.collection('workspaces').doc(workspaceId).collection('responsibles').doc(responsibleId).get()
+      if (respDoc.exists) {
+        responsibleName = respDoc.data()?.name || ""
+      }
+    }
+
     const newCreditRef = db.collection('workspaces').doc(workspaceId).collection('credits').doc()
 
     const newCreditData = {
@@ -137,6 +146,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       categoryId: categoryId || null,
       categoryName: categoryName || null,
       categoryUrl: categoryUrl || null,
+      responsibleId: responsibleId || null,
+      responsibleName: responsibleName || null,
       proofUrl: proofUrl?.trim() || null,
       status: status || 'pending',
       workspaceId: workspaceId,

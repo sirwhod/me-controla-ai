@@ -165,13 +165,15 @@ async function runTestSuite() {
       const catDoc = await catRef.get()
       assert('Categorias', 'Categoria de Despesa criada com sucesso', catDoc.exists && catDoc.data()?.name === 'Alimentação')
 
-      // 2.2 Criar Banco com Fechamento e Vencimento de Fatura
+      // 2.2 Criar Banco com Fechamento, Vencimento e Chave PIX
       const bankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc()
       bankId = bankRef.id
       await bankRef.set({
         name: 'Nubank Cartão',
         code: '260',
         iconUrl: null,
+        pixKey: 'pix@nubank.com',
+        pixKeyType: 'email',
         invoiceClosingDay: '10',
         invoiceDueDate: '17',
         workspaceId: workspaceId,
@@ -179,7 +181,8 @@ async function runTestSuite() {
         updatedAt: new Date(),
       })
       const bankDoc = await bankRef.get()
-      assert('Bancos & Cartões', 'Banco/Cartão criado com dia de fechamento e vencimento', bankDoc.exists && bankDoc.data()?.invoiceClosingDay === '10')
+      assert('Bancos & Contas', 'Banco criado com dia de fechamento e vencimento', bankDoc.exists && bankDoc.data()?.invoiceClosingDay === '10')
+      assert('Bancos & Contas', 'Banco armazena chave PIX e tipo da chave corretamente', bankDoc.exists && bankDoc.data()?.pixKey === 'pix@nubank.com' && bankDoc.data()?.pixKeyType === 'email')
 
       // 2.3 Criar Meta Financeira
       const goalRef = db.collection('workspaces').doc(workspaceId).collection('goals').doc()
@@ -677,10 +680,83 @@ async function runTestSuite() {
   } catch (error: any) {
     assert('Convites de Caixinhas', 'Erro na execução da suíte 13', false, error.message)
   }
+
   // ==========================================
-  // SUÍTE 14: Rotas HTTP e Proteção do Middleware
+  // SUÍTE 15: Gestão de Cartões de Crédito
   // ==========================================
-  console.log('🌐 [14/14] Testando Rotas HTTP da Aplicação...')
+  console.log('💳 [15/16] Testando Gestão de Cartões de Crédito e Faturas...')
+  let cardId = ''
+  try {
+    if (workspaceId && userId) {
+      // 15.1 Cadastrar Cartão de Crédito
+      const cardRef = db.collection('workspaces').doc(workspaceId).collection('cards').doc()
+      cardId = cardRef.id
+      await cardRef.set({
+        name: 'Nubank Ultravioleta',
+        bankId: bankId,
+        bankName: 'Nubank Cartão',
+        last4Digits: '9876',
+        limit: 15000,
+        closingDay: 10,
+        dueDay: 17,
+        color: '#8a05be',
+        workspaceId,
+        userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+
+      const cardDoc = await cardRef.get()
+      assert('Gestão de Cartões', 'Cartão de crédito criado com limite, banco e dias de fatura', cardDoc.exists && cardDoc.data()?.limit === 15000)
+      assert('Gestão de Cartões', 'Cartão vinculado corretamente ao banco emissor', cardDoc.data()?.bankId === bankId)
+
+      // 15.2 Criar Despesa com Cartão de Crédito
+      const cardDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+      await cardDebitRef.set({
+        description: 'Compra no Cartão Ultravioleta',
+        value: 299.90,
+        date: new Date(),
+        month: 'agosto',
+        year: 2026,
+        type: 'Comum',
+        categoryId: categoryId,
+        creditCardId: cardId,
+        bankId: bankId,
+        paymentMethod: 'Crédito',
+        status: 'pending',
+        workspaceId,
+        userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+
+      const cardDebitDoc = await cardDebitRef.get()
+      assert('Gestão de Cartões', 'Despesa no Crédito armazena creditCardId e paymentMethod Crédito', cardDebitDoc.exists && cardDebitDoc.data()?.creditCardId === cardId)
+    }
+  } catch (error: any) {
+    assert('Gestão de Cartões', 'Erro na execução da suíte 15', false, error.message)
+  }
+
+  // ==========================================
+  // SUÍTE 16: Gestão de Membros da Caixinha
+  // ==========================================
+  console.log('👥 [16/16] Testando Gestão de Membros e Acessos à Caixinha...')
+  try {
+    if (workspaceId && userId) {
+      const wsDoc = await db.collection('workspaces').doc(workspaceId).get()
+      const wsData = wsDoc.data()
+
+      assert('Gestão de Membros', 'Proprietário da caixinha definido corretamente', wsData?.ownerId === userId)
+      assert('Gestão de Membros', 'Array de membros inicializado no workspace', Array.isArray(wsData?.members))
+    }
+  } catch (error: any) {
+    assert('Gestão de Membros', 'Erro na execução da suíte 16', false, error.message)
+  }
+
+  // ==========================================
+  // SUÍTE 17: Rotas HTTP e Proteção do Middleware
+  // ==========================================
+  console.log('🌐 [17/17] Testando Rotas HTTP da Aplicação...')
   const baseUrl = 'http://localhost:3000'
 
   try {

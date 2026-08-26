@@ -23,6 +23,7 @@ import { getBanks } from "../http/banks/get-banks"
 import { useState } from "react" 
 import { Separator } from "./ui/separator"
 import { ImageUploadField } from "./image-upload-field"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
 type CreateBankFormData = CreateBankProps
 
@@ -37,6 +38,8 @@ export function CreateBank() {
     defaultValues: {
       name: "",
       code: "",
+      pixKey: "",
+      pixKeyType: "cpf",
       iconUrl: "",
     },
   })
@@ -64,6 +67,8 @@ export function CreateBank() {
     const formData = new FormData()
     formData.append("name", data.name)
     formData.append("code", data.code ?? "")
+    formData.append("pixKey", data.pixKey ?? "")
+    formData.append("pixKeyType", data.pixKeyType ?? "")
     
     if (data.invoiceClosingDay !== undefined && data.invoiceClosingDay !== null && !isNaN(Number(data.invoiceClosingDay))) {
       formData.append("invoiceClosingDay", String(data.invoiceClosingDay));
@@ -195,6 +200,63 @@ export function CreateBank() {
                     )}
                   />
                 </div>
+            </div>
+
+            <Separator />
+            
+            {/* Chave PIX do Banco */}
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-0.5">
+                <strong className="text-sm font-semibold">Chave PIX da Conta (opcional)</strong>
+                <p className="text-xs text-muted-foreground">Cadastre a chave PIX desta conta para recebimentos rápidos e cobranças.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <FormField
+                  control={form.control}
+                  name="pixKeyType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Tipo de Chave</FormLabel>
+                      <Select
+                        value={field.value || "cpf"}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="h-9 text-xs">
+                            <SelectValue placeholder="Tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="cpf">CPF</SelectItem>
+                          <SelectItem value="cnpj">CNPJ</SelectItem>
+                          <SelectItem value="email">E-mail</SelectItem>
+                          <SelectItem value="phone">Telefone</SelectItem>
+                          <SelectItem value="random">Aleatória</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="pixKey"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel className="text-xs">Chave PIX</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Ex: seu@email.com ou 000.000.000-00"
+                          className="h-9 text-xs"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <Separator />

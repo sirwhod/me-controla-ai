@@ -109,6 +109,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
       updatedAt: new Date(),
     }
 
+    if (updateData.responsibleId) {
+      const respDoc = await db.collection('workspaces').doc(workspaceId).collection('responsibles').doc(updateData.responsibleId).get()
+      if (respDoc.exists) {
+        dataToUpdate.responsibleName = respDoc.data()?.name || ""
+      }
+    } else if (updateData.responsibleId === null) {
+      dataToUpdate.responsibleName = null
+    }
+
     if (updateData.date) {
       const dateObj = new Date(updateData.date)
       dataToUpdate.date = dateObj

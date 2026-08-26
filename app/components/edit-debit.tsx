@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Edit2, Loader2, Save, Info } from "lucide-react"
+import { Edit2, Loader2, Save, Info, CreditCard as CardIcon } from "lucide-react"
 
 import { Button } from "@/app/components/ui/button"
 import {
@@ -27,10 +27,12 @@ import {
   FormMessage,
 } from "@/app/components/ui/form"
 import { Input } from "@/app/components/ui/input"
-import { Debit, updateDebitSchema, UpdateDebit as UpdateDebitProps, Category, Bank } from "@/app/types/financial"
+import { Debit, updateDebitSchema, UpdateDebit as UpdateDebitProps, Category, Bank, CreditCard as CreditCardType, PersonResponsible } from "@/app/types/financial"
 import { updateDebit } from "@/app/http/debits/update-debit"
 import { getCategories } from "@/app/http/categories/get-categories"
 import { getBanks } from "@/app/http/banks/get-banks"
+import { getCards } from "@/app/http/cards"
+import { getResponsibles, createResponsible } from "@/app/http/responsibles"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { DropdownMenuItem } from "@/app/components/ui/dropdown-menu"
 import { QuickCreateSelect } from "@/app/components/ui/quick-create-select"
@@ -58,6 +60,7 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
       value: debit.value || 0,
       date: debit.date ? new Date(debit.date).toISOString() : new Date().toISOString(),
       bankId: debit.bankId || null,
+      creditCardId: debit.creditCardId || null,
       categoryId: debit.categoryId || null,
       responsibleId: debit.responsibleId || null,
       paymentMethod: debit.paymentMethod || "Pix",
@@ -75,6 +78,18 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
   const { data: banks = [] } = useQuery<Bank[]>({
     queryKey: ["banks", workspaceActive?.id],
     queryFn: () => getBanks(workspaceActive!.id),
+    enabled: !!workspaceActive && open,
+  })
+
+  const { data: cards = [] } = useQuery<CreditCardType[]>({
+    queryKey: ["cards", workspaceActive?.id],
+    queryFn: () => getCards(workspaceActive!.id),
+    enabled: !!workspaceActive && open,
+  })
+
+  const { data: responsibles = [] } = useQuery<PersonResponsible[]>({
+    queryKey: ["responsibles", workspaceActive?.id],
+    queryFn: () => getResponsibles(workspaceActive!.id),
     enabled: !!workspaceActive && open,
   })
 
@@ -98,11 +113,7 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
 
   const handleQuickCreateCategory = async (name: string) => {
     if (!workspaceActive) return null
-    const formData = new FormData()
-    formData.append("name", name)
-    formData.append("type", "all")
-    formData.append("icon", "tag")
-    const res = await createCategory({ workspaceId: workspaceActive.id, payload: formData })
+    const res = await createCategory({ workspaceId: workspaceActive.id, name, type: 'all', icon: 'tag' as IconName })
     await queryClient.invalidateQueries({ queryKey: ["categories", workspaceActive.id] })
     toast.success(`Categoria "${name}" criada!`)
     return res.categoryId
@@ -118,7 +129,16 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
     return res.bankId
   }
 
-  const isRecurringOrInstallment = debit.type && debit.type !== "Comum"
+  const handleQuickCreateResponsible = async (name: string) => {
+    if (!workspaceActive) return null
+    const res = await createResponsible(workspaceActive.id, { name, pixKeyType: 'cpf' })
+    await queryClient.invalidateQueries({ queryKey: ["responsibles", workspaceActive.id] })
+    toast.success(`Responsável "${name}" cadastrado!`)
+    return res.responsibleId
+  }
+
+  const isRecurring = debit.type === "Fixo" || debit.type === "Assinatura" || debit.type === "Parcelamento"
+  const isCreditPayment = form.watch("paymentMethod") === "Crédito"
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -142,20 +162,23 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Despesa</DialogTitle>
           <DialogDescription>
-            Atualize as informações, valor e categoria desta despesa.
+            Atualize os dados desta despesa ({debit.type}).
           </DialogDescription>
         </DialogHeader>
 
-        {isRecurringOrInstallment && (
-          <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
-            <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-            <span>
-              Esta despesa é do tipo <strong>{debit.type}</strong>. Alterações de valor e data serão aplicadas aos lançamentos futuros pendentes, preservando o histórico já pago.
-            </span>
+        {isRecurring && (
+          <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-300">
+            <Info className="h-4 w-4 shrink-0 mt-0.5" />
+            <div>
+              <strong>Lançamento Recorrente:</strong>
+              <p className="mt-0.5 text-muted-foreground">
+                As alterações realizadas aqui atualizarão esta despesa e as parcelas/ocorrências futuras a partir desta data, preservando o histórico passado.
+              </p>
+            </div>
           </div>
         )}
 
@@ -168,7 +191,7 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
                 <FormItem>
                   <FormLabel>Descrição</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Mercado, Uber, Restaurante..." {...field} />
+                    <Input placeholder="Ex: Supermercado..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -225,7 +248,17 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Forma de Pagamento</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value || "Pix"}>
+                    <Select
+                      onValueChange={(val) => {
+                        field.onChange(val)
+                        if (val === "Crédito") {
+                          form.setValue("bankId", null)
+                        } else {
+                          form.setValue("creditCardId", null)
+                        }
+                      }}
+                      defaultValue={field.value || "Pix"}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione" />
@@ -294,31 +327,88 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="bankId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Banco / Conta</FormLabel>
-                    <FormControl>
-                      <QuickCreateSelect
-                        items={banks.map((b) => ({
-                          id: b.id,
-                          name: b.name,
-                        }))}
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Selecione banco"
-                        searchPlaceholder="Buscar ou criar banco..."
-                        createLabel="Criar banco"
-                        onCreateNew={handleQuickCreateBank}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {isCreditPayment ? (
+                <FormField
+                  control={form.control}
+                  name="creditCardId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cartão de Crédito</FormLabel>
+                      <FormControl>
+                        <QuickCreateSelect
+                          items={cards.map((c) => ({
+                            id: c.id,
+                            name: `${c.name} ${c.bankName ? `(${c.bankName})` : ''}`,
+                            icon: <CardIcon className="h-4 w-4 text-primary" />,
+                          }))}
+                          value={field.value}
+                          onChange={(val) => {
+                            field.onChange(val)
+                            const selectedCard = cards.find(c => c.id === val)
+                            if (selectedCard?.bankId) {
+                              form.setValue("bankId", selectedCard.bankId)
+                            }
+                          }}
+                          placeholder="Selecione o cartão..."
+                          searchPlaceholder="Buscar cartão..."
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="bankId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Banco / Conta</FormLabel>
+                      <FormControl>
+                        <QuickCreateSelect
+                          items={banks.map((b) => ({
+                            id: b.id,
+                            name: b.name,
+                          }))}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Selecione banco"
+                          searchPlaceholder="Buscar ou criar banco..."
+                          createLabel="Criar banco"
+                          onCreateNew={handleQuickCreateBank}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
+
+            <FormField
+              control={form.control}
+              name="responsibleId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Responsável (opcional)</FormLabel>
+                  <FormControl>
+                    <QuickCreateSelect
+                      items={responsibles.map((r) => ({
+                        id: r.id,
+                        name: r.name,
+                      }))}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Selecione responsável..."
+                      searchPlaceholder="Buscar ou criar responsável..."
+                      createLabel="Criar responsável"
+                      onCreateNew={handleQuickCreateResponsible}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter className="justify-between pt-2">
               <DialogClose asChild>

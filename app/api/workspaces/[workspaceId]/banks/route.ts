@@ -83,6 +83,8 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
     const bankDataFromForm = {
       name: formData.get('name') as string,
       code: formData.get('code') as string,
+      pixKey: formData.get('pixKey') as string | null,
+      pixKeyType: formData.get('pixKeyType') as string | null,
       invoiceClosingDay: formData.get('invoiceClosingDay') as string | null, // Vem como string
       invoiceDueDate: formData.get('invoiceDueDate') as string | null,     // Vem como string
     }
@@ -96,7 +98,7 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
       }, { status: 400 })
     }
 
-    const { name, code, invoiceClosingDay, invoiceDueDate } = validationResult.data
+    const { name, code, pixKey, pixKeyType, invoiceClosingDay, invoiceDueDate } = validationResult.data
     let uploadedIconUrl: string | undefined = undefined
 
     if (imageFile) {
@@ -134,11 +136,13 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
 
     const newBankData = {
       name: name.trim(),
-      code: code?.trim(),
+      code: code?.trim() || null,
       iconUrl: uploadedIconUrl ?? null, // URL da imagem do Storage
+      pixKey: pixKey?.trim() || null,
+      pixKeyType: pixKeyType || null,
       workspaceId: workspaceId,
-      invoiceClosingDay: invoiceClosingDay ?? null, // Zod já converteu para número ou null
-      invoiceDueDate: invoiceDueDate ?? null,     // Zod já converteu para número ou null
+      invoiceClosingDay: invoiceClosingDay ?? null,
+      invoiceDueDate: invoiceDueDate ?? null,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
