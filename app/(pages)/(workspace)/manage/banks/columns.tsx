@@ -1,6 +1,7 @@
 "use client"
 
 import { DeleteBank } from "@/app/components/delete-bank"
+import { EditBank } from "@/app/components/edit-bank"
 import { DataTableColumnHeader } from "@/app/components/table/column-header"
 import { Button } from "@/app/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu"
@@ -91,6 +92,7 @@ export const columns: ColumnDef<Bank>[] = [
                 Copiar ID do banco
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              <EditBank bank={bank} asDropdownItem />
               <DeleteBank bankId={bank.id} />
             </DropdownMenuContent>
           </DropdownMenu>

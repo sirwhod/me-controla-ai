@@ -384,7 +384,7 @@ export function CreateDebit() {
                     </FormItem>
                   )}
                 />
-                <div className="flex flex-col md:flex-row gap-2 w-full">
+                <div className="grid grid-cols-2 gap-2 w-full">
                   <FormField
                     control={form.control}
                     name="totalInstallments"
@@ -396,8 +396,28 @@ export function CreateDebit() {
                             type="number" 
                             placeholder="12"
                             {...field}
+                            value={field.value ?? 2}
+                            onChange={e => field.onChange(Number(e.target.value) || 2)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="currentInstallment"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>Parcela Atual (1 a N)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min={1}
+                            placeholder="1"
+                            {...field}
                             value={field.value ?? 1}
-                            onChange={e => field.onChange(e.target.value === "1" ? 1 : Number(e.target.value))}
+                            onChange={e => field.onChange(Number(e.target.value) || 1)}
                           />
                         </FormControl>
                         <FormMessage />

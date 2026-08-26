@@ -8,9 +8,10 @@ import { format } from "date-fns"
 import Image from "next/image"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu"
 import { Button } from "@/app/components/ui/button"
 import { DeleteCredit } from "@/app/components/delete-credit"
+import { EditCredit } from "@/app/components/edit-credit"
 
 export const columns: ColumnDef<Credit>[] = [
   {
@@ -146,6 +147,12 @@ export const columns: ColumnDef<Credit>[] = [
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(credit.id)}>
+                Copiar ID da receita
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <EditCredit credit={credit} asDropdownItem />
               <DeleteCredit creditId={credit.id} />
             </DropdownMenuContent>
           </DropdownMenu>

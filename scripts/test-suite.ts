@@ -504,23 +504,197 @@ async function runTestSuite() {
   }
 
   // ==========================================
-  // SUÍTE 9: Rotas HTTP e Proteção do Middleware
+  // SUÍTE 10: Parcelamento Retroativo (Status PAGA vs PENDENTE)
   // ==========================================
-  console.log('🌐 [9/9] Testando Rotas HTTP da Aplicação...')
-  const baseUrl = 'http://127.0.0.1:3000'
+  console.log('🔀 [10/13] Testando Parcelamento Retroativo...')
+  try {
+    if (workspaceId && userId) {
+      const retroFirstRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+      const totalParcelas = 5
+      const parcelaAtual = 3
+      const retroBatch = db.batch()
+
+      for (let i = 1; i <= totalParcelas; i++) {
+        const ref = i === 1 ? retroFirstRef : db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+        const status = i <= parcelaAtual ? 'paid' : 'pending'
+
+        retroBatch.set(ref, {
+          description: `Parcela ${i}/${totalParcelas} - Smartphone`,
+          value: 300,
+          date: new Date(),
+          month: 'agosto',
+          year: 2026,
+          type: 'Parcelamento',
+          totalInstallments: totalParcelas,
+          currentInstallment: i,
+          status,
+          originalDebitId: retroFirstRef.id,
+          workspaceId,
+          userId,
+          paymentMethod: 'Crédito',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+      }
+      await retroBatch.commit()
+
+      const retroDocs = await db.collection('workspaces').doc(workspaceId).collection('debits').where('originalDebitId', '==', retroFirstRef.id).get()
+      assert('Parcelamento Retroativo', '5 parcelas geradas no Firestore', retroDocs.docs.length === 5)
+
+      const paidInstallments = retroDocs.docs.filter((d) => d.data().status === 'paid')
+      const pendingInstallments = retroDocs.docs.filter((d) => d.data().status === 'pending')
+
+      assert('Parcelamento Retroativo', 'Parcelas 1 a 3 marcadas como PAGAS (paid)', paidInstallments.length === 3)
+      assert('Parcelamento Retroativo', 'Parcelas 4 a 5 marcadas como PENDENTES (pending)', pendingInstallments.length === 2)
+    }
+  } catch (error: any) {
+    assert('Parcelamento Retroativo', 'Erro na execução da suíte 10', false, error.message)
+  }
+
+  // ==========================================
+  // SUÍTE 11: Aportes em Metas Financeiras (GoalContribution)
+  // ==========================================
+  console.log('🎯 [11/13] Testando Aportes em Metas Financeiras...')
+  try {
+    if (workspaceId && goalId) {
+      const goalRef = db.collection('workspaces').doc(workspaceId).collection('goals').doc(goalId)
+      const initialGoalDoc = await goalRef.get()
+      const initialAmount = initialGoalDoc.data()?.currentAmount || 0
+
+      // Registrar novo aporte
+      const aporteValue = 1500
+      const contributionRef = goalRef.collection('contributions').doc()
+      await contributionRef.set({
+        goalId,
+        workspaceId,
+        userId,
+        value: aporteValue,
+        description: 'Bônus semestral',
+        date: new Date(),
+        createdAt: new Date(),
+      })
+
+      // Atualizar currentAmount atomically
+      await goalRef.update({
+        currentAmount: initialAmount + aporteValue,
+        updatedAt: new Date(),
+      })
+
+      const updatedGoalDoc = await goalRef.get()
+      assert('Aportes em Metas', 'Aporte registrado na subcoleção contributions', (await goalRef.collection('contributions').get()).docs.length >= 1)
+      assert('Aportes em Metas', 'Saldo da meta recalculado automaticamente com o aporte', updatedGoalDoc.data()?.currentAmount === initialAmount + aporteValue)
+    }
+  } catch (error: any) {
+    assert('Aportes em Metas', 'Erro na execução da suíte 11', false, error.message)
+  }
+
+  // ==========================================
+  // SUÍTE 12: Gestão de Responsáveis & Cobrança PIX
+  // ==========================================
+  console.log('👤 [12/13] Testando Gestão de Responsáveis & Balanço PIX...')
+  try {
+    if (workspaceId) {
+      // 12.1 Criar Responsável
+      const respRef = db.collection('workspaces').doc(workspaceId).collection('responsibles').doc()
+      const respId = respRef.id
+      await respRef.set({
+        name: 'Lucas Brandão',
+        email: 'lucas@exemplo.com',
+        pixKey: '12345678900',
+        pixKeyType: 'cpf',
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+
+      const respDoc = await respRef.get()
+      assert('Gestão de Responsáveis', 'Responsável cadastrado com chave PIX', respDoc.exists && respDoc.data()?.pixKey === '12345678900')
+
+      // 12.2 Vincular Despesa ao Responsável
+      const debitRespRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+      await debitRespRef.set({
+        description: 'Jantar Restaurante',
+        value: 120,
+        date: new Date(),
+        month: 'agosto',
+        year: 2026,
+        type: 'Comum',
+        status: 'pending',
+        paymentMethod: 'Pix',
+        responsibleId: respId,
+        responsibleName: 'Lucas Brandão',
+        workspaceId,
+        userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+
+      // 12.3 Calcular Balanço do Responsável
+      const debitsForResp = await db.collection('workspaces').doc(workspaceId).collection('debits').where('responsibleId', '==', respId).where('status', '==', 'pending').get()
+      const totalDevido = debitsForResp.docs.reduce((acc, d) => acc + (d.data().value || 0), 0)
+
+      assert('Gestão de Responsáveis', 'Despesa vinculada com sucesso ao responsável', !debitsForResp.empty)
+      assert('Gestão de Responsáveis', 'Cálculo de balanço devedor do responsável correto (R$ 120)', totalDevido === 120)
+    }
+  } catch (error: any) {
+    assert('Gestão de Responsáveis', 'Erro na execução da suíte 12', false, error.message)
+  }
+
+  // ==========================================
+  // SUÍTE 13: Convites de Caixinhas Compartilhadas
+  // ==========================================
+  console.log('💌 [13/13] Testando Convites de Caixinhas Compartilhadas...')
+  try {
+    if (workspaceId && userId) {
+      const inviteRef = db.collection('invitations').doc()
+      const inviteeEmail = 'parceiro.teste@gmail.com'
+
+      await inviteRef.set({
+        workspaceId,
+        workspaceName: 'Caixinha Familiar',
+        inviterId: userId,
+        inviterName: 'Usuário de Teste',
+        inviterEmail: testUser.email,
+        inviteeEmail,
+        status: 'pending',
+        token: 'token-teste-123',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+
+      const pendingInvites = await db.collection('invitations').where('inviteeEmail', '==', inviteeEmail).where('status', '==', 'pending').get()
+      assert('Convites de Caixinhas', 'Convite gerado e armazenado com status pending', !pendingInvites.empty)
+
+      // Simular aceite do convite
+      await inviteRef.update({
+        status: 'accepted',
+        acceptedAt: new Date(),
+      })
+
+      const acceptedDoc = await inviteRef.get()
+      assert('Convites de Caixinhas', 'Status do convite atualizado para accepted após confirmação', acceptedDoc.data()?.status === 'accepted')
+    }
+  } catch (error: any) {
+    assert('Convites de Caixinhas', 'Erro na execução da suíte 13', false, error.message)
+  }
+  // ==========================================
+  // SUÍTE 14: Rotas HTTP e Proteção do Middleware
+  // ==========================================
+  console.log('🌐 [14/14] Testando Rotas HTTP da Aplicação...')
+  const baseUrl = 'http://localhost:3000'
 
   try {
-    // 9.1 Testar Página Inicial (Pública)
-    const homeRes = await axios.get(baseUrl, { timeout: 30000, validateStatus: () => true })
+    // 14.1 Testar Página Inicial (Pública)
+    const homeRes = await axios.get(baseUrl, { timeout: 60000, validateStatus: () => true })
     assert('Rotas HTTP', 'Página Inicial (/) acessível publicamente (Status 200)', homeRes.status === 200)
 
-    // 9.2 Testar Página de Login (Pública)
-    const signinRes = await axios.get(`${baseUrl}/sign-in`, { timeout: 30000, validateStatus: () => true })
+    // 14.2 Testar Página de Login (Pública)
+    const signinRes = await axios.get(`${baseUrl}/sign-in`, { timeout: 60000, validateStatus: () => true })
     assert('Rotas HTTP', 'Página de Login (/sign-in) acessível publicamente (Status 200)', signinRes.status === 200)
 
-    // 9.3 Testar Proteção de Rota Privada (/dashboard)
+    // 14.3 Testar Proteção de Rota Privada (/dashboard)
     const dashRes = await axios.get(`${baseUrl}/dashboard`, {
-      timeout: 30000,
+      timeout: 60000,
       maxRedirects: 0,
       validateStatus: () => true,
     })

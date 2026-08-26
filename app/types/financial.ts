@@ -20,18 +20,23 @@ export interface Debit {
   bankId: string | null; // ID do banco associado (pode ser null)
   bankName: string | null; // Nome do banco associado (pode ser null)
   bankImageUrl: string | null; // Imagem do banco associado (pode ser null)
+  creditCardId?: string | null; // ID do cartão de crédito específico
   paymentMethod: 'Crédito' | 'Débito' | 'Pix' | 'Conta'; // método de pagamento associado
   categoryId: string | null; // ID da categoria associada (pode ser null)
   categoryName: string | null; // Nome da categoria associada (pode ser null)
   categoryUrl: string | null; // Imagem da categoria associada (pode ser null)
+  responsibleId?: string | null; // ID do responsável vinculado à despesa
+  responsibleName?: string | null;
   proofUrl: string | null; // URL do comprovante (pode ser null)
   status: string; // Status do débito (ex: 'pending', 'paid', 'overdue')
   createdAt: Date | null; // Convertido de Timestamp para Date
   updatedAt: Date | null; // Convertido de Timestamp para Date
 
-  // Campos específicos para tipos complexos (podem ser undefined ou null dependendo do tipo e se é modelo/instância)
+  // Campos específicos para tipos complexos
   isTemplate?: boolean; // Para Fixo/Assinatura: True se modelo, False se instância
   templateId?: string | null; // Para Instâncias: ID do modelo original
+  recurrenceId?: string | null; // ID do registro mestre de recorrência
+  originalDebitId?: string | null; // ID da primeira parcela do grupo
   frequency?: 'monthly'; // Para Modelos Fixo/Assinatura: Frequência
   startDate?: Date | null; // Para Modelos Fixo/Assinatura/Parcelamento: Data de início
   endDate?: Date | null; // Opcional para Assinatura: Data de término
@@ -59,11 +64,14 @@ export const createDebitSchema = z.object({
     errorMap: () => ({ message: 'Tipo de débito inválido.' }),
   }).optional(),
   bankId: z.string().optional().nullable(),
+  creditCardId: z.string().optional().nullable(),
   paymentMethod: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
     errorMap: () => ({ message: 'Método de pagamento inválido.' }),
   }),
   categoryId: z.string().optional().nullable(),
+  responsibleId: z.string().optional().nullable(),
   proofUrl: safeUrlSchema,
+  status: z.enum(['pending', 'paid', 'overdue']).optional(),
   frequency: z.enum(['monthly']).optional(),
   startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
   endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
@@ -78,10 +86,12 @@ export const updateDebitSchema = z.object({
   value: z.number().positive({ message: 'O valor deve ser positivo.' }).max(1_000_000_000, { message: 'Valor excede o limite máximo.' }).optional(),
   date: z.string().datetime({ message: 'Data inválida.' }).optional(),
   bankId: z.string().optional().nullable(),
+  creditCardId: z.string().optional().nullable(),
   paymentMethod: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
     errorMap: () => ({ message: 'Método de pagamento inválido.' }),
-  }).nullable(),
+  }).nullable().optional(),
   categoryId: z.string().optional().nullable(),
+  responsibleId: z.string().optional().nullable(),
   proofUrl: safeUrlSchema,
   status: z.string().max(50).optional(),
   frequency: z.enum(['monthly']).optional(),
@@ -90,6 +100,7 @@ export const updateDebitSchema = z.object({
   isActive: z.boolean().optional(),
   totalInstallments: z.number().int().min(2, { message: 'Mínimo de 2 parcelas.' }).max(120, { message: 'Máximo de 120 parcelas permitido.' }).optional(),
   currentInstallment: z.number().int().min(1, { message: 'Número da parcela atual deve ser 1 ou maior.' }).optional(),
+  updateFutureOnly: z.boolean().optional(), // Quando atualizando recorrência mestre
 })
 
 export type UpdateDebit = z.infer<typeof updateDebitSchema>
@@ -139,7 +150,7 @@ export const updateCreditSchema = z.object({
   bankId: z.string().optional().nullable(),
   paymentMethod: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
     errorMap: () => ({ message: 'Método de pagamento inválido.' }),
-  }).nullable(),
+  }).nullable().optional(),
   categoryId: z.string().optional().nullable(),
   proofUrl: safeUrlSchema,
   status: z.string().max(50).optional(),
@@ -147,8 +158,7 @@ export const updateCreditSchema = z.object({
 
 export type UpdateCredit = z.infer<typeof updateCreditSchema>
 
-// --- Interface para Banco (Bank) ---
-// Corresponde ao documento em 'workspaces/{workspaceId}/banks/{bankId}'
+// --- Interface para Banco / Conta (Bank) ---
 export interface Bank {
   id: string; // O ID do documento do Firestore
   workspaceId: string; // ID do workspace pai
@@ -196,17 +206,43 @@ export const updateBankSchema = z.object({
 
 export type UpdateBank = z.infer<typeof updateBankSchema>
 
-// --- Interface para Categoria (Category) ---
-// Corresponde ao documento em 'workspaces/{workspaceId}/categories/{categoryId}'
-
-export interface Category {
-  id: string; // O ID do documento do Firestore
-  workspaceId: string; // ID do workspace pai
+// --- Interface para Cartão de Crédito (CreditCard) ---
+export interface CreditCard {
+  id: string;
+  workspaceId: string;
+  bankId: string;
+  bankName?: string;
   name: string;
-  icon: IconName | null; // ícone (pode ser null)
-  type: 'expense' | 'income'; // Tipo de categoria
-  createdAt: Date | null; // Data de criação (Timestamp convertido)
-  updatedAt: Date | null; // Data de atualização (Timestamp convertido)
+  last4Digits?: string | null;
+  limit?: number | null;
+  closingDay: number;
+  dueDay: number;
+  color?: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+}
+
+export const createCreditCardSchema = z.object({
+  bankId: z.string().min(1, { message: 'Selecione a conta/banco emissor.' }),
+  name: z.string().trim().min(1, { message: 'Nome do cartão é obrigatório.' }).max(100),
+  last4Digits: z.string().length(4, { message: 'Informe os 4 últimos dígitos.' }).optional().or(z.literal('')),
+  limit: z.number().positive({ message: 'Limite deve ser positivo.' }).optional().nullable(),
+  closingDay: z.number().int().min(1).max(31, { message: 'Dia de fechamento inválido (1-31).' }),
+  dueDay: z.number().int().min(1).max(31, { message: 'Dia de vencimento inválido (1-31).' }),
+  color: z.string().optional(),
+})
+
+export type CreateCreditCard = z.infer<typeof createCreditCardSchema>
+
+// --- Interface para Categoria Universal (Category) ---
+export interface Category {
+  id: string;
+  workspaceId: string;
+  name: string;
+  icon: IconName | null;
+  type: 'all' | 'expense' | 'income'; // 'all' = universal para receitas e despesas
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 export const createCategorySchema = z.object({
@@ -215,8 +251,8 @@ export const createCategorySchema = z.object({
     (val) => typeof val === 'string' && iconNames.includes(val as IconName),
     { message: 'Por favor, selecione um ícone válido.' },
   ).refine((val) => val !== undefined && val !== null, { message: 'Por favor, selecione um ícone.' }),
-  type: z.enum(['expense', 'income'], {
-    errorMap: () => ({ message: 'Tipo de categoria inválido. Deve ser "expense" ou "income".' }),
+  type: z.enum(['all', 'expense', 'income'], {
+    errorMap: () => ({ message: 'Tipo inválido.' }),
   }),
 })
 
@@ -227,29 +263,25 @@ export const updateCategorySchema = z.object({
   icon: z.custom<IconName>(
     (val) => typeof val === 'string' && iconNames.includes(val as IconName),
     { message: 'Por favor, selecione um ícone válido.' },
-  ).refine((val) => val !== undefined && val !== null, { message: 'Por favor, selecione um ícone.' }),
-  type: z.enum(['expense', 'income'], {
-    errorMap: () => ({ message: 'Tipo de categoria inválido. Deve ser "expense" ou "income".' }),
-  }).optional(),
+  ).refine((val) => val !== undefined && val !== null, { message: 'Por favor, selecione um ícone.' }).optional(),
+  type: z.enum(['all', 'expense', 'income']).optional(),
 })
 
 export type UpdateCategory = z.infer<typeof updateCategorySchema>
 
-
-// --- Interface para Meta (Goal) ---
-// Corresponde ao documento em 'workspaces/{workspaceId}/goals/{goalId}'
+// --- Interface para Meta Financeira (Goal) ---
 export interface Goal {
-  id: string; // O ID do documento do Firestore
-  workspaceId: string; // ID do workspace pai
+  id: string;
+  workspaceId: string;
   name: string;
   targetAmount: number;
-  currentAmount: number; // Progresso atual (atualizado manualmente)
-  startDate: Date | null; // Data de início (Timestamp convertido)
-  endDate: Date | null; // Data de término (Timestamp convertido, pode ser null)
-  userId: string | null; // UID do usuário responsável (pode ser null)
-  description: string | null; // Descrição (pode ser null)
-  createdAt: Date | null; // Data de criação (Timestamp convertido)
-  updatedAt: Date | null; // Data de atualização (Timestamp convertido)
+  currentAmount: number;
+  startDate: Date | null;
+  endDate: Date | null;
+  userId: string | null;
+  description: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 export const createGoalSchema = z.object({
@@ -272,4 +304,77 @@ export const updateGoalSchema = z.object({
   description: z.string().trim().max(500, { message: 'Descrição não pode exceder 500 caracteres.' }).optional().or(z.literal('')).nullable(),
   userId: z.string().optional().nullable(),
 })
+
 export type UpdateGoal = z.infer<typeof updateGoalSchema>
+
+// --- Interface para Aportes na Meta (GoalContribution) ---
+export interface GoalContribution {
+  id: string;
+  goalId: string;
+  workspaceId: string;
+  userId: string;
+  value: number;
+  date: Date | null;
+  description?: string | null;
+  createdAt: Date | null;
+}
+
+export const createGoalContributionSchema = z.object({
+  value: z.number().positive({ message: 'O valor do aporte deve ser positivo.' }),
+  date: z.string().datetime({ message: 'Data do aporte inválida.' }),
+  description: z.string().trim().max(255).optional().or(z.literal('')),
+})
+
+export type CreateGoalContribution = z.infer<typeof createGoalContributionSchema>
+
+// --- Interface para Responsável / Terceiro (PersonResponsible) ---
+export interface PersonResponsible {
+  id: string;
+  workspaceId: string;
+  name: string;
+  email?: string | null;
+  pixKey?: string | null;
+  pixKeyType?: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random' | string | null;
+  status: 'active' | 'invited' | 'linked';
+  linkedUserId?: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+}
+
+export const createPersonResponsibleSchema = z.object({
+  name: z.string().trim().min(1, { message: 'O nome do responsável é obrigatório.' }).max(100),
+  email: z.string().email('E-mail inválido.').optional().or(z.literal('')),
+  pixKey: z.string().trim().max(100).optional().or(z.literal('')),
+  pixKeyType: z.enum(['cpf', 'cnpj', 'email', 'phone', 'random']).optional(),
+})
+
+export type CreatePersonResponsible = z.infer<typeof createPersonResponsibleSchema>
+
+export const updatePersonResponsibleSchema = z.object({
+  name: z.string().trim().min(1, { message: 'O nome não pode ser vazio.' }).max(100).optional(),
+  email: z.string().email('E-mail inválido.').optional().or(z.literal('')).nullable(),
+  pixKey: z.string().trim().max(100).optional().or(z.literal('')).nullable(),
+  pixKeyType: z.enum(['cpf', 'cnpj', 'email', 'phone', 'random']).optional().nullable(),
+})
+
+export type UpdatePersonResponsible = z.infer<typeof updatePersonResponsibleSchema>
+
+// --- Interface para Convites de Caixinha (BoxInvitation) ---
+export interface BoxInvitation {
+  id: string;
+  workspaceId: string;
+  workspaceName: string;
+  inviterName: string;
+  inviterEmail: string;
+  inviteeEmail: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  token: string;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+}
+
+export const createBoxInvitationSchema = z.object({
+  inviteeEmail: z.string().email({ message: 'E-mail do convidado inválido.' }),
+})
+
+export type CreateBoxInvitation = z.infer<typeof createBoxInvitationSchema>

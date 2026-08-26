@@ -1,6 +1,7 @@
 "use client"
 
 import { DeleteCategory } from "@/app/components/delete-category"
+import { EditCategory } from "@/app/components/edit-category"
 import { DataTableColumnHeader } from "@/app/components/table/column-header"
 import { Button } from "@/app/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu"
@@ -57,6 +58,7 @@ export const columns: ColumnDef<Category>[] = [
               Copiar ID da categoria
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            <EditCategory category={category} asDropdownItem />
             <DeleteCategory categoryId={category.id} />
           </DropdownMenuContent>
         </DropdownMenu>

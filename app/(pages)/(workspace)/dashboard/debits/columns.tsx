@@ -3,11 +3,15 @@
 import { DataTableColumnHeader } from "@/app/components/table/column-header"
 import { Debit } from "@/app/types/financial"
 import { ColumnDef } from "@tanstack/react-table"
-import { Banknote, BanknoteArrowDown, CalendarSync, CreditCard, Landmark, Pin } from "lucide-react"
+import { Banknote, BanknoteArrowDown, CalendarSync, CreditCard, Landmark, MoreHorizontal, Pin } from "lucide-react"
 import { format } from 'date-fns'
 import Image from "next/image"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu"
+import { Button } from "@/app/components/ui/button"
+import { EditDebit } from "@/app/components/edit-debit"
+import { DeleteDebit } from "@/app/components/delete-debit"
 
 export const columns: ColumnDef<Debit>[] = [
   {
@@ -232,5 +236,33 @@ export const columns: ColumnDef<Debit>[] = [
         </div>
       )
     },
-  }, 
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => {
+      const debit = row.original
+
+      return (
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Abrir menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(debit.id || '')}>
+                Copiar ID do débito
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <EditDebit debit={debit} asDropdownItem />
+              {debit.id && <DeleteDebit debitId={debit.id} asDropdownItem />}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )
+    },
+  },
 ]

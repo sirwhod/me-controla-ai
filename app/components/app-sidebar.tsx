@@ -58,6 +58,10 @@ const data = {
           title: "Metas",
           url: "/manage/goals",
         },
+        {
+          title: "Responsáveis",
+          url: "/manage/responsibles",
+        },
       ],
     },
   ],

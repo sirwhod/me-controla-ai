@@ -1,0 +1,280 @@
+"use client"
+
+import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
+import { Edit2, Loader2, Save } from "lucide-react"
+
+import { Button } from "@/app/components/ui/button"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/app/components/ui/dialog"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/app/components/ui/form"
+import { Input } from "@/app/components/ui/input"
+import { Credit, updateCreditSchema, UpdateCredit as UpdateCreditProps, Category, Bank } from "@/app/types/financial"
+import { updateCredit } from "@/app/http/credits/update-credit"
+import { getCategories } from "@/app/http/categories/get-categories"
+import { getBanks } from "@/app/http/banks/get-banks"
+import { useWorkspace } from "@/app/hooks/use-workspace"
+import { DropdownMenuItem } from "@/app/components/ui/dropdown-menu"
+import { QuickCreateSelect } from "@/app/components/ui/quick-create-select"
+import { DynamicIcon, type IconName } from "lucide-react/dynamic"
+import { createCategory } from "@/app/http/categories/create-category"
+import { createBank } from "@/app/http/banks/create-bank"
+
+interface EditCreditProps {
+  credit: Credit
+  asDropdownItem?: boolean
+}
+
+export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) {
+  const [open, setOpen] = useState(false)
+  const { workspaceActive } = useWorkspace()
+  const queryClient = useQueryClient()
+
+  const creditDateString = credit.date ? new Date(credit.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
+
+  const form = useForm<UpdateCreditProps>({
+    resolver: zodResolver(updateCreditSchema),
+    defaultValues: {
+      description: credit.description || "",
+      value: credit.value || 0,
+      date: credit.date ? new Date(credit.date).toISOString() : new Date().toISOString(),
+      bankId: credit.bankId || null,
+      categoryId: credit.categoryId || null,
+      paymentMethod: credit.paymentMethod || "Pix",
+      status: credit.status || "received",
+    },
+  })
+
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ["categories", workspaceActive?.id],
+    queryFn: () => getCategories(workspaceActive!.id),
+    enabled: !!workspaceActive && open,
+  })
+
+  const { data: banks = [] } = useQuery<Bank[]>({
+    queryKey: ["banks", workspaceActive?.id],
+    queryFn: () => getBanks(workspaceActive!.id),
+    enabled: !!workspaceActive && open,
+  })
+
+  const { mutateAsync: updateCreditMutation, isPending } = useMutation({
+    mutationFn: (data: UpdateCreditProps) =>
+      updateCredit(workspaceActive!.id, credit.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive?.id] })
+      toast.success("Receita atualizada com sucesso!")
+      setOpen(false)
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Erro ao atualizar receita.")
+    },
+  })
+
+  const onSubmit = async (data: UpdateCreditProps) => {
+    if (!workspaceActive) return
+    await updateCreditMutation(data)
+  }
+
+  const handleQuickCreateCategory = async (name: string) => {
+    if (!workspaceActive) return null
+    const formData = new FormData()
+    formData.append("name", name)
+    formData.append("type", "all")
+    formData.append("icon", "tag")
+    const res = await createCategory({ workspaceId: workspaceActive.id, payload: formData })
+    await queryClient.invalidateQueries({ queryKey: ["categories", workspaceActive.id] })
+    toast.success(`Categoria "${name}" criada!`)
+    return res.categoryId
+  }
+
+  const handleQuickCreateBank = async (name: string) => {
+    if (!workspaceActive) return null
+    const formData = new FormData()
+    formData.append("name", name)
+    const res = await createBank({ workspaceId: workspaceActive.id, payload: formData })
+    await queryClient.invalidateQueries({ queryKey: ["banks", workspaceActive.id] })
+    toast.success(`Banco "${name}" criado!`)
+    return res.bankId
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {asDropdownItem ? (
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault()
+              setOpen(true)
+            }}
+            className="cursor-pointer gap-2"
+          >
+            <Edit2 className="h-4 w-4" />
+            Editar receita
+          </DropdownMenuItem>
+        ) : (
+          <Button variant="outline" size="sm" className="gap-1.5">
+            <Edit2 className="h-3.5 w-3.5" />
+            Editar
+          </Button>
+        )}
+      </DialogTrigger>
+
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Editar Receita</DialogTitle>
+          <DialogDescription>
+            Atualize o valor, categoria, conta ou data deste lançamento de receita.
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Salário, Venda, Freelance..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="value"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor (R$)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0,00"
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        defaultValue={creditDateString}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          if (val) field.onChange(new Date(val + "T12:00:00Z").toISOString())
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="categoryId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria</FormLabel>
+                    <FormControl>
+                      <QuickCreateSelect
+                        items={categories.map((c) => ({
+                          id: c.id,
+                          name: c.name,
+                          icon: c.icon ? <DynamicIcon name={c.icon as IconName} className="h-4 w-4 text-primary" /> : undefined,
+                        }))}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Selecione categoria"
+                        searchPlaceholder="Buscar ou criar categoria..."
+                        createLabel="Criar categoria"
+                        onCreateNew={handleQuickCreateCategory}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="bankId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Banco / Conta</FormLabel>
+                    <FormControl>
+                      <QuickCreateSelect
+                        items={banks.map((b) => ({
+                          id: b.id,
+                          name: b.name,
+                        }))}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Selecione banco"
+                        searchPlaceholder="Buscar ou criar banco..."
+                        createLabel="Criar banco"
+                        onCreateNew={handleQuickCreateBank}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <DialogFooter className="justify-between pt-2">
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">
+                  Cancelar
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                Salvar Alterações
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}

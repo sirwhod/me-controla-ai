@@ -42,6 +42,7 @@ import Link from "next/link"
 import { Button } from "@/app/components/ui/button"
 import { CreateDebit } from "@/app/components/create-debit"
 import { CreateCredit } from "@/app/components/create-credit"
+import { InvitationsBanner } from "@/app/components/invitations-banner"
 
 const meses = [
   { value: "janeiro", label: "Janeiro", short: "Jan" },
@@ -281,6 +282,8 @@ export default function Page() {
       </header>
 
       <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
+        <InvitationsBanner />
+
         {/* Barra superior de boas-vindas, botões de ação e filtros */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>

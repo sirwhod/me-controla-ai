@@ -1,19 +1,18 @@
-import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member';
+import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { createDebitSchema, Debit, TypeDebit } from '@/app/types/financial'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
-import { DocumentReference } from 'firebase-admin/firestore';
+import { DocumentReference } from 'firebase-admin/firestore'
 import { NextRequest, NextResponse } from 'next/server'
 
 interface DebitsRouteParams {
-  workspaceId: string;
+  workspaceId: string
 }
 
-export async function GET(req: NextRequest, { params }: { params: Promise<DebitsRouteParams> }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<DebitsRouteParams> }) {
   try {
-    const searchParams = await params
-    const workspaceId = searchParams.workspaceId
+    const { workspaceId } = await params
     const session = await auth()
 
     if (!session?.user) {
@@ -21,21 +20,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
     }
 
     const isMember = await checkIsWorkspaceMember({
-      workspaceId, 
+      workspaceId,
       workspaceIds: session.user.workspaceIds,
       userId: session.user.id,
     })
-    
+
     if (!isMember) {
-        return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
+      return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
-    
-    const debitsQuery = db.collection('workspaces').doc(workspaceId).collection('debits')
+
+    const debitsQuery = db
+      .collection('workspaces')
+      .doc(workspaceId)
+      .collection('debits')
       .orderBy('date', 'desc')
 
     const querySnapshot = await debitsQuery.get()
 
-    const debits = querySnapshot.docs.map(doc => {
+    const debits = querySnapshot.docs.map((doc) => {
       const data = doc.data()
       return {
         id: doc.id,
@@ -49,32 +51,29 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
     })
 
     return NextResponse.json(debits, { status: 200 })
-
   } catch (error) {
-    const searchParams = await params
-    console.error(`Erro ao listar débitos para workspace ${searchParams.workspaceId}:`, error)
+    console.error('Erro ao listar débitos:', error)
     return NextResponse.json({ message: 'Erro interno do servidor ao listar débitos' }, { status: 500 })
   }
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<DebitsRouteParams> }) {
   try {
-    const searchParams = await params
-    const workspaceId = searchParams.workspaceId
+    const { workspaceId } = await params
     const session = await auth()
 
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
     }
 
     const isMember = await checkIsWorkspaceMember({
-      workspaceId, 
+      workspaceId,
       workspaceIds: session.user.workspaceIds,
       userId: session.user.id,
     })
-    
+
     if (!isMember) {
-       return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
+      return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
     const body = await req.json()
@@ -83,7 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
     if (!validationResult.success) {
       return NextResponse.json({
         message: 'Dados de entrada inválidos para criar débito.',
-        error: validationResult.error.errors.map(e => e.message).join(', '),
+        error: validationResult.error.errors.map((e) => e.message).join(', '),
       }, { status: 400 })
     }
 
@@ -91,46 +90,53 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       description,
       value,
       date,
-      type,
+      type = 'Comum',
       bankId,
+      creditCardId,
       paymentMethod,
       categoryId,
+      responsibleId,
       proofUrl,
+      status = 'pending',
       frequency,
       startDate,
       endDate,
       totalInstallments,
-      currentInstallment,
+      currentInstallment = 1,
     } = validationResult.data
 
     const dateObj = new Date(date)
     const startDateObj = startDate ? new Date(startDate) : null
     const endDateObj = endDate ? new Date(endDate) : null
 
-    if (!bankId) {
-      return NextResponse.json({ message: 'Banco não encontrado' }, { status: 404 })
+    let bankDocData: Record<string, unknown> | null = null
+    if (bankId) {
+      const bankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId)
+      const bankDoc = await bankRef.get()
+      if (bankDoc.exists) {
+        bankDocData = bankDoc.data() || null
+      }
     }
 
-    const bankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId)
-    const bankDoc = await bankRef.get()
-
-    if (!bankDoc.exists) {
-      return NextResponse.json({ message: 'Banco não encontrado' }, { status: 404 })
+    let categoryDocData: Record<string, unknown> | null = null
+    if (categoryId) {
+      const categoryRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc(categoryId)
+      const categoryDoc = await categoryRef.get()
+      if (categoryDoc.exists) {
+        categoryDocData = categoryDoc.data() || null
+      }
     }
 
-    if (!categoryId) {
-      return NextResponse.json({ message: 'Categoria não encontrada' }, { status: 404 })
-    }
-
-    const categoryRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc(categoryId)
-    const categoryDoc = await categoryRef.get()
-
-    if (!categoryDoc.exists) {
-      return NextResponse.json({ message: 'Categoria não encontrada' }, { status: 404 })
+    let responsibleName: string | null = null
+    if (responsibleId) {
+      const responsibleDoc = await db.collection('workspaces').doc(workspaceId).collection('responsibles').doc(responsibleId).get()
+      if (responsibleDoc.exists) {
+        responsibleName = responsibleDoc.data()?.name || null
+      }
     }
 
     // Regra de Fechamento de Fatura de Cartão de Crédito
-    const bankClosingDay = bankDoc.data()?.invoiceClosingDay
+    const bankClosingDay = typeof bankDocData?.invoiceClosingDay === 'string' ? bankDocData.invoiceClosingDay : null
     const getInvoiceDate = (baseDate: Date) => {
       if (paymentMethod === 'Crédito' && bankClosingDay) {
         const closingDay = parseInt(bankClosingDay, 10)
@@ -148,34 +154,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
 
     const newDebitData: Debit = {
       description: description.trim(),
-      value: value,
+      value,
       date: dateObj,
-      month: month,
-      year: year,
+      month,
+      year,
       type: type as TypeDebit,
       bankId: bankId || null,
-      bankName: bankDoc.data()?.name || "",
-      bankImageUrl: bankDoc.data()?.iconUrl || "",
-      categoryName: categoryDoc.data()?.name || "",
-      categoryUrl: categoryDoc.data()?.icon || "",
-      paymentMethod: paymentMethod || null,
+      bankName: typeof bankDocData?.name === 'string' ? bankDocData.name : null,
+      bankImageUrl: typeof bankDocData?.iconUrl === 'string' ? bankDocData.iconUrl : null,
+      creditCardId: creditCardId || null,
+      categoryName: typeof categoryDocData?.name === 'string' ? categoryDocData.name : null,
+      categoryUrl: typeof categoryDocData?.icon === 'string' ? categoryDocData.icon : null,
+      paymentMethod: paymentMethod || 'Pix',
       categoryId: categoryId || null,
+      responsibleId: responsibleId || null,
+      responsibleName: responsibleName || null,
       proofUrl: proofUrl?.trim() || null,
-      workspaceId: workspaceId,
+      workspaceId,
       userId: session.user.id,
       createdAt: new Date(),
       updatedAt: new Date(),
-      status: 'pending',
+      status: status || 'pending',
     }
 
-    let newDebitRef: DocumentReference | null = null;
-
-    // Specific logic for each type
     switch (type) {
       case 'Comum': {
-        newDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+        const newDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
         await newDebitRef.set(newDebitData)
-        break
+        return NextResponse.json({
+          message: 'Débito criado com sucesso!',
+          debitId: newDebitRef.id,
+        }, { status: 201 })
       }
 
       case 'Fixo': {
@@ -205,7 +214,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         }
 
         const batch = db.batch()
-        debitsToCreate.forEach(debit => {
+        debitsToCreate.forEach((debit) => {
           const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
           batch.set(ref, debit)
         })
@@ -241,7 +250,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         }
 
         const assinaturaBatch = db.batch()
-        assinaturaDebitsToCreate.forEach(debit => {
+        assinaturaDebitsToCreate.forEach((debit) => {
           const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
           assinaturaBatch.set(ref, debit)
         })
@@ -251,21 +260,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       }
 
       case 'Parcelamento': {
-        if (!startDate || !totalInstallments || !currentInstallment) {
-          return NextResponse.json({ message: 'Data de Início, Total de Parcelas e Parcela Atual são obrigatórios para débito Parcelamento.' }, { status: 400 })
+        if (!startDate || !totalInstallments) {
+          return NextResponse.json({ message: 'Data de Início e Total de Parcelas são obrigatórios para Parcelamento.' }, { status: 400 })
         }
-        if (currentInstallment !== 1) {
-          return NextResponse.json({ message: 'Ao criar um parcelamento, a parcela atual deve ser 1.' }, { status: 400 })
-        }
+
         newDebitData.isTemplate = false
         newDebitData.startDate = startDateObj
         newDebitData.totalInstallments = totalInstallments
 
-        const parcelasToCreate = []
+        const parcelasToCreate: Array<Debit & { ref: DocumentReference }> = []
         const baseParcelaDate = getInvoiceDate(startDateObj!)
         const parcelaDate = new Date(baseParcelaDate.getFullYear(), baseParcelaDate.getMonth(), 1)
+
+        // Criar referências antecipadas para vincular originalDebitId
+        const firstRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+
         for (let i = 1; i <= totalInstallments; i++) {
-          const parcelaData = {
+          const ref = i === 1 ? firstRef : db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+          
+          // Lançamento retroativo: parcelas até currentInstallment são consideradas 'paid', as demais 'pending'
+          const installmentStatus = i <= currentInstallment ? 'paid' : 'pending'
+
+          const parcelaData: Debit & { ref: DocumentReference } = {
             ...newDebitData,
             currentInstallment: i,
             date: new Date(parcelaDate),
@@ -274,34 +290,34 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
             description: `Parcela ${i}/${totalInstallments} - ${newDebitData.description}`,
             createdAt: new Date(),
             updatedAt: new Date(),
-            originalDebitId: '', // será preenchido depois
+            originalDebitId: firstRef.id,
+            status: installmentStatus,
+            ref,
           }
           parcelasToCreate.push(parcelaData)
           parcelaDate.setMonth(parcelaDate.getMonth() + 1)
         }
 
-        const parcelamentoBatch = db.batch()
-        const firstRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
-        parcelasToCreate.forEach((parcela, idx) => {
-          const ref = idx === 0 ? firstRef : db.collection('workspaces').doc(workspaceId).collection('debits').doc()
-          parcela.originalDebitId = firstRef.id
-          parcelamentoBatch.set(ref, parcela)
+        const parcelaBatch = db.batch()
+        parcelasToCreate.forEach(({ ref, ...debitData }) => {
+          parcelaBatch.set(ref, debitData)
         })
-        await parcelamentoBatch.commit()
+        await parcelaBatch.commit()
 
-        return NextResponse.json({ message: 'Parcelamento criado com sucesso!', count: parcelasToCreate.length, originalDebitId: firstRef.id }, { status: 201 })
+        return NextResponse.json({
+          message: 'Parcelamento criado com sucesso!',
+          originalDebitId: firstRef.id,
+          totalInstallments,
+          currentInstallment,
+        }, { status: 201 })
       }
-    }
 
-    if (newDebitRef) {
-      return NextResponse.json({ message: 'Débito criado com sucesso!', debitId: newDebitRef.id }, { status: 201 })
-    } else {
-      return NextResponse.json({ message: 'Erro ao criar débito.' }, { status: 500 })
+      default:
+        return NextResponse.json({ message: 'Tipo de débito não reconhecido.' }, { status: 400 })
     }
-
-  } catch (error) {
-    const searchParams = await params
-    console.error(`Erro ao criar débito para workspace ${searchParams.workspaceId}:`, error)
-    return NextResponse.json({ message: 'Erro interno do servidor ao criar débito' }, { status: 500 })
+  } catch (error: unknown) {
+    console.error('Erro ao criar débito:', error)
+    const message = error instanceof Error ? error.message : 'Erro interno do servidor ao criar débito'
+    return NextResponse.json({ message }, { status: 500 })
   }
 }

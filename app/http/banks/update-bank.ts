@@ -5,20 +5,20 @@ interface UpdateBankResponse {
   message: string;
 }
 
-export async function updateBanks(
+export async function updateBank(
   workspaceId: string, 
   bankId: string,
-  {name, code, iconUrl, invoiceClosingDay, invoiceDueDate}: UpdateBank
+  { name, code, iconUrl, invoiceClosingDay, invoiceDueDate }: UpdateBank
 ): Promise<UpdateBankResponse> {
   if (!workspaceId) {
     return {
-      message: "O Id da Caixinha é nescessário para a alteração do banco."
+      message: "O Id da Caixinha é necessário para a alteração do banco."
     }
   }
 
   if (!bankId) {
     return {
-      message: "O Id do banco é nescessário para a alteração do banco."
+      message: "O Id do banco é necessário para a alteração do banco."
     }
   }
 
@@ -35,3 +35,5 @@ export async function updateBanks(
 
   return response.data
 }
+
+export const updateBanks = updateBank
