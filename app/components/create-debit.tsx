@@ -173,6 +173,7 @@ export function CreateDebit() {
       })
 
       if (response) {
+        await queryClient.invalidateQueries({ queryKey: ['debits', workspaceActive.id] })
         refetch()
         toast.success(response.message || "Despesa criada com sucesso!")
         setModalIsOpen(false)

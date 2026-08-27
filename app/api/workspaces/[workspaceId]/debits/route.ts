@@ -105,9 +105,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       currentInstallment = 1,
     } = validationResult.data
 
-    const dateObj = new Date(date)
-    const startDateObj = startDate ? new Date(startDate) : null
-    const endDateObj = endDate ? new Date(endDate) : null
+    const parseSafeDate = (val: unknown, fallback: Date = new Date()): Date => {
+      if (!val) return fallback
+      if (val instanceof Date) return isNaN(val.getTime()) ? fallback : val
+      if (typeof val === 'string' && val.trim() !== '') {
+        const d = new Date(val)
+        return isNaN(d.getTime()) ? fallback : d
+      }
+      return fallback
+    }
+
+    const now = new Date()
+    const startDateObj = parseSafeDate(startDate || date, now)
+    const dateObj = parseSafeDate(date || startDate, now)
+    const endDateObj = endDate && typeof endDate === 'string' && endDate.trim() !== '' ? parseSafeDate(endDate, now) : null
 
     let bankDocData: Record<string, unknown> | null = null
     if (bankId) {
@@ -158,7 +169,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       date: dateObj,
       month,
       year,
-      type: type as TypeDebit,
+      type: (type || 'Comum') as TypeDebit,
       bankId: bankId || null,
       bankName: typeof bankDocData?.name === 'string' ? bankDocData.name : null,
       bankImageUrl: typeof bankDocData?.iconUrl === 'string' ? bankDocData.iconUrl : null,
@@ -172,8 +183,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       proofUrl: proofUrl?.trim() || null,
       workspaceId,
       userId: session.user.id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
       status: status || 'pending',
     }
 
@@ -190,7 +201,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       }
 
       case 'Fixo': {
-        const effStartDate = startDateObj || dateObj || new Date()
+        const effStartDate = startDateObj
         newDebitData.isTemplate = true
         newDebitData.frequency = effectiveFrequency
         newDebitData.startDate = effStartDate
@@ -206,8 +217,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
             date: new Date(current),
             month: current.toLocaleString('pt-BR', { month: 'long' }),
             year: current.getFullYear(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: now,
+            updatedAt: now,
           }
           debitsToCreate.push(debitForMonth)
           current.setMonth(current.getMonth() + 1)
@@ -224,7 +235,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       }
 
       case 'Assinatura': {
-        const effStartDate = startDateObj || dateObj || new Date()
+        const effStartDate = startDateObj
         newDebitData.isTemplate = true
         newDebitData.frequency = effectiveFrequency
         newDebitData.startDate = effStartDate
@@ -233,18 +244,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
 
         const assinaturaDebitsToCreate = []
         const baseAssinaturaDate = getInvoiceDate(effStartDate)
-        const assinaturaCurrent = new Date(baseAssinaturaDate.getFullYear(), baseAssinaturaDate.getMonth(), 1)
+        const baseDay = baseAssinaturaDate.getDate() || 1
+        const startYear = baseAssinaturaDate.getFullYear()
+        const startMonth = baseAssinaturaDate.getMonth()
+
         for (let i = 0; i < 12; i++) {
+          const installmentDate = new Date(startYear, startMonth + i, baseDay)
           const debitForMonth = {
             ...newDebitData,
-            date: new Date(assinaturaCurrent),
-            month: assinaturaCurrent.toLocaleString('pt-BR', { month: 'long' }),
-            year: assinaturaCurrent.getFullYear(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            date: installmentDate,
+            month: installmentDate.toLocaleString('pt-BR', { month: 'long' }),
+            year: installmentDate.getFullYear(),
+            createdAt: now,
+            updatedAt: now,
           }
           assinaturaDebitsToCreate.push(debitForMonth)
-          assinaturaCurrent.setMonth(assinaturaCurrent.getMonth() + 1)
         }
 
         const assinaturaBatch = db.batch()
@@ -254,7 +268,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         })
         await assinaturaBatch.commit()
 
-        return NextResponse.json({ message: 'Débitos de assinatura criados com sucesso!', count: assinaturaDebitsToCreate.length }, { status: 201 })
+        return NextResponse.json({ message: 'Assinatura criada com sucesso!', count: assinaturaDebitsToCreate.length }, { status: 201 })
       }
 
       case 'Parcelamento': {

@@ -58,7 +58,7 @@ const safeUrlSchema = z.string().url('URL inválida.').refine((url) => {
 export const createDebitSchema = z.object({
   description: z.string().trim().min(1, { message: 'A descrição do débito é obrigatória.' }).max(255, { message: 'Descrição não pode exceder 255 caracteres.' }),
   value: z.number().positive({ message: 'O valor do débito deve ser positivo.' }).max(1_000_000_000, { message: 'Valor excede o limite máximo.' }),
-  date: z.string().datetime({ message: 'Data da transação inválida.' }),
+  date: z.string().optional().or(z.literal('')).nullable(),
   type: z.enum(['Comum', 'Fixo', 'Assinatura', 'Parcelamento'], {
     errorMap: () => ({ message: 'Tipo de débito inválido.' }),
   }).optional(),
@@ -71,9 +71,9 @@ export const createDebitSchema = z.object({
   responsibleId: z.string().optional().nullable(),
   proofUrl: safeUrlSchema,
   status: z.enum(['pending', 'paid', 'overdue']).optional(),
-  frequency: z.enum(['monthly']).optional(),
-  startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
-  endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
+  frequency: z.enum(['monthly']).optional().or(z.literal('')).nullable(),
+  startDate: z.string().optional().or(z.literal('')).nullable(),
+  endDate: z.string().optional().or(z.literal('')).nullable(),
   totalInstallments: z.number().int().min(2, { message: 'Mínimo de 2 parcelas.' }).max(120, { message: 'Máximo de 120 parcelas permitido.' }).optional(),
   currentInstallment: z.number().int().min(1, { message: 'Número da parcela atual deve ser 1 ou maior.' }).optional(),
 })

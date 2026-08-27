@@ -415,6 +415,35 @@ async function runTestSuite() {
       }
       await fixedBatch.commit()
       assert('Despesas Avançadas', 'Geração de despesas fixas mensais até o fim do ano', fixedCount === 4)
+
+      // 5.4 Testar Assinatura (gera 12 meses a partir da data de início)
+      const subBatch = db.batch()
+      const subDate = new Date('2026-09-05')
+      for (let i = 0; i < 12; i++) {
+        const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+        const instDate = new Date(subDate.getFullYear(), subDate.getMonth() + i, subDate.getDate())
+        subBatch.set(ref, {
+          description: 'Netflix Premium 4K',
+          value: 55.90,
+          date: instDate,
+          month: instDate.toLocaleString('pt-BR', { month: 'long' }),
+          year: instDate.getFullYear(),
+          type: 'Assinatura',
+          isTemplate: true,
+          isActive: true,
+          frequency: 'monthly',
+          startDate: subDate,
+          paymentMethod: 'Crédito',
+          bankId: bankId,
+          categoryId: categoryId,
+          workspaceId: workspaceId,
+          userId: userId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+      }
+      await subBatch.commit()
+      assert('Despesas Avançadas', 'Geração de 12 lançamentos de Assinatura no Firestore', true)
     }
   } catch (error: any) {
     assert('Despesas Avançadas', 'Erro na execução da suíte 5', false, error.message)
