@@ -60,6 +60,7 @@ export const FINANCIAL_ICONS_CATALOG: IconCatalogItem[] = [
   { name: 'dog', label: 'Pets & Animais', tags: ['cachorro', 'gato', 'veterinario', 'racao', 'pet shop'] },
   { name: 'baby', label: 'Filhos & Crianças', tags: ['bebe', 'fralda', 'crianca', 'brinquedo', 'escola infantil'] },
   { name: 'sparkles', label: 'Outros / Diversos', tags: ['geral', 'outros', 'diversos', 'extra'] },
+  { name: 'tag', label: 'Etiqueta / Geral', tags: ['geral', 'tag', 'etiqueta', 'outros', 'categoria'] },
 ]
 
 export function searchCatalogIcons(query: string): IconName[] {

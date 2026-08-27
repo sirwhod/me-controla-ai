@@ -57,7 +57,7 @@ export function getColumns(month?: string, year?: string): ColumnDef<PersonRespo
     },
     {
       accessorKey: "pendingBalance",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Saldo Devedor (Receitas em Aberto)" />,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Saldo Devedor (Despesas)" />,
       cell: ({ row }) => {
         const balance = row.original.pendingBalance || 0
         return (

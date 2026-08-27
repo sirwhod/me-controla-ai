@@ -28,7 +28,7 @@ export interface Debit {
   responsibleId?: string | null; // ID do responsável vinculado à despesa
   responsibleName?: string | null;
   proofUrl: string | null; // URL do comprovante (pode ser null)
-  status: string; // Status do débito (ex: 'pending', 'paid', 'overdue')
+  status?: string | null; // Opcional (sem lógica de status)
   createdAt: Date | null; // Convertido de Timestamp para Date
   updatedAt: Date | null; // Convertido de Timestamp para Date
 
@@ -125,7 +125,7 @@ export interface Credit {
   proofUrl: string | null; // URL do comprovante (pode ser null)
   responsibleId?: string | null;
   responsibleName?: string | null;
-  status: string; // Status do crédito (ex: 'pending', 'received')
+  status?: string | null; // Opcional (sem lógica de status)
   createdAt: Date | null; // Convertido de Timestamp para Date
   updatedAt: Date | null; // Convertido de Timestamp para Date
 }
@@ -271,7 +271,7 @@ export interface Category {
 export const createCategorySchema = z.object({
   name: z.string().trim().min(1, { message: 'O nome da categoria é obrigatório.' }).max(100, { message: 'Nome da categoria não pode exceder 100 caracteres.' }),
   icon: z.custom<IconName>(
-    (val) => typeof val === 'string' && iconNames.includes(val as IconName),
+    (val) => typeof val === 'string' && val.trim().length > 0,
     { message: 'Por favor, selecione um ícone válido.' },
   ),
   type: z.enum(['all', 'expense', 'income'], {

@@ -248,67 +248,42 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="paymentMethod"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Forma de Pagamento</FormLabel>
-                    <Select
-                      onValueChange={(val) => {
-                        field.onChange(val)
-                        if (val === "Crédito") {
-                          const currentCard = cards.find(c => c.id === form.getValues("creditCardId"))
-                          if (currentCard?.bankId) {
-                            form.setValue("bankId", currentCard.bankId)
-                          }
-                        } else {
-                          form.setValue("creditCardId", null)
+            <FormField
+              control={form.control}
+              name="paymentMethod"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Forma de Pagamento</FormLabel>
+                  <Select
+                    onValueChange={(val) => {
+                      field.onChange(val)
+                      if (val === "Crédito") {
+                        const currentCard = cards.find(c => c.id === form.getValues("creditCardId"))
+                        if (currentCard?.bankId) {
+                          form.setValue("bankId", currentCard.bankId)
                         }
-                      }}
-                      defaultValue={field.value || "Pix"}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Pix">Pix</SelectItem>
-                        <SelectItem value="Crédito">Crédito</SelectItem>
-                        <SelectItem value="Débito">Débito</SelectItem>
-                        <SelectItem value="Conta">Dinheiro / Conta</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value || "pending"}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="pending">Pendente</SelectItem>
-                        <SelectItem value="paid">Pago</SelectItem>
-                        <SelectItem value="overdue">Atrasado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                      } else {
+                        form.setValue("creditCardId", null)
+                      }
+                    }}
+                    defaultValue={field.value || "Pix"}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Pix">Pix</SelectItem>
+                      <SelectItem value="Crédito">Crédito</SelectItem>
+                      <SelectItem value="Débito">Débito</SelectItem>
+                      <SelectItem value="Conta">Dinheiro / Conta</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-2 gap-3">
               <FormField

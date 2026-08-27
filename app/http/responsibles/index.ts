@@ -1,7 +1,7 @@
 import { api } from '@/app/lib/axios'
 import { CreatePersonResponsible, PersonResponsible, UpdatePersonResponsible } from '@/app/types/financial'
 
-export interface ResponsiblePendingCredit {
+export interface ResponsiblePendingDebit {
   id: string
   description: string
   value: number
@@ -13,9 +13,14 @@ export interface ResponsiblePendingCredit {
   year?: number
 }
 
+export type ResponsiblePendingCredit = ResponsiblePendingDebit
+
 export interface ResponsibleDetails extends PersonResponsible {
   totalPending: number
-  pendingCredits: ResponsiblePendingCredit[]
+  totalDebits?: number
+  totalCredits?: number
+  pendingDebits?: ResponsiblePendingDebit[]
+  pendingCredits?: ResponsiblePendingCredit[]
 }
 
 export async function getResponsibles(

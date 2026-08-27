@@ -42,19 +42,17 @@ export async function GET(req: NextRequest, props: RouteParams) {
 
     const responsibleData = responsibleDoc.data()!
 
-    // Buscar todas as RECEITAS pendentes deste responsável
-    const creditsSnap = await db
-      .collection('workspaces')
-      .doc(workspaceId)
-      .collection('credits')
-      .where('responsibleId', '==', responsibleId)
-      .where('status', '==', 'pending')
-      .get()
+    // Buscar todas as DESPESAS e RECEITAS deste responsável
+    const [debitsSnap, creditsSnap] = await Promise.all([
+      db.collection('workspaces').doc(workspaceId).collection('debits').where('responsibleId', '==', responsibleId).get(),
+      db.collection('workspaces').doc(workspaceId).collection('credits').where('responsibleId', '==', responsibleId).get(),
+    ])
 
-    let totalPending = 0
-    const pendingCredits = []
+    let totalDebits = 0
+    let totalCredits = 0
+    const pendingDebits = []
 
-    for (const doc of creditsSnap.docs) {
+    for (const doc of debitsSnap.docs) {
       const d = doc.data()
 
       // Filtro de mês e ano se especificado
@@ -65,10 +63,10 @@ export async function GET(req: NextRequest, props: RouteParams) {
         continue
       }
 
-      totalPending += d.value || 0
+      totalDebits += d.value || 0
       const dateStr = d.date?.toDate ? d.date.toDate().toLocaleDateString('pt-BR') : ''
 
-      pendingCredits.push({
+      pendingDebits.push({
         id: doc.id,
         description: d.description,
         value: d.value,
@@ -80,6 +78,19 @@ export async function GET(req: NextRequest, props: RouteParams) {
         year: d.year,
       })
     }
+
+    for (const doc of creditsSnap.docs) {
+      const c = doc.data()
+      if (month && month !== 'todos' && c.month && c.month.toLowerCase() !== month.toLowerCase()) {
+        continue
+      }
+      if (year && year !== 'todos' && c.year && Number(c.year) !== Number(year)) {
+        continue
+      }
+      totalCredits += c.value || 0
+    }
+
+    const totalPending = Math.max(0, totalDebits - totalCredits)
 
     // Verificar se o e-mail corresponde a um usuário cadastrado
     let userImage: string | null = null
@@ -107,7 +118,10 @@ export async function GET(req: NextRequest, props: RouteParams) {
       isRegisteredUser,
       status: responsibleData.status || 'active',
       totalPending: Number(totalPending.toFixed(2)),
-      pendingCredits,
+      totalDebits: Number(totalDebits.toFixed(2)),
+      totalCredits: Number(totalCredits.toFixed(2)),
+      pendingDebits,
+      pendingCredits: pendingDebits, // Alias para retrocompatibilidade
       createdAt: serializeFirestoreDate(responsibleData.createdAt),
       updatedAt: serializeFirestoreDate(responsibleData.updatedAt),
     }, { status: 200 })

@@ -28,27 +28,41 @@ export async function GET(req: NextRequest, props: RouteParams) {
     const month = searchParams.get('month')
     const year = searchParams.get('year')
 
-    const [responsiblesSnap, creditsSnap] = await Promise.all([
+    const [responsiblesSnap, debitsSnap, creditsSnap] = await Promise.all([
       db.collection('workspaces').doc(workspaceId).collection('responsibles').orderBy('name', 'asc').get(),
-      db.collection('workspaces').doc(workspaceId).collection('credits').where('status', '==', 'pending').get(),
+      db.collection('workspaces').doc(workspaceId).collection('debits').get(),
+      db.collection('workspaces').doc(workspaceId).collection('credits').get(),
     ])
 
-    // Calcular total pendente por responsável com base nas RECEITAS pendentes
-    const pendingBalances: Record<string, number> = {}
+    // Calcular total de despesas e receitas por responsável no período
+    const totalDebitsByResp: Record<string, number> = {}
+    const totalCreditsByResp: Record<string, number> = {}
 
-    creditsSnap.docs.forEach((doc) => {
+    debitsSnap.docs.forEach((doc) => {
       const data = doc.data()
       if (data.responsibleId) {
-        // Se houver filtro de mês/ano, aplicar
         if (month && month !== 'todos' && data.month && data.month.toLowerCase() !== month.toLowerCase()) {
           return
         }
         if (year && year !== 'todos' && data.year && Number(data.year) !== Number(year)) {
           return
         }
+        totalDebitsByResp[data.responsibleId] =
+          (totalDebitsByResp[data.responsibleId] || 0) + (data.value || 0)
+      }
+    })
 
-        pendingBalances[data.responsibleId] =
-          (pendingBalances[data.responsibleId] || 0) + (data.value || 0)
+    creditsSnap.docs.forEach((doc) => {
+      const data = doc.data()
+      if (data.responsibleId) {
+        if (month && month !== 'todos' && data.month && data.month.toLowerCase() !== month.toLowerCase()) {
+          return
+        }
+        if (year && year !== 'todos' && data.year && Number(data.year) !== Number(year)) {
+          return
+        }
+        totalCreditsByResp[data.responsibleId] =
+          (totalCreditsByResp[data.responsibleId] || 0) + (data.value || 0)
       }
     })
 
@@ -73,6 +87,10 @@ export async function GET(req: NextRequest, props: RouteParams) {
           }
         }
 
+        const debitsVal = totalDebitsByResp[doc.id] || 0
+        const creditsVal = totalCreditsByResp[doc.id] || 0
+        const pendingBalance = Math.max(0, debitsVal - creditsVal)
+
         return {
           id: doc.id,
           workspaceId,
@@ -82,7 +100,9 @@ export async function GET(req: NextRequest, props: RouteParams) {
           isRegisteredUser,
           status: isRegisteredUser ? 'linked' : data.status || 'active',
           linkedUserId: data.linkedUserId || null,
-          pendingBalance: Number((pendingBalances[doc.id] || 0).toFixed(2)),
+          pendingBalance: Number(pendingBalance.toFixed(2)),
+          totalDebits: Number(debitsVal.toFixed(2)),
+          totalCredits: Number(creditsVal.toFixed(2)),
           createdAt: serializeFirestoreDate(data.createdAt),
           updatedAt: serializeFirestoreDate(data.updatedAt),
         }

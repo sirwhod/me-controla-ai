@@ -35,6 +35,7 @@ import Image from "next/image"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { cn } from "../lib/utils"
 import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import { Calendar } from "./ui/calendar"
 import { QuickCreateSelect } from "./ui/quick-create-select"
 
@@ -236,7 +237,7 @@ export function CreateCredit() {
                           )}
                         >
                           {field.value ? (
-                            format(new Date(field.value), "PPP")
+                            format(new Date(field.value), "PPP", { locale: ptBR })
                           ) : (
                             <span>Selecione uma data</span>
                           )}

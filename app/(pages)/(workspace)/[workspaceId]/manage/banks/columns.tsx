@@ -10,6 +10,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { CreditCard, Landmark, MoreHorizontal, QrCode } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { toast } from "sonner"
 
 export const columns: ColumnDef<Bank>[] = [
   {
@@ -48,20 +49,38 @@ export const columns: ColumnDef<Bank>[] = [
         return <span className="text-xs text-muted-foreground italic">Não cadastrada</span>
       }
 
+      const handleCopyPix = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        navigator.clipboard.writeText(pixKey)
+        toast.success("Chave PIX copiada para a área de transferência!")
+      }
+
       return (
-        <div className="flex items-center gap-2">
-          <div className="p-1 rounded-sm bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+        <button
+          type="button"
+          onClick={handleCopyPix}
+          title="Clique para copiar a chave PIX"
+          className="flex items-center gap-2 group p-1.5 rounded-md hover:bg-accent/60 transition-colors text-left cursor-pointer border border-transparent hover:border-border"
+        >
+          <div className="p-1 rounded-sm bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-500/20 transition-colors">
             <QrCode className="h-3.5 w-3.5" />
           </div>
           <div className="flex flex-col">
-            <span className="text-xs font-mono font-medium truncate max-w-[180px]">{pixKey}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-mono font-bold tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
+                ••••••••••••
+              </span>
+              <span className="text-[10px] text-primary underline underline-offset-2 opacity-80 group-hover:opacity-100">
+                Copiar
+              </span>
+            </div>
             {pixKeyType && (
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                {pixKeyType}
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground/80">
+                Tipo: {pixKeyType}
               </span>
             )}
           </div>
-        </div>
+        </button>
       )
     },
   },

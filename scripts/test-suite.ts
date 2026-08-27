@@ -636,15 +636,14 @@ async function runTestSuite() {
       const respDoc = await respRef.get()
       assert('Gestão de Responsáveis', 'Responsável cadastrado apenas com Nome e Email (sem chave PIX)', respDoc.exists && respDoc.data()?.name === 'Lucas Brandão' && !respDoc.data()?.pixKey)
 
-      // 12.2 Vincular Receita Pendente ao Responsável
-      const creditRespRef = db.collection('workspaces').doc(workspaceId).collection('credits').doc()
-      await creditRespRef.set({
-        description: 'Reembolso Aluguel',
+      // 12.2 Vincular Despesa ao Responsável
+      const debitRespRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+      await debitRespRef.set({
+        description: 'Almoço Equipe',
         value: 350,
         date: new Date(),
         month: 'agosto',
         year: 2026,
-        status: 'pending',
         paymentMethod: 'Pix',
         responsibleId: respId,
         responsibleName: 'Lucas Brandão',
@@ -654,21 +653,46 @@ async function runTestSuite() {
         updatedAt: new Date(),
       })
 
-      // 12.3 Calcular Saldo Devedor a partir da Lista de Receitas
+      // 12.3 Calcular Saldo Devedor a partir das Despesas
+      const debitsForResp = await db
+        .collection('workspaces')
+        .doc(workspaceId)
+        .collection('debits')
+        .where('responsibleId', '==', respId)
+        .get()
+
+      const totalDespesasResp = debitsForResp.docs.reduce((acc, d) => acc + (d.data().value || 0), 0)
+      assert('Gestão de Responsáveis', 'Despesa vinculada com sucesso ao responsável', !debitsForResp.empty)
+      assert('Gestão de Responsáveis', 'Cálculo de saldo devedor do responsável a partir de Despesas correto (R$ 350)', totalDespesasResp === 350)
+
+      // 12.4 Abate de Saldo: Gerar Receita no valor da cobrança e abater o valor
+      const acertoCreditRef = db.collection('workspaces').doc(workspaceId).collection('credits').doc()
+      await acertoCreditRef.set({
+        description: 'Acerto PIX - Lucas Brandão',
+        value: 350,
+        date: new Date(),
+        month: 'agosto',
+        year: 2026,
+        paymentMethod: 'Pix',
+        responsibleId: respId,
+        responsibleName: 'Lucas Brandão',
+        workspaceId,
+        userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+
       const creditsForResp = await db
         .collection('workspaces')
         .doc(workspaceId)
         .collection('credits')
         .where('responsibleId', '==', respId)
-        .where('status', '==', 'pending')
         .get()
+      const totalReceitasResp = creditsForResp.docs.reduce((acc, d) => acc + (d.data().value || 0), 0)
+      const saldoAposAbate = Math.max(0, totalDespesasResp - totalReceitasResp)
+      assert('Gestão de Responsáveis', 'Saldo devedor zerado após registro da receita de acerto PIX', saldoAposAbate === 0)
 
-      const totalDevidoReceitas = creditsForResp.docs.reduce((acc, d) => acc + (d.data().value || 0), 0)
-
-      assert('Gestão de Responsáveis', 'Receita vinculada com sucesso ao responsável', !creditsForResp.empty)
-      assert('Gestão de Responsáveis', 'Cálculo de saldo devedor do responsável a partir de Receitas correto (R$ 350)', totalDevidoReceitas === 350)
-
-      // 12.4 Validação de correspondência de usuário para foto/avatar
+      // 12.5 Validação de correspondência de usuário para foto/avatar
       const userMatch = await db.collection('users').where('email', '==', testUser.email.toLowerCase().trim()).limit(1).get()
       assert('Gestão de Responsáveis', 'E-mail do responsável reconhecido como usuário cadastrado', !userMatch.empty)
     }

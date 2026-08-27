@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Check, Copy, Landmark, MessageSquareShare, QrCode, Receipt, Sparkles, AlertCircle } from "lucide-react"
+import { Check, Copy, Landmark, MessageSquareShare, QrCode, Receipt, Sparkles, AlertCircle, PlusCircle, Loader2 } from "lucide-react"
 
 import { Button } from "@/app/components/ui/button"
 import {
@@ -17,8 +17,9 @@ import {
   DialogTrigger,
 } from "@/app/components/ui/dialog"
 import { Textarea } from "@/app/components/ui/textarea"
-import { getResponsibleDetails } from "@/app/http/responsibles"
+import { getResponsibleDetails, ResponsiblePendingDebit } from "@/app/http/responsibles"
 import { getBanks } from "@/app/http/banks/get-banks"
+import { createCredit } from "@/app/http/credits/create-credit"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { formatCurrency } from "@/app/lib/utils"
 import { Bank } from "@/app/types/financial"
@@ -44,8 +45,9 @@ export function ResponsiblePixModal({
   const [copied, setCopied] = useState(false)
   const [selectedBankId, setSelectedBankId] = useState<string>("")
   const { workspaceActive } = useWorkspace()
+  const queryClient = useQueryClient()
 
-  // Buscar detalhes do responsável com as receitas pendentes do mês/ano
+  // Buscar detalhes do responsável com as despesas do mês/ano
   const { data: details, isLoading: isDetailsLoading } = useQuery({
     queryKey: ["responsible-details", workspaceActive?.id, responsibleId, month, year],
     queryFn: () => getResponsibleDetails(workspaceActive!.id, responsibleId, { month, year }),
@@ -59,7 +61,7 @@ export function ResponsiblePixModal({
     enabled: !!workspaceActive && open,
   })
 
-  // Pre-selecionar o primeiro banco com chave PIX cadastrada
+  // Pré-selecionar o primeiro banco com chave PIX cadastrada
   const banksWithPix = useMemo(() => banks.filter(b => !!b.pixKey), [banks])
 
   useEffect(() => {
@@ -77,15 +79,18 @@ export function ResponsiblePixModal({
     [banks, selectedBankId]
   )
 
-  // Gerar mensagem de cobrança personalizada com as receitas e chave PIX do banco selecionado
+  const debitsList: ResponsiblePendingDebit[] = useMemo(() => {
+    return (details?.pendingDebits || details?.pendingCredits || []) as ResponsiblePendingDebit[]
+  }, [details])
+
+  const total = details?.totalPending ?? pendingBalance
+
+  // Gerar mensagem de cobrança personalizada com as despesas e chave PIX do banco selecionado
   const billingMessage = useMemo(() => {
-    const credits = details?.pendingCredits || []
-    const total = details?.totalPending ?? pendingBalance
+    const periodText = month && month !== 'todos' ? ` referente a ${month}${year && year !== 'todos' ? `/${year}` : ''}` : ''
 
-    const periodText = month && month !== 'todos' ? ` para ${month}${year && year !== 'todos' ? `/${year}` : ''}` : ''
-
-    const lines = credits.map(
-      (c) => `• ${c.dateFormatted ? c.dateFormatted + ' - ' : ''}${c.description}: ${formatCurrency(c.value)}`
+    const lines = debitsList.map(
+      (d) => `• ${d.dateFormatted ? d.dateFormatted + ' - ' : ''}${d.description}: ${formatCurrency(d.value)}`
     )
 
     const bankInfo = selectedBank?.pixKey
@@ -93,14 +98,41 @@ export function ResponsiblePixModal({
       : `\n⚠️ Favor solicitar a chave PIX para transferência.`
 
     return [
-      `Olá ${responsibleName}! Segue o extrato de valores em aberto no MeControla.AI${periodText}:`,
+      `Olá ${responsibleName}! Segue o extrato de despesas no MeControla.AI${periodText}:`,
       ...lines,
       `---------------------------------`,
       `💰 Total a pagar: ${formatCurrency(total)}`,
       bankInfo,
       `\nObrigado! 🚀`,
     ].join('\n')
-  }, [details, pendingBalance, month, year, responsibleName, selectedBank])
+  }, [debitsList, total, month, year, responsibleName, selectedBank])
+
+  // Mutation para registrar a Receita de acerto e abater o saldo
+  const { mutateAsync: generateCreditMutation, isPending: isGeneratingCredit } = useMutation({
+    mutationFn: async () => {
+      if (!workspaceActive) return
+      return createCredit({
+        workspaceId: workspaceActive.id,
+        description: `Acerto PIX - ${responsibleName}${month && month !== 'todos' ? ` (${month})` : ''}`,
+        value: total,
+        date: new Date().toISOString(),
+        paymentMethod: "Pix",
+        bankId: selectedBankId || null,
+        responsibleId: responsibleId,
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["responsibles"] })
+      queryClient.invalidateQueries({ queryKey: ["responsible-details"] })
+      queryClient.invalidateQueries({ queryKey: ["credits"] })
+      queryClient.invalidateQueries({ queryKey: ["debits"] })
+      toast.success(`Receita de ${formatCurrency(total)} gerada com sucesso! Saldo abatido.`)
+      setOpen(false)
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Erro ao gerar receita de acerto.")
+    },
+  })
 
   const handleCopy = () => {
     if (!billingMessage) return
@@ -122,27 +154,27 @@ export function ResponsiblePixModal({
         <Button
           variant="outline"
           size="sm"
-          className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10 font-semibold"
+          className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10 font-semibold cursor-pointer"
         >
           <QrCode className="h-3.5 w-3.5" />
           Cobrar PIX
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
             Cobrança PIX: {responsibleName}
           </DialogTitle>
           <DialogDescription>
-            Selecione o banco de destino da cobrança e envie o extrato de receitas pendentes diretamente ao responsável.
+            Envie o extrato de despesas do responsável e gere a receita de acerto para abater o saldo.
           </DialogDescription>
         </DialogHeader>
 
         {isDetailsLoading || isBanksLoading ? (
           <div className="py-8 text-center text-sm text-muted-foreground">
-            Carregando extrato de receitas do responsável...
+            Carregando extrato de despesas do responsável...
           </div>
         ) : (
           <div className="space-y-4">
@@ -159,7 +191,7 @@ export function ResponsiblePixModal({
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     <span>Nenhum banco cadastrado.</span>
                   </div>
-                  <Link href="/manage/banks">
+                  <Link href={`/${workspaceActive?.id ? `${workspaceActive.id}/` : ''}manage/banks`}>
                     <Button size="sm" variant="outline" className="h-7 text-xs">Cadastrar Banco</Button>
                   </Link>
                 </div>
@@ -194,47 +226,47 @@ export function ResponsiblePixModal({
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-center justify-between">
               <div>
                 <span className="text-xs font-semibold text-muted-foreground uppercase">
-                  Total a Receber {month && month !== 'todos' ? `(${month})` : ''}
+                  Saldo Devedor {month && month !== 'todos' ? `(${month})` : ''}
                 </span>
                 <div className="text-2xl font-extrabold text-foreground">
-                  {formatCurrency(details?.totalPending ?? pendingBalance)}
+                  {formatCurrency(total)}
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-xs text-muted-foreground">Chave PIX Selecionada:</span>
+                <span className="text-xs text-muted-foreground">Chave PIX:</span>
                 <div className="text-xs font-bold text-primary truncate max-w-[180px]">
                   {selectedBank?.pixKey || "Nenhuma chave no banco"}
                 </div>
               </div>
             </div>
 
-            {/* List of Pending Revenues */}
+            {/* List of Debits */}
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-1 flex items-center gap-1.5">
                 <Receipt className="h-3.5 w-3.5" />
-                Receitas em Aberto deste Responsável ({details?.pendingCredits?.length || 0})
+                Despesas Deste Responsável ({debitsList.length})
               </h4>
               <div className="max-h-36 overflow-y-auto space-y-1.5 mt-2 pr-1">
-                {!details?.pendingCredits || details.pendingCredits.length === 0 ? (
+                {debitsList.length === 0 ? (
                   <div className="p-3 text-center text-xs text-muted-foreground bg-muted/40 rounded-lg">
-                    Nenhuma receita pendente encontrada para este período.
+                    Nenhuma despesa encontrada para este período.
                   </div>
                 ) : (
-                  details.pendingCredits.map((c) => (
+                  debitsList.map((d) => (
                     <div
-                      key={c.id}
+                      key={d.id}
                       className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-xs"
                     >
                       <div className="truncate pr-2">
-                        <span className="font-medium text-foreground">{c.description}</span>
-                        {c.dateFormatted && (
+                        <span className="font-medium text-foreground">{d.description}</span>
+                        {d.dateFormatted && (
                           <span className="text-[10px] text-muted-foreground ml-2">
-                            {c.dateFormatted}
+                            {d.dateFormatted}
                           </span>
                         )}
                       </div>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
-                        {formatCurrency(c.value)}
+                      <span className="font-bold text-red-600 dark:text-red-400 shrink-0">
+                        {formatCurrency(d.value)}
                       </span>
                     </div>
                   ))
@@ -245,11 +277,11 @@ export function ResponsiblePixModal({
             {/* Formatted Message Ready to Send */}
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1">
-                Mensagem Formatada para Envio:
+                Mensagem Formatada para Cobrança:
               </label>
               <Textarea
                 readOnly
-                rows={5}
+                rows={4}
                 value={billingMessage}
                 className="font-mono text-xs bg-muted/30 resize-none"
               />
@@ -258,6 +290,22 @@ export function ResponsiblePixModal({
         )}
 
         <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+          {total > 0 && (
+            <Button
+              type="button"
+              onClick={() => generateCreditMutation()}
+              disabled={isGeneratingCredit || isDetailsLoading || total <= 0}
+              className="w-full sm:w-auto gap-1.5 font-bold"
+            >
+              {isGeneratingCredit ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <PlusCircle className="h-4 w-4" />
+              )}
+              Registrar Receita & Abater Saldo
+            </Button>
+          )}
+
           <Button
             type="button"
             variant="outline"
@@ -276,7 +324,7 @@ export function ResponsiblePixModal({
             className="w-full sm:w-auto gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
           >
             <MessageSquareShare className="h-4 w-4" />
-            Enviar no WhatsApp
+            WhatsApp
           </Button>
 
           <DialogClose asChild>
