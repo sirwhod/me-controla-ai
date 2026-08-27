@@ -31,25 +31,25 @@ export async function createCategory(
     }
   }
 
-  let body: FormData | Record<string, unknown>
-  let headers: Record<string, string | undefined> | undefined = undefined
+  let payload: Record<string, unknown>
 
   if ('payload' in props && props.payload instanceof FormData) {
-    body = props.payload
-    headers = { 'Content-Type': undefined }
+    payload = {
+      name: props.payload.get('name')?.toString() || '',
+      type: props.payload.get('type')?.toString() || 'all',
+      icon: props.payload.get('icon')?.toString() || 'tag',
+    }
   } else {
-    const formData = new FormData()
-    formData.append("name", (props as CreateCategoryDirectProps).name)
-    formData.append("type", (props as CreateCategoryDirectProps).type || "all")
-    formData.append("icon", (props as CreateCategoryDirectProps).icon || "tag")
-    body = formData
-    headers = { 'Content-Type': undefined }
+    payload = {
+      name: (props as CreateCategoryDirectProps).name,
+      type: (props as CreateCategoryDirectProps).type || 'all',
+      icon: (props as CreateCategoryDirectProps).icon || 'tag',
+    }
   }
 
   const response = await api.post<CreateCategoryResponse>(
     `/workspaces/${workspaceId}/categories`,
-    body,
-    { headers }
+    payload
   )
 
   return response.data

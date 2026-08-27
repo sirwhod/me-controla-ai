@@ -272,7 +272,7 @@ export const createCategorySchema = z.object({
   icon: z.custom<IconName>(
     (val) => typeof val === 'string' && iconNames.includes(val as IconName),
     { message: 'Por favor, selecione um ícone válido.' },
-  ).refine((val) => val !== undefined && val !== null, { message: 'Por favor, selecione um ícone.' }),
+  ),
   type: z.enum(['all', 'expense', 'income'], {
     errorMap: () => ({ message: 'Tipo inválido.' }),
   }),

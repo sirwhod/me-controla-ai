@@ -13,25 +13,28 @@ export async function updateDebit(
     description,
     value,
     bankId,
+    creditCardId,
     categoryId,
+    responsibleId,
     currentInstallment,
     endDate,
     frequency,
     paymentMethod,
     proofUrl,
     startDate,
-    totalInstallments
+    totalInstallments,
+    status
   }: UpdateDebit
 ): Promise<UpdateDebitResponse> {
   if (!workspaceId) {
     return {
-      message: "O Id da Caixinha é nescessário para a alteração do débito."
+      message: "O Id da Caixinha é necessário para a alteração do débito."
     }
   }
 
   if (!debitId) {
     return {
-      message: "O Id do débito é nescessário para a alteração do débito."
+      message: "O Id do débito é necessário para a alteração do débito."
     }
   }
 
@@ -42,14 +45,17 @@ export async function updateDebit(
       description,
       value,
       bankId,
+      creditCardId,
       categoryId,
+      responsibleId,
       currentInstallment,
       endDate,
       frequency,
       paymentMethod,
       proofUrl,
       startDate,
-      totalInstallments
+      totalInstallments,
+      status
     }
   )
 

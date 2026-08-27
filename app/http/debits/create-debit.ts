@@ -3,11 +3,11 @@ import { CreateDebit } from '@/app/types/financial'
 
 interface CreateDebitResponse {
   message: string;
-  debitId: string; // O ID do débito criada
+  debitId: string;
 }
 
 interface CreateDebitProps extends CreateDebit {
-  workspaceId: string, 
+  workspaceId: string;
 }
 
 export async function createDebit(
@@ -17,7 +17,9 @@ export async function createDebit(
     type,
     value,
     bankId,
+    creditCardId,
     categoryId,
+    responsibleId,
     currentInstallment,
     endDate,
     frequency,
@@ -25,12 +27,13 @@ export async function createDebit(
     proofUrl,
     startDate,
     totalInstallments,
+    status,
     workspaceId
   }: CreateDebitProps
 ): Promise<CreateDebitResponse> {
   if (!workspaceId) {
     return {
-      message: "O Id da Caixinha é nescessário para a criação do débito.",
+      message: "O Id da Caixinha é necessário para a criação do débito.",
       debitId: ""
     }
   }
@@ -43,14 +46,17 @@ export async function createDebit(
       type,
       value,
       bankId,
+      creditCardId,
       categoryId,
+      responsibleId,
       currentInstallment,
       endDate,
       frequency,
       paymentMethod,
       proofUrl,
       startDate,
-      totalInstallments
+      totalInstallments,
+      status
     }
   )
 

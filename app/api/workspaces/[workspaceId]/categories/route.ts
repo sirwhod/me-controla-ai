@@ -76,7 +76,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Categ
         return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
-    const body = await req.json()
+    let body: Record<string, unknown>
+    const contentType = req.headers.get('content-type') || ''
+
+    if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
+      const formData = await req.formData()
+      body = {
+        name: formData.get('name')?.toString() || '',
+        icon: formData.get('icon')?.toString() || 'tag',
+        type: formData.get('type')?.toString() || 'all',
+      }
+    } else {
+      body = await req.json()
+      if (!body.icon) body.icon = 'tag'
+      if (!body.type) body.type = 'all'
+    }
+
     const validationResult = createCategorySchema.safeParse(body)
 
     if (!validationResult.success) {
@@ -92,8 +107,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Categ
 
     const newCategoryData = {
       name: name.trim(),
-      icon: (icon as IconName) || null,
-      type: type || 'expense',
+      icon: (icon as IconName) || 'tag',
+      type: type || 'all',
       workspaceId: workspaceId,
       userId: session.user.id,
       createdAt: new Date(),

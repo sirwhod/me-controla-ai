@@ -109,12 +109,37 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
       updatedAt: new Date(),
     }
 
+    if (updateData.bankId) {
+      const bankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(updateData.bankId)
+      const bankDoc = await bankRef.get()
+      if (bankDoc.exists) {
+        dataToUpdate.bankName = bankDoc.data()?.name || ""
+        dataToUpdate.bankImageUrl = bankDoc.data()?.iconUrl || ""
+      }
+    } else if (updateData.bankId === null) {
+      dataToUpdate.bankName = null
+      dataToUpdate.bankImageUrl = null
+    }
+
+    if (updateData.categoryId) {
+      const catRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc(updateData.categoryId)
+      const catDoc = await catRef.get()
+      if (catDoc.exists) {
+        dataToUpdate.categoryName = catDoc.data()?.name || ""
+        dataToUpdate.categoryUrl = catDoc.data()?.icon || ""
+      }
+    } else if (updateData.categoryId === null) {
+      dataToUpdate.categoryName = null
+      dataToUpdate.categoryUrl = null
+    }
+
     if (updateData.responsibleId) {
       const respDoc = await db.collection('workspaces').doc(workspaceId).collection('responsibles').doc(updateData.responsibleId).get()
       if (respDoc.exists) {
         dataToUpdate.responsibleName = respDoc.data()?.name || ""
       }
-    } else if (updateData.responsibleId === null) {
+    } else if (updateData.responsibleId === null || updateData.responsibleId === '') {
+      dataToUpdate.responsibleId = null
       dataToUpdate.responsibleName = null
     }
 

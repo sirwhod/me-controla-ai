@@ -165,6 +165,20 @@ async function runTestSuite() {
       const catDoc = await catRef.get()
       assert('Categorias', 'Categoria de Despesa criada com sucesso', catDoc.exists && catDoc.data()?.name === 'Alimentação')
 
+      // 2.1.1 Criar Categoria Universal com defaults (Quick Create)
+      const catUniversalRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc()
+      await catUniversalRef.set({
+        name: 'Investimentos',
+        icon: 'tag',
+        type: 'all',
+        workspaceId: workspaceId,
+        userId: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      const catUniversalDoc = await catUniversalRef.get()
+      assert('Categorias', 'Categoria universal criada com valores padrão (icon tag, type all)', catUniversalDoc.exists && catUniversalDoc.data()?.type === 'all')
+
       // 2.2 Criar Banco com Fechamento, Vencimento e Chave PIX
       const bankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc()
       bankId = bankRef.id
@@ -389,6 +403,17 @@ async function runTestSuite() {
       })
       const updatedCreditDoc = await creditRef.get()
       assert('Atualização (CRUD)', 'Atualização de valor e descrição da Receita', updatedCreditDoc.data()?.value === 6500 && updatedCreditDoc.data()?.description === 'Salário Atualizado com Bônus')
+
+      // 6.1.1 Atualizar Receita vinculando ID do Responsável
+      const dummyRespRef = db.collection('workspaces').doc(workspaceId).collection('responsibles').doc()
+      await dummyRespRef.set({ name: 'Carlos Teste', email: 'carlos@teste.com', status: 'active', createdAt: new Date() })
+      await creditRef.update({
+        responsibleId: dummyRespRef.id,
+        responsibleName: 'Carlos Teste',
+        updatedAt: new Date(),
+      })
+      const creditWithRespDoc = await creditRef.get()
+      assert('Atualização (CRUD)', 'Atualização de Receita vinculando ID do Responsável e persistindo dados', creditWithRespDoc.data()?.responsibleId === dummyRespRef.id && creditWithRespDoc.data()?.responsibleName === 'Carlos Teste')
 
       // 6.2 Atualizar Despesa
       const debitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc(debitId1)

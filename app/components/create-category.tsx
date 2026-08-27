@@ -68,15 +68,12 @@ export function CreateCategory() {
       return
     }
 
-    const formData = new FormData()
-    formData.append("name", data.name)
-    formData.append("type", data.type || "all")
-    formData.append("icon", data.icon)
-
     try {
       const response = await createCategoryFn({
-        payload: formData,
-        workspaceId: workspaceActive.id
+        workspaceId: workspaceActive.id,
+        name: data.name,
+        icon: data.icon,
+        type: data.type || "all",
       })
 
       if (response) {

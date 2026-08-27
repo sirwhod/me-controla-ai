@@ -14,6 +14,7 @@ export async function updateCredit(
     date,
     bankId,
     categoryId,
+    responsibleId,
     paymentMethod,
     proofUrl,
     status
@@ -21,13 +22,13 @@ export async function updateCredit(
 ): Promise<UpdateCreditResponse> {
   if (!workspaceId) {
     return {
-      message: "O Id da Caixinha é nescessário para a alteração do crédito."
+      message: "O Id da Caixinha é necessário para a alteração do crédito."
     }
   }
 
   if (!creditId) {
     return {
-      message: "O Id do crédito é nescessário para a alteração do crédito."
+      message: "O Id do crédito é necessário para a alteração do crédito."
     }
   }
 
@@ -39,6 +40,7 @@ export async function updateCredit(
       date,
       bankId,
       categoryId,
+      responsibleId,
       paymentMethod,
       proofUrl,
       status
