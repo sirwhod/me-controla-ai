@@ -13,6 +13,8 @@ import { redirect } from "next/navigation"
 import { Suspense, useEffect } from "react"
 import { Loader } from "@/app/components/ui/loader"
 
+import { MobileNav } from "@/app/components/mobile-nav"
+
 export default function WorkspaceLayout({
   children,
 }: Readonly<{
@@ -39,9 +41,10 @@ export default function WorkspaceLayout({
           <DateFilterProvider>
             <WorkspaceProvider>
               <AppSidebar />
-              <SidebarInset>
+              <SidebarInset className="pb-20 md:pb-0">
                 {children}
               </SidebarInset>
+              <MobileNav />
             </WorkspaceProvider>
           </DateFilterProvider>
         </Suspense>

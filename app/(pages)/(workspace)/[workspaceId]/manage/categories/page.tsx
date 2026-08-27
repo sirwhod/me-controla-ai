@@ -49,40 +49,40 @@ export default function Page() {
 
   return (
     <>
-        <header className="flex h-16 shrink-0 items-center gap-2">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  {isWorkspaceLoading || !workspaceActive  &&  (
-                    <Skeleton className="h-5 w-48" />
+      <header className="flex h-14 md:h-16 shrink-0 items-center gap-2 border-b border-border/40 bg-background/95 backdrop-blur-md px-3 md:px-4">
+        <div className="flex items-center gap-2 w-full">
+          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
+          <Separator
+            orientation="vertical"
+            className="mr-1 md:mr-2 h-4"
+          />
+          <Breadcrumb>
+            <BreadcrumbList className="text-xs sm:text-sm">
+              <BreadcrumbItem>
+                <BreadcrumbPage>
+                  {isWorkspaceLoading || !workspaceActive ? (
+                    <Skeleton className="h-5 w-32 md:w-48" />
+                  ) : (
+                    <WorkspaceSelector />
                   )}
-                  {isWorkspaceLoading &&  (
-                    <Skeleton className="h-5 w-48" />
-                  )}
-                  <WorkspaceSelector />
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem className="hidden md:block">
-                  <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ''}/dashboard`}>
-                    Dashboard
-                  </Link>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>
-                    Categorias
-                  </BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header>
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbItem className="hidden md:block">
+                <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ''}/dashboard`}>
+                  Dashboard
+                </Link>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="font-semibold text-foreground">
+                  Categorias
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+      </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
           <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min p-4">
             {isWorkspaceLoading || !workspaceActive  &&  (

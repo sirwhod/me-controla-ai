@@ -14,12 +14,18 @@ import { cn } from "@/app/lib/utils"
 interface MonthYearNavigatorProps {
   className?: string
   compact?: boolean
+  showFullMonthName?: boolean
 }
 
-export function MonthYearNavigator({ className, compact = false }: MonthYearNavigatorProps) {
+export function MonthYearNavigator({
+  className,
+  compact = false,
+  showFullMonthName = false,
+}: MonthYearNavigatorProps) {
   const {
     month,
     year,
+    monthLabel,
     monthShort,
     goToPreviousMonth,
     goToNextMonth,
@@ -75,7 +81,9 @@ export function MonthYearNavigator({ className, compact = false }: MonthYearNavi
             )}
           >
             <CalendarIcon className="h-3.5 w-3.5 text-primary" />
-            <span className="capitalize">{monthShort} {year}</span>
+            <span className="capitalize">
+              {showFullMonthName ? `${monthLabel} de ${year}` : `${monthShort} ${year}`}
+            </span>
           </Button>
         </PopoverTrigger>
 

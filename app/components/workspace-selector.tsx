@@ -28,10 +28,16 @@ export default function WorkspaceSelector() {
   return (
     <Dialog>
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center justify-center gap-2">
-          {workspaceActive?.type && workspaceActive.type === "personal" ? <User className="w-4 h-4"/> : <Users className="w-4 h-4"/>}
-          {workspaceActive?.name ?? 'Selecione um Workspace'}
-          <ChevronsUpDown className="w-4 h-4 text-muted" />
+        <DropdownMenuTrigger className="flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-semibold hover:text-primary transition-colors cursor-pointer outline-hidden">
+          {workspaceActive?.type && workspaceActive.type === "personal" ? (
+            <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
+          ) : (
+            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
+          )}
+          <span className="truncate max-w-[130px] sm:max-w-[200px] md:max-w-none">
+            {workspaceActive?.name ?? 'Selecione um Workspace'}
+          </span>
+          <ChevronsUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuLabel>Caixinha</DropdownMenuLabel>

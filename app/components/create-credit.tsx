@@ -156,6 +156,7 @@ export function CreateCredit() {
       })
 
       if (response) {
+        await queryClient.invalidateQueries({ queryKey: ['credits', workspaceActive.id] })
         refetch()
         toast.success(response.message || "Receita criada com sucesso!")
         setModalIsOpen(false)
