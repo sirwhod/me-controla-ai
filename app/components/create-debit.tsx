@@ -52,6 +52,8 @@ export function CreateDebit() {
     defaultValues: {
       description: "",
       date: new Date().toISOString(),
+      startDate: new Date().toISOString(),
+      frequency: "monthly",
       bankId: "",
       creditCardId: "",
       categoryId: "",
@@ -158,9 +160,16 @@ export function CreateDebit() {
     }
 
     try {
+      const payload: CreateDebitProps = {
+        ...data,
+        frequency: data.frequency || "monthly",
+        startDate: data.startDate || data.date || new Date().toISOString(),
+        date: data.date || data.startDate || new Date().toISOString(),
+      }
+
       const response = await createDebitFn({
         workspaceId: workspaceActive.id,
-        ...data
+        ...payload
       })
 
       if (response) {

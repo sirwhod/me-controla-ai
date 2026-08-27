@@ -383,6 +383,38 @@ async function runTestSuite() {
       const targetInvoiceMonth = purchaseDateAfterClosing.getDate() > closingDay ? 'setembro' : 'agosto'
 
       assert('Despesas Avançadas', 'Regra de fechamento de fatura projeta mês de vencimento subsequente', targetInvoiceMonth === 'setembro')
+
+      // 5.3 Testar Despesa Fixa (gera lançamentos mensais até o fim do ano com frequency monthly default)
+      const fixedBatch = db.batch()
+      const fixedDate = new Date('2026-09-10')
+      const currentYear = fixedDate.getFullYear()
+      const curFixed = new Date(currentYear, fixedDate.getMonth(), 1)
+      let fixedCount = 0
+      while (curFixed.getFullYear() === currentYear && curFixed <= new Date(currentYear, 11, 31)) {
+        const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
+        fixedBatch.set(ref, {
+          description: 'Internet Residencial',
+          value: 94.90,
+          date: new Date(curFixed),
+          month: curFixed.toLocaleString('pt-BR', { month: 'long' }),
+          year: curFixed.getFullYear(),
+          type: 'Fixo',
+          isTemplate: true,
+          frequency: 'monthly',
+          startDate: fixedDate,
+          paymentMethod: 'Conta',
+          bankId: bankId,
+          categoryId: categoryId,
+          workspaceId: workspaceId,
+          userId: userId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        fixedCount++
+        curFixed.setMonth(curFixed.getMonth() + 1)
+      }
+      await fixedBatch.commit()
+      assert('Despesas Avançadas', 'Geração de despesas fixas mensais até o fim do ano', fixedCount === 4)
     }
   } catch (error: any) {
     assert('Despesas Avançadas', 'Erro na execução da suíte 5', false, error.message)

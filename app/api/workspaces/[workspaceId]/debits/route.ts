@@ -177,6 +177,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       status: status || 'pending',
     }
 
+    const effectiveFrequency = frequency || 'monthly'
+
     switch (type) {
       case 'Comum': {
         const newDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
@@ -188,16 +190,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       }
 
       case 'Fixo': {
-        if (!frequency || !startDate) {
-          return NextResponse.json({ message: 'Frequência e Data de Início são obrigatórios para débito Fixo.' }, { status: 400 })
-        }
+        const effStartDate = startDateObj || dateObj || new Date()
         newDebitData.isTemplate = true
-        newDebitData.frequency = frequency
-        newDebitData.startDate = startDateObj
+        newDebitData.frequency = effectiveFrequency
+        newDebitData.startDate = effStartDate
         newDebitData.endDate = endDateObj
 
         const debitsToCreate = []
-        const baseStartDate = getInvoiceDate(startDateObj!)
+        const baseStartDate = getInvoiceDate(effStartDate)
         const currentYear = baseStartDate.getFullYear()
         const current = new Date(baseStartDate.getFullYear(), baseStartDate.getMonth(), 1)
         while (current.getFullYear() === currentYear && current <= new Date(currentYear, 11, 31)) {
@@ -224,17 +224,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       }
 
       case 'Assinatura': {
-        if (!frequency || !startDate) {
-          return NextResponse.json({ message: 'Frequência e Data de Início são obrigatórios para débito Assinatura.' }, { status: 400 })
-        }
+        const effStartDate = startDateObj || dateObj || new Date()
         newDebitData.isTemplate = true
-        newDebitData.frequency = frequency
-        newDebitData.startDate = startDateObj
+        newDebitData.frequency = effectiveFrequency
+        newDebitData.startDate = effStartDate
         newDebitData.endDate = endDateObj
         newDebitData.isActive = true
 
         const assinaturaDebitsToCreate = []
-        const baseAssinaturaDate = getInvoiceDate(startDateObj!)
+        const baseAssinaturaDate = getInvoiceDate(effStartDate)
         const assinaturaCurrent = new Date(baseAssinaturaDate.getFullYear(), baseAssinaturaDate.getMonth(), 1)
         for (let i = 0; i < 12; i++) {
           const debitForMonth = {
@@ -260,25 +258,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       }
 
       case 'Parcelamento': {
-        if (!startDate || !totalInstallments) {
-          return NextResponse.json({ message: 'Data de Início e Total de Parcelas são obrigatórios para Parcelamento.' }, { status: 400 })
-        }
+        const effStartDate = startDateObj || dateObj || new Date()
+        const numInstallments = totalInstallments || 2
 
         newDebitData.isTemplate = false
-        newDebitData.startDate = startDateObj
-        newDebitData.totalInstallments = totalInstallments
+        newDebitData.startDate = effStartDate
+        newDebitData.totalInstallments = numInstallments
 
         const parcelasToCreate: Array<Debit & { ref: DocumentReference }> = []
-        const baseParcelaDate = getInvoiceDate(startDateObj!)
+        const baseParcelaDate = getInvoiceDate(effStartDate)
         const parcelaDate = new Date(baseParcelaDate.getFullYear(), baseParcelaDate.getMonth(), 1)
 
         // Criar referências antecipadas para vincular originalDebitId
         const firstRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
 
-        for (let i = 1; i <= totalInstallments; i++) {
+        for (let i = 1; i <= numInstallments; i++) {
           const ref = i === 1 ? firstRef : db.collection('workspaces').doc(workspaceId).collection('debits').doc()
-          
-          // Lançamento retroativo: parcelas até currentInstallment são consideradas 'paid', as demais 'pending'
           const installmentStatus = i <= currentInstallment ? 'paid' : 'pending'
 
           const parcelaData: Debit & { ref: DocumentReference } = {
@@ -287,7 +282,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
             date: new Date(parcelaDate),
             month: parcelaDate.toLocaleString('pt-BR', { month: 'long' }),
             year: parcelaDate.getFullYear(),
-            description: `Parcela ${i}/${totalInstallments} - ${newDebitData.description}`,
+            description: `Parcela ${i}/${numInstallments} - ${newDebitData.description}`,
             createdAt: new Date(),
             updatedAt: new Date(),
             originalDebitId: firstRef.id,
@@ -307,7 +302,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         return NextResponse.json({
           message: 'Parcelamento criado com sucesso!',
           originalDebitId: firstRef.id,
-          totalInstallments,
+          totalInstallments: numInstallments,
           currentInstallment,
         }, { status: 201 })
       }
