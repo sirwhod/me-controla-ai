@@ -131,7 +131,7 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
 
   const handleQuickCreateResponsible = async (name: string) => {
     if (!workspaceActive) return null
-    const res = await createResponsible(workspaceActive.id, { name, pixKeyType: 'cpf' })
+    const res = await createResponsible(workspaceActive.id, { name })
     await queryClient.invalidateQueries({ queryKey: ["responsibles", workspaceActive.id] })
     toast.success(`Responsável "${name}" cadastrado!`)
     return res.responsibleId

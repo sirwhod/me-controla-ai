@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Loader2, Plus, UserPlus } from "lucide-react"
+import { Loader2, Plus, UserPlus, Mail, User } from "lucide-react"
 
 import { Button } from "@/app/components/ui/button"
 import {
@@ -27,13 +27,6 @@ import {
   FormMessage,
 } from "@/app/components/ui/form"
 import { Input } from "@/app/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/app/components/ui/select"
 import { CreatePersonResponsible, createPersonResponsibleSchema } from "@/app/types/financial"
 import { createResponsible } from "@/app/http/responsibles"
 import { useWorkspace } from "@/app/hooks/use-workspace"
@@ -48,8 +41,6 @@ export function CreateResponsible() {
     defaultValues: {
       name: "",
       email: "",
-      pixKey: "",
-      pixKeyType: "cpf",
     },
   })
 
@@ -83,9 +74,12 @@ export function CreateResponsible() {
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Novo Responsável por Despesas</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-primary" />
+            Cadastrar Responsável
+          </DialogTitle>
           <DialogDescription>
-            Cadastre uma pessoa para dividir gastos, gerar cobranças PIX ou vincular a despesas conjuntas.
+            Cadastre uma pessoa para associar a receitas e acompanhar valores a receber.
           </DialogDescription>
         </DialogHeader>
 
@@ -98,7 +92,10 @@ export function CreateResponsible() {
                 <FormItem>
                   <FormLabel>Nome da Pessoa *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Lucas Silva, Mariana..." {...field} />
+                    <div className="relative">
+                      <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input className="pl-9" placeholder="Ex: Lucas Silva, Mariana..." {...field} />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -110,66 +107,23 @@ export function CreateResponsible() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>E-mail (opcional para convite)</FormLabel>
+                  <FormLabel>E-mail (opcional)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="lucas@exemplo.com"
-                      value={field.value || ""}
-                      onChange={field.onChange}
-                    />
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="email"
+                        className="pl-9"
+                        placeholder="exemplo@email.com"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            <div className="grid grid-cols-3 gap-3">
-              <FormField
-                control={form.control}
-                name="pixKeyType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo PIX</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value || "cpf"}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="cpf">CPF</SelectItem>
-                        <SelectItem value="cnpj">CNPJ</SelectItem>
-                        <SelectItem value="email">E-mail</SelectItem>
-                        <SelectItem value="phone">Telefone</SelectItem>
-                        <SelectItem value="random">Aleatória</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="col-span-2">
-                <FormField
-                  control={form.control}
-                  name="pixKey"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Chave PIX (para cobrança)</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Chave para receber..."
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
 
             <DialogFooter className="justify-between pt-2">
               <DialogClose asChild>

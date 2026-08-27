@@ -355,8 +355,8 @@ export interface PersonResponsible {
   workspaceId: string;
   name: string;
   email?: string | null;
-  pixKey?: string | null;
-  pixKeyType?: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random' | string | null;
+  userImage?: string | null;
+  isRegisteredUser?: boolean;
   status: 'active' | 'invited' | 'linked';
   linkedUserId?: string | null;
   createdAt: Date | null;
@@ -366,8 +366,6 @@ export interface PersonResponsible {
 export const createPersonResponsibleSchema = z.object({
   name: z.string().trim().min(1, { message: 'O nome do responsável é obrigatório.' }).max(100),
   email: z.string().email('E-mail inválido.').optional().or(z.literal('')),
-  pixKey: z.string().trim().max(100).optional().or(z.literal('')),
-  pixKeyType: z.enum(['cpf', 'cnpj', 'email', 'phone', 'random']).optional(),
 })
 
 export type CreatePersonResponsible = z.infer<typeof createPersonResponsibleSchema>
@@ -375,8 +373,6 @@ export type CreatePersonResponsible = z.infer<typeof createPersonResponsibleSche
 export const updatePersonResponsibleSchema = z.object({
   name: z.string().trim().min(1, { message: 'O nome não pode ser vazio.' }).max(100).optional(),
   email: z.string().email('E-mail inválido.').optional().or(z.literal('')).nullable(),
-  pixKey: z.string().trim().max(100).optional().or(z.literal('')).nullable(),
-  pixKeyType: z.enum(['cpf', 'cnpj', 'email', 'phone', 'random']).optional().nullable(),
 })
 
 export type UpdatePersonResponsible = z.infer<typeof updatePersonResponsibleSchema>

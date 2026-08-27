@@ -4,7 +4,6 @@ import { db } from '@/app/lib/firebase'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { updatePersonResponsibleSchema } from '@/app/types/financial'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
-import { formatCurrency } from '@/app/lib/utils'
 
 interface RouteParams {
   params: Promise<{
@@ -13,7 +12,7 @@ interface RouteParams {
   }>
 }
 
-export async function GET(_req: NextRequest, props: RouteParams) {
+export async function GET(req: NextRequest, props: RouteParams) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -25,6 +24,10 @@ export async function GET(_req: NextRequest, props: RouteParams) {
     if (!isMember) {
       return NextResponse.json({ message: 'Acesso negado' }, { status: 403 })
     }
+
+    const { searchParams } = new URL(req.url)
+    const month = searchParams.get('month')
+    const year = searchParams.get('year')
 
     const responsibleDoc = await db
       .collection('workspaces')
@@ -39,21 +42,33 @@ export async function GET(_req: NextRequest, props: RouteParams) {
 
     const responsibleData = responsibleDoc.data()!
 
-    // Buscar todas as despesas pendentes deste responsável
-    const debitsSnap = await db
+    // Buscar todas as RECEITAS pendentes deste responsável
+    const creditsSnap = await db
       .collection('workspaces')
       .doc(workspaceId)
-      .collection('debits')
+      .collection('credits')
       .where('responsibleId', '==', responsibleId)
       .where('status', '==', 'pending')
       .get()
 
     let totalPending = 0
-    const pendingDebits = debitsSnap.docs.map((doc) => {
+    const pendingCredits = []
+
+    for (const doc of creditsSnap.docs) {
       const d = doc.data()
+
+      // Filtro de mês e ano se especificado
+      if (month && month !== 'todos' && d.month && d.month.toLowerCase() !== month.toLowerCase()) {
+        continue
+      }
+      if (year && year !== 'todos' && d.year && Number(d.year) !== Number(year)) {
+        continue
+      }
+
       totalPending += d.value || 0
       const dateStr = d.date?.toDate ? d.date.toDate().toLocaleDateString('pt-BR') : ''
-      return {
+
+      pendingCredits.push({
         id: doc.id,
         description: d.description,
         value: d.value,
@@ -61,34 +76,38 @@ export async function GET(_req: NextRequest, props: RouteParams) {
         dateFormatted: dateStr,
         paymentMethod: d.paymentMethod,
         categoryName: d.categoryName || null,
+        month: d.month,
+        year: d.year,
+      })
+    }
+
+    // Verificar se o e-mail corresponde a um usuário cadastrado
+    let userImage: string | null = null
+    let isRegisteredUser = false
+
+    if (responsibleData.email) {
+      const userSnap = await db
+        .collection('users')
+        .where('email', '==', responsibleData.email.toLowerCase().trim())
+        .limit(1)
+        .get()
+
+      if (!userSnap.empty) {
+        userImage = userSnap.docs[0].data()?.image || null
+        isRegisteredUser = true
       }
-    })
-
-    // Montar texto pronto e formatado para cobrança via WhatsApp / PIX
-    const lines = pendingDebits.map(
-      (d) => `• ${d.dateFormatted ? d.dateFormatted + ' - ' : ''}${d.description}: ${formatCurrency(d.value)}`
-    )
-
-    const pixKeyText = responsibleData.pixKey ? `\n🔑 Chave PIX: ${responsibleData.pixKey}` : ''
-    const formattedBillingMessage = [
-      `Olá ${responsibleData.name}! Segue o balanço das despesas no MeControla.AI:`,
-      ...lines,
-      `---------------------------------`,
-      `💰 Total: ${formatCurrency(totalPending)}${pixKeyText}`,
-      `\nObrigado! 🚀`,
-    ].join('\n')
+    }
 
     return NextResponse.json({
       id: responsibleDoc.id,
       workspaceId,
       name: responsibleData.name,
       email: responsibleData.email || null,
-      pixKey: responsibleData.pixKey || null,
-      pixKeyType: responsibleData.pixKeyType || null,
+      userImage,
+      isRegisteredUser,
       status: responsibleData.status || 'active',
       totalPending: Number(totalPending.toFixed(2)),
-      pendingDebits,
-      formattedBillingMessage,
+      pendingCredits,
       createdAt: serializeFirestoreDate(responsibleData.createdAt),
       updatedAt: serializeFirestoreDate(responsibleData.updatedAt),
     }, { status: 200 })
@@ -133,9 +152,23 @@ export async function PATCH(req: NextRequest, props: RouteParams) {
     }
 
     if (parsed.data.name !== undefined) updateData.name = parsed.data.name
-    if (parsed.data.email !== undefined) updateData.email = parsed.data.email
-    if (parsed.data.pixKey !== undefined) updateData.pixKey = parsed.data.pixKey
-    if (parsed.data.pixKeyType !== undefined) updateData.pixKeyType = parsed.data.pixKeyType
+    if (parsed.data.email !== undefined) {
+      const emailFormatted = parsed.data.email ? parsed.data.email.toLowerCase().trim() : null
+      updateData.email = emailFormatted
+
+      if (emailFormatted) {
+        const userSnap = await db
+          .collection('users')
+          .where('email', '==', emailFormatted)
+          .limit(1)
+          .get()
+
+        if (!userSnap.empty) {
+          updateData.linkedUserId = userSnap.docs[0].id
+          updateData.status = 'linked'
+        }
+      }
+    }
 
     await responsibleRef.update(updateData)
 

@@ -140,7 +140,6 @@ export function CreateDebit() {
     try {
       const res = await createResponsible(workspaceActive.id, {
         name,
-        pixKeyType: 'cpf',
       })
       await queryClient.invalidateQueries({ queryKey: ['responsibles', workspaceActive.id] })
       toast.success(`Responsável "${name}" cadastrado com sucesso!`)

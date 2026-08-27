@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Edit2, Loader2, Save } from "lucide-react"
+import { Edit2, Loader2, Save, Mail, User } from "lucide-react"
 
 import { Button } from "@/app/components/ui/button"
 import {
@@ -27,13 +27,6 @@ import {
   FormMessage,
 } from "@/app/components/ui/form"
 import { Input } from "@/app/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/app/components/ui/select"
 import { PersonResponsible, UpdatePersonResponsible, updatePersonResponsibleSchema } from "@/app/types/financial"
 import { updateResponsible } from "@/app/http/responsibles"
 import { useWorkspace } from "@/app/hooks/use-workspace"
@@ -54,8 +47,6 @@ export function EditResponsible({ responsible, asDropdownItem = false }: EditRes
     defaultValues: {
       name: responsible.name || "",
       email: responsible.email || "",
-      pixKey: responsible.pixKey || "",
-      pixKeyType: (responsible.pixKeyType as 'cpf' | 'cnpj' | 'email' | 'phone' | 'random') || "cpf",
     },
   })
 
@@ -104,7 +95,7 @@ export function EditResponsible({ responsible, asDropdownItem = false }: EditRes
         <DialogHeader>
           <DialogTitle>Editar Responsável</DialogTitle>
           <DialogDescription>
-            Atualize o nome, e-mail ou dados de PIX desta pessoa.
+            Atualize o nome ou o e-mail desta pessoa.
           </DialogDescription>
         </DialogHeader>
 
@@ -115,9 +106,12 @@ export function EditResponsible({ responsible, asDropdownItem = false }: EditRes
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome</FormLabel>
+                  <FormLabel>Nome da Pessoa *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Lucas Silva..." {...field} />
+                    <div className="relative">
+                      <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input className="pl-9" placeholder="Ex: Lucas Silva..." {...field} />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -129,66 +123,23 @@ export function EditResponsible({ responsible, asDropdownItem = false }: EditRes
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>E-mail</FormLabel>
+                  <FormLabel>E-mail (opcional)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="lucas@exemplo.com"
-                      value={field.value || ""}
-                      onChange={field.onChange}
-                    />
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="email"
+                        className="pl-9"
+                        placeholder="exemplo@email.com"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            <div className="grid grid-cols-3 gap-3">
-              <FormField
-                control={form.control}
-                name="pixKeyType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo PIX</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value || "cpf"}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="cpf">CPF</SelectItem>
-                        <SelectItem value="cnpj">CNPJ</SelectItem>
-                        <SelectItem value="email">E-mail</SelectItem>
-                        <SelectItem value="phone">Telefone</SelectItem>
-                        <SelectItem value="random">Aleatória</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="col-span-2">
-                <FormField
-                  control={form.control}
-                  name="pixKey"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Chave PIX</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Chave para receber..."
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
 
             <DialogFooter className="justify-between pt-2">
               <DialogClose asChild>

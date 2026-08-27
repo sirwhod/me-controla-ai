@@ -1,23 +1,30 @@
 import { api } from '@/app/lib/axios'
 import { CreatePersonResponsible, PersonResponsible, UpdatePersonResponsible } from '@/app/types/financial'
 
-export interface ResponsibleDetails extends PersonResponsible {
-  totalPending: number
-  pendingDebits: Array<{
-    id: string
-    description: string
-    value: number
-    date: string | null
-    dateFormatted: string
-    paymentMethod: string
-    categoryName: string | null
-  }>
-  formattedBillingMessage: string
+export interface ResponsiblePendingCredit {
+  id: string
+  description: string
+  value: number
+  date: string | null
+  dateFormatted: string
+  paymentMethod: string
+  categoryName: string | null
+  month?: string
+  year?: number
 }
 
-export async function getResponsibles(workspaceId: string): Promise<(PersonResponsible & { pendingBalance: number })[]> {
+export interface ResponsibleDetails extends PersonResponsible {
+  totalPending: number
+  pendingCredits: ResponsiblePendingCredit[]
+}
+
+export async function getResponsibles(
+  workspaceId: string,
+  params?: { month?: string; year?: string }
+): Promise<(PersonResponsible & { pendingBalance: number })[]> {
   const response = await api.get<(PersonResponsible & { pendingBalance: number })[]>(
-    `/workspaces/${workspaceId}/responsibles`
+    `/workspaces/${workspaceId}/responsibles`,
+    { params }
   )
   return response.data
 }
@@ -35,10 +42,12 @@ export async function createResponsible(
 
 export async function getResponsibleDetails(
   workspaceId: string,
-  responsibleId: string
+  responsibleId: string,
+  params?: { month?: string; year?: string }
 ): Promise<ResponsibleDetails> {
   const response = await api.get<ResponsibleDetails>(
-    `/workspaces/${workspaceId}/responsibles/${responsibleId}`
+    `/workspaces/${workspaceId}/responsibles/${responsibleId}`,
+    { params }
   )
   return response.data
 }
