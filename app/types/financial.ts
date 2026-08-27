@@ -171,6 +171,7 @@ export interface Bank {
   iconUrl: string | null; // URL do ícone (pode ser null)
   pixKey?: string | null;
   pixKeyType?: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random' | null;
+  cardsCount?: number;
   createdAt: Date | null; // Data de criação (Timestamp convertido)
   updatedAt: Date | null; // Data de atualização (Timestamp convertido)
   invoiceClosingDay: string | null; // Dia de fechamento (para Crédito, pode ser null)

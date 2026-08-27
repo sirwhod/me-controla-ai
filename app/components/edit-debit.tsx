@@ -108,7 +108,14 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
 
   const onSubmit = async (data: UpdateDebitProps) => {
     if (!workspaceActive) return
-    await updateDebitMutation(data)
+    const payload = { ...data }
+    if (payload.paymentMethod === "Crédito" && payload.creditCardId) {
+      const card = cards.find(c => c.id === payload.creditCardId)
+      if (card?.bankId) {
+        payload.bankId = card.bankId
+      }
+    }
+    await updateDebitMutation(payload)
   }
 
   const handleQuickCreateCategory = async (name: string) => {
@@ -252,7 +259,10 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
                       onValueChange={(val) => {
                         field.onChange(val)
                         if (val === "Crédito") {
-                          form.setValue("bankId", null)
+                          const currentCard = cards.find(c => c.id === form.getValues("creditCardId"))
+                          if (currentCard?.bankId) {
+                            form.setValue("bankId", currentCard.bankId)
+                          }
                         } else {
                           form.setValue("creditCardId", null)
                         }

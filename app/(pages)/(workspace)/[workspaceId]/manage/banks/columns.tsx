@@ -7,13 +7,14 @@ import { Button } from "@/app/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu"
 import { Bank } from "@/app/types/financial"
 import { ColumnDef } from "@tanstack/react-table"
-import { CalendarClock, CreditCard, Landmark, MoreHorizontal } from "lucide-react"
+import { CreditCard, Landmark, MoreHorizontal, QrCode } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 
 export const columns: ColumnDef<Bank>[] = [
   {
     accessorKey: "name",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Banco" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Banco / Conta" />,
     cell: ({ row }) => {
       const iconUrl = row.original.iconUrl
       const code = row.original.code
@@ -37,35 +38,57 @@ export const columns: ColumnDef<Bank>[] = [
     },
   },
   {
-    accessorKey: "invoiceClosingDay",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Fechamento Fatura" />,
+    accessorKey: "pixKey",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Chave PIX" />,
     cell: ({ row }) => {
-      const day = row.original.invoiceClosingDay
-      if (!day || day === "0") {
-        return <span className="text-xs text-muted-foreground">Não definido</span>
+      const pixKey = row.original.pixKey
+      const pixKeyType = row.original.pixKeyType
+
+      if (!pixKey) {
+        return <span className="text-xs text-muted-foreground italic">Não cadastrada</span>
       }
 
       return (
-        <div className="flex items-center gap-1.5 text-xs font-medium text-purple-600 dark:text-purple-400">
-          <CreditCard className="h-3.5 w-3.5" />
-          <span>Dia {day}</span>
+        <div className="flex items-center gap-2">
+          <div className="p-1 rounded-sm bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <QrCode className="h-3.5 w-3.5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs font-mono font-medium truncate max-w-[180px]">{pixKey}</span>
+            {pixKeyType && (
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                {pixKeyType}
+              </span>
+            )}
+          </div>
         </div>
       )
     },
   },
   {
-    accessorKey: "invoiceDueDate",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Vencimento Fatura" />,
+    accessorKey: "cardsCount",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Cartões Associados" />,
     cell: ({ row }) => {
-      const day = row.original.invoiceDueDate
-      if (!day || day === "0") {
-        return <span className="text-xs text-muted-foreground">Não definido</span>
-      }
+      const count = row.original.cardsCount || 0
+      const workspaceId = row.original.workspaceId
 
       return (
-        <div className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400">
-          <CalendarClock className="h-3.5 w-3.5" />
-          <span>Dia {day}</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-medium bg-secondary px-2.5 py-1 rounded-full border">
+            <CreditCard className="h-3.5 w-3.5 text-primary" />
+            <span>
+              {count === 0 ? "Nenhum cartão" : count === 1 ? "1 cartão" : `${count} cartões`}
+            </span>
+          </div>
+
+          {workspaceId && count > 0 && (
+            <Link
+              href={`/${workspaceId}/manage/cards`}
+              className="text-xs text-primary hover:underline"
+            >
+              Ver cartões
+            </Link>
+          )}
         </div>
       )
     },

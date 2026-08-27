@@ -32,16 +32,25 @@ export async function GET(req: NextRequest, { params }: {params: Promise<BankRou
        return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
-    const banksQuery = db.collection('workspaces').doc(workspaceId).collection('banks')
-      .orderBy('name', 'asc')
+    const [banksSnapshot, cardsSnapshot] = await Promise.all([
+      db.collection('workspaces').doc(workspaceId).collection('banks').orderBy('name', 'asc').get(),
+      db.collection('workspaces').doc(workspaceId).collection('cards').get(),
+    ])
 
-    const querySnapshot = await banksQuery.get()
+    const cardsByBank = new Map<string, number>()
+    cardsSnapshot.docs.forEach((cardDoc) => {
+      const bId = cardDoc.data()?.bankId
+      if (bId) {
+        cardsByBank.set(bId, (cardsByBank.get(bId) || 0) + 1)
+      }
+    })
 
-    const banks = querySnapshot.docs.map(doc => {
+    const banks = banksSnapshot.docs.map(doc => {
       const data = doc.data()
       return {
         id: doc.id,
         ...data,
+        cardsCount: cardsByBank.get(doc.id) || 0,
         createdAt: serializeFirestoreDate(data.createdAt),
         updatedAt: serializeFirestoreDate(data.updatedAt),
       }

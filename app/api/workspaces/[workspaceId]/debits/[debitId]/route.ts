@@ -111,6 +111,49 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
       updatedAt: new Date(),
     }
 
+    // Se tiver creditCardId mas não bankId, buscar o banco do cartão
+    if (updateData.creditCardId && !updateData.bankId) {
+      const cardDoc = await db.collection('workspaces').doc(workspaceId).collection('cards').doc(updateData.creditCardId).get()
+      if (cardDoc.exists && cardDoc.data()?.bankId) {
+        dataToUpdate.bankId = cardDoc.data()?.bankId
+      }
+    }
+
+    const finalBankId = (dataToUpdate.bankId ?? updateData.bankId) as string | null | undefined
+    if (finalBankId) {
+      const bankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(finalBankId)
+      const bankDoc = await bankRef.get()
+      if (bankDoc.exists) {
+        dataToUpdate.bankName = bankDoc.data()?.name || ""
+        dataToUpdate.bankImageUrl = bankDoc.data()?.iconUrl || ""
+      }
+    } else if (finalBankId === null) {
+      dataToUpdate.bankName = null
+      dataToUpdate.bankImageUrl = null
+    }
+
+    if (updateData.categoryId) {
+      const catRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc(updateData.categoryId)
+      const catDoc = await catRef.get()
+      if (catDoc.exists) {
+        dataToUpdate.categoryName = catDoc.data()?.name || ""
+        dataToUpdate.categoryUrl = catDoc.data()?.icon || ""
+      }
+    } else if (updateData.categoryId === null) {
+      dataToUpdate.categoryName = null
+      dataToUpdate.categoryUrl = null
+    }
+
+    if (updateData.responsibleId) {
+      const respDoc = await db.collection('workspaces').doc(workspaceId).collection('responsibles').doc(updateData.responsibleId).get()
+      if (respDoc.exists) {
+        dataToUpdate.responsibleName = respDoc.data()?.name || ""
+      }
+    } else if (updateData.responsibleId === null || updateData.responsibleId === '') {
+      dataToUpdate.responsibleId = null
+      dataToUpdate.responsibleName = null
+    }
+
     if (updateData.date) {
       const dateObj = new Date(updateData.date)
       dataToUpdate.date = dateObj
