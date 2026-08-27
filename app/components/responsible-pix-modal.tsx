@@ -161,7 +161,7 @@ export function ResponsiblePixModal({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-xl max-h-[92vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -289,13 +289,13 @@ export function ResponsiblePixModal({
           </div>
         )}
 
-        <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+        <DialogFooter className="flex flex-col sm:flex-row flex-wrap sm:justify-between items-stretch sm:items-center gap-2 pt-3 border-t">
           {total > 0 && (
             <Button
               type="button"
               onClick={() => generateCreditMutation()}
               disabled={isGeneratingCredit || isDetailsLoading || total <= 0}
-              className="w-full sm:w-auto gap-1.5 font-bold"
+              className="w-full sm:w-auto gap-1.5 font-bold cursor-pointer shrink-0"
             >
               {isGeneratingCredit ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -306,32 +306,36 @@ export function ResponsiblePixModal({
             </Button>
           )}
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCopy}
-            disabled={isDetailsLoading || !billingMessage}
-            className="w-full sm:w-auto gap-1.5"
-          >
-            {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-            {copied ? "Copiado!" : "Copiar Texto"}
-          </Button>
-
-          <Button
-            type="button"
-            onClick={handleWhatsApp}
-            disabled={isDetailsLoading || !billingMessage}
-            className="w-full sm:w-auto gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-          >
-            <MessageSquareShare className="h-4 w-4" />
-            WhatsApp
-          </Button>
-
-          <DialogClose asChild>
-            <Button type="button" variant="secondary" className="w-full sm:w-auto">
-              Fechar
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleCopy}
+              disabled={isDetailsLoading || !billingMessage}
+              className="flex-1 sm:flex-initial gap-1.5 cursor-pointer"
+            >
+              {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+              {copied ? "Copiado!" : "Copiar"}
             </Button>
-          </DialogClose>
+
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleWhatsApp}
+              disabled={isDetailsLoading || !billingMessage}
+              className="flex-1 sm:flex-initial gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer"
+            >
+              <MessageSquareShare className="h-4 w-4" />
+              WhatsApp
+            </Button>
+
+            <DialogClose asChild>
+              <Button type="button" size="sm" variant="secondary" className="cursor-pointer">
+                Fechar
+              </Button>
+            </DialogClose>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

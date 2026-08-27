@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -60,6 +60,17 @@ export function EditCategory({ category, asDropdownItem = false }: EditCategoryP
     },
   })
 
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        name: category.name || "",
+        icon: (category.icon as IconName) || "tag",
+        type: category.type || "all",
+      })
+      setSearchTerm("")
+    }
+  }, [open, category, form])
+
   const { mutateAsync: updateCategoryMutation, isPending } = useMutation({
     mutationFn: (data: UpdateCategoryProps) =>
       updateCategory(workspaceActive!.id, category.id, data),
@@ -104,7 +115,7 @@ export function EditCategory({ category, asDropdownItem = false }: EditCategoryP
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Editar Categoria</DialogTitle>
           <DialogDescription>

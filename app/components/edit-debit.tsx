@@ -169,7 +169,7 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Editar Despesa</DialogTitle>
           <DialogDescription>

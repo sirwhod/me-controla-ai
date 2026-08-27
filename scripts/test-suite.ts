@@ -442,6 +442,17 @@ async function runTestSuite() {
       })
       const updatedBankDoc = await bankRef.get()
       assert('Atualização (CRUD)', 'Atualização de nome do Banco/Cartão', updatedBankDoc.data()?.name === 'Nubank Ultravioleta VIP')
+
+      // 6.5 Atualizar Categoria (Nome, Ícone e Tipo)
+      const catRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc(categoryId)
+      await catRef.update({
+        name: 'Alimentação & Restaurantes',
+        icon: 'utensils',
+        type: 'all',
+        updatedAt: new Date(),
+      })
+      const updatedCatDoc = await catRef.get()
+      assert('Atualização (CRUD)', 'Atualização de nome e ícone da Categoria', updatedCatDoc.data()?.name === 'Alimentação & Restaurantes' && updatedCatDoc.data()?.icon === 'utensils')
     }
   } catch (error: any) {
     assert('Atualização (CRUD)', 'Erro na execução da suíte 6', false, error.message)

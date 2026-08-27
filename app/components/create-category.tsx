@@ -107,7 +107,7 @@ export function CreateCategory() {
           Nova Categoria
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Nova Categoria</DialogTitle>
           <DialogDescription>

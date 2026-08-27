@@ -150,7 +150,7 @@ export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) 
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Editar Receita</DialogTitle>
           <DialogDescription>

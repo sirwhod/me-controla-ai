@@ -91,7 +91,7 @@ export function EditResponsible({ responsible, asDropdownItem = false }: EditRes
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Editar Responsável</DialogTitle>
           <DialogDescription>

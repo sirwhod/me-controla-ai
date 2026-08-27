@@ -135,7 +135,7 @@ export function CreateBank() {
           Novo Banco
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Novo Banco</DialogTitle>
           <DialogDescription>

@@ -97,7 +97,7 @@ export function EditGoal({ goal, asDropdownItem = false }: EditGoalProps) {
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Editar Meta Financeira</DialogTitle>
           <DialogDescription>

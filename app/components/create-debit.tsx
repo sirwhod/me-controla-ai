@@ -226,7 +226,7 @@ export function CreateDebit() {
           Nova Despesa
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Nova Despesa</DialogTitle>
           <DialogDescription>
@@ -482,7 +482,7 @@ export function CreateDebit() {
                               form.setValue("creditCardId", "")
                             }
                           }}
-                          className="grid grid-cols-2 md:grid-cols-4 w-full gap-2"
+                          className="grid grid-cols-2 sm:grid-cols-4 w-full gap-2"
                         >
                           <div>
                             <RadioGroupItem value="Pix" id="debit-pix" className="peer sr-only" />

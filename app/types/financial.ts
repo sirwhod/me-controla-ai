@@ -284,9 +284,9 @@ export type CreateCategory = z.infer<typeof createCategorySchema>
 export const updateCategorySchema = z.object({
   name: z.string().trim().min(1, { message: 'O nome da categoria não pode ser vazio.' }).max(100, { message: 'Nome da categoria não pode exceder 100 caracteres.' }).optional(),
   icon: z.custom<IconName>(
-    (val) => typeof val === 'string' && iconNames.includes(val as IconName),
+    (val) => typeof val === 'string' && val.trim().length > 0,
     { message: 'Por favor, selecione um ícone válido.' },
-  ).refine((val) => val !== undefined && val !== null, { message: 'Por favor, selecione um ícone.' }).optional(),
+  ).optional(),
   type: z.enum(['all', 'expense', 'income']).optional(),
 })
 

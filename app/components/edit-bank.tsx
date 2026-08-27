@@ -95,7 +95,7 @@ export function EditBank({ bank, asDropdownItem = false }: EditBankProps) {
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Editar Banco / Conta</DialogTitle>
           <DialogDescription>

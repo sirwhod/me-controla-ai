@@ -210,7 +210,7 @@ export function CreateCredit() {
           Nova Receita
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Nova Receita</DialogTitle>
           <DialogDescription>

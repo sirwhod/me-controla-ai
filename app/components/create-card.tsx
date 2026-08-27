@@ -105,7 +105,7 @@ export function CreateCard() {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CardIcon className="h-5 w-5 text-primary" />
