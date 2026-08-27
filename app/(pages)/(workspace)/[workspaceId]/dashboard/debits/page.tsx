@@ -30,7 +30,7 @@ import {
 import { Button } from "@/app/components/ui/button"
 import { getBanks } from "@/app/http/banks/get-banks"
 import { getCategories } from "@/app/http/categories/get-categories"
-import { Banknote, CreditCard, Landmark, Tags, X } from "lucide-react"
+import { Banknote, CreditCard, Landmark, Tags, X, Receipt } from "lucide-react"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
 import Image from "next/image"
 import { MONTHS, useDateFilter } from "@/app/contexts/date-filter-context"
@@ -157,43 +157,83 @@ export default function Page() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-3.5 p-3 md:p-4 pt-3">
-        <div className="bg-muted/40 min-h-[calc(100vh-5rem)] md:min-h-min flex-1 rounded-xl p-3 md:p-4 gap-3.5 flex flex-col">
-          {/* 1. SEÇÃO DE FILTROS & AÇÃO - MOBILE (md:hidden) */}
-          <div className="flex flex-col gap-2.5 md:hidden w-full">
-            {/* Barra de Período + Filtros em BottomSheet + CTA */}
-            <div className="flex items-center justify-between gap-2 w-full">
-              <MonthYearNavigator
-                showFullMonthName
-                compact
-                className="flex-1 justify-between bg-card/80 border-border/70 h-9"
-              />
-
-              <BottomSheetFilters
-                categories={categories}
-                banks={banks}
-                categoryFilter={categoryFilter}
-                onCategoryChange={setCategoryFilter}
-                bankFilter={bankFilter}
-                onBankChange={setBankFilter}
-                paymentMethodFilter={paymentMethodFilter}
-                onPaymentMethodChange={setPaymentMethodFilter}
-                onClearFilters={clearFilters}
-                totalCount={filteredDebits.length}
-              />
-
-              <div className="shrink-0">
-                <CreateDebit />
-              </div>
-            </div>
+      <div className="flex flex-1 flex-col gap-4 p-3 md:p-6 pt-3 max-w-7xl w-full mx-auto">
+        {/* ========================================================================= */}
+        {/* 1. ESTRUTURA MOBILE (< 768px): Header + Período + CTA + Filtros + Listagem */}
+        {/* ========================================================================= */}
+        <div className="flex flex-col gap-3 md:hidden w-full">
+          {/* Título da Página */}
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-rose-500" />
+              Despesas
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Acompanhe e gerencie todos os gastos desta caixinha.
+            </p>
           </div>
 
-          {/* 2. SEÇÃO DE FILTROS & AÇÃO - DESKTOP (hidden md:flex) */}
-          <div className="hidden md:flex flex-wrap items-center justify-between gap-2">
+          {/* Seletor de Período em Largura Confortável */}
+          <MonthYearNavigator
+            showFullMonthName
+            className="w-full justify-between bg-card/80 border-border/70 h-10 shadow-xs text-xs font-semibold"
+          />
+
+          {/* CTA Principal Full Width */}
+          <CreateDebit fullWidth className="h-10 font-semibold shadow-xs" />
+
+          {/* Linha de Filtros & Contador de Despesas */}
+          <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/30">
+            <BottomSheetFilters
+              categories={categories}
+              banks={banks}
+              categoryFilter={categoryFilter}
+              onCategoryChange={setCategoryFilter}
+              bankFilter={bankFilter}
+              onBankChange={setBankFilter}
+              paymentMethodFilter={paymentMethodFilter}
+              onPaymentMethodChange={setPaymentMethodFilter}
+              onClearFilters={clearFilters}
+              totalCount={filteredDebits.length}
+            />
+
+            <span className="text-xs font-bold text-muted-foreground">
+              {countDebits} despesa{countDebits !== 1 ? "s" : ""}
+            </span>
+          </div>
+
+          {/* Resumo de Métricas (KPIs) */}
+          <SummaryKpiBar
+            type="debit"
+            total={totalDebits}
+            count={countDebits}
+            dailyAverage={dailyAverage}
+          />
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 2. ESTRUTURA DESKTOP (>= 768px): Barra Horizontal de Filtros e Controles  */}
+        {/* ========================================================================= */}
+        <div className="hidden md:flex flex-col gap-4 w-full">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                <Receipt className="h-6 w-6 text-rose-500" />
+                Despesas
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Gerencie lançamentos de despesas, compras no crédito, assinaturas e parcelamentos.
+              </p>
+            </div>
+
+            <CreateDebit />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-card/60 p-3 rounded-xl border border-border/60">
             <div className="flex flex-wrap items-center gap-2">
               {/* Categoria */}
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-44 h-8 text-xs font-medium">
+                <SelectTrigger className="w-44 h-8 text-xs font-medium bg-background">
                   <div className="flex items-center gap-1.5 truncate">
                     <Tags className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <SelectValue placeholder="Todas categorias" />
@@ -214,7 +254,7 @@ export default function Page() {
 
               {/* Banco */}
               <Select value={bankFilter} onValueChange={setBankFilter}>
-                <SelectTrigger className="w-44 h-8 text-xs font-medium">
+                <SelectTrigger className="w-44 h-8 text-xs font-medium bg-background">
                   <div className="flex items-center gap-1.5 truncate">
                     <Landmark className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <SelectValue placeholder="Todos bancos" />
@@ -242,7 +282,7 @@ export default function Page() {
 
               {/* Método de Pagamento */}
               <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
-                <SelectTrigger className="w-40 h-8 text-xs font-medium">
+                <SelectTrigger className="w-40 h-8 text-xs font-medium bg-background">
                   <div className="flex items-center gap-1.5 truncate">
                     <CreditCard className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <SelectValue placeholder="Todos métodos" />
@@ -293,28 +333,39 @@ export default function Page() {
               )}
             </div>
 
-            <CreateDebit />
+            <span className="text-xs text-muted-foreground font-medium">
+              {countDebits} despesa{countDebits !== 1 ? "s" : ""} encontrada{countDebits !== 1 ? "s" : ""}
+            </span>
           </div>
 
-          {/* 3. CARD COM MÉTRICAS KPI (TOTAL, QTD, MÉDIA POR DIA) */}
+          {/* Resumo de Métricas Desktop (KPIs) */}
           <SummaryKpiBar
             type="debit"
             total={totalDebits}
             count={countDebits}
             dailyAverage={dailyAverage}
           />
+        </div>
 
-          {/* 4. LISTAGEM DE DADOS (MOBILE CARDS / DESKTOP TABLE) */}
+        {/* ========================================================================= */}
+        {/* 3. LISTAGEM DE DADOS (MOBILE: ExpenseList / DESKTOP: DataTable)          */}
+        {/* ========================================================================= */}
+        <div className="w-full">
           {isLoading ? (
-            <LoadingState variant="list" count={6} />
+            <LoadingState variant="list" count={5} />
           ) : error ? (
             <ErrorState
-              title="Erro ao carregar despesas"
+              title="Não foi possível carregar as despesas"
               message={error.message}
               onRetry={() => refetch()}
             />
           ) : (
-            <DataTable columns={columns} data={filteredDebits} />
+            <DataTable
+              columns={columns}
+              data={filteredDebits}
+              hasActiveFilters={hasActiveFilters}
+              onClearFilters={clearFilters}
+            />
           )}
         </div>
       </div>

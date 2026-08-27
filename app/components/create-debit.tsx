@@ -42,7 +42,13 @@ import { QuickCreateSelect } from "./ui/quick-create-select"
 
 type CreateDebitFormData = CreateDebitProps
 
-export function CreateDebit() {
+interface CreateDebitComponentProps {
+  className?: string
+  fullWidth?: boolean
+  label?: string
+}
+
+export function CreateDebit({ className, fullWidth, label = "Nova Despesa" }: CreateDebitComponentProps = {}) {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false)
   const queryClient = useQueryClient()
@@ -231,12 +237,16 @@ export function CreateDebit() {
   return (
     <Dialog open={modalIsOpen} onOpenChange={handleModalOpenChange}>
       <DialogTrigger asChild>
-        <Button onClick={() => setModalIsOpen(true)} variant="default">
+        <Button
+          onClick={() => setModalIsOpen(true)}
+          variant="default"
+          className={cn(fullWidth && "w-full", className)}
+        >
           <PlusCircle className="w-4 h-4 mr-2" />
-          Nova Despesa
+          {label}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-xl max-h-[90vh]">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Nova Despesa</DialogTitle>
           <DialogDescription>

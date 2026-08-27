@@ -27,11 +27,17 @@ import {
   FormMessage,
 } from "@/app/components/ui/form"
 import { Input } from "@/app/components/ui/input"
+import { cn } from "@/app/lib/utils"
 import { CreatePersonResponsible, createPersonResponsibleSchema } from "@/app/types/financial"
 import { createResponsible } from "@/app/http/responsibles"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 
-export function CreateResponsible() {
+interface CreateResponsibleProps {
+  className?: string
+  fullWidth?: boolean
+}
+
+export function CreateResponsible({ className, fullWidth }: CreateResponsibleProps = {}) {
   const [open, setOpen] = useState(false)
   const { workspaceActive } = useWorkspace()
   const queryClient = useQueryClient()
@@ -66,13 +72,13 @@ export function CreateResponsible() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 font-semibold">
+        <Button className={cn("gap-2 font-semibold", fullWidth && "w-full", className)}>
           <UserPlus className="h-4 w-4" />
           Novo Responsável
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5 text-primary" />

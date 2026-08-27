@@ -19,11 +19,12 @@ import { PersonResponsible } from "@/app/types/financial"
 import { Skeleton } from "@/app/components/ui/skeleton"
 import Link from "next/link"
 import { useMemo } from "react"
-import { Calendar } from "lucide-react"
+import { Calendar, Users } from "lucide-react"
 import { useDateFilter } from "@/app/contexts/date-filter-context"
 import { MonthYearNavigator } from "@/app/components/month-year-navigator"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
+import { CreateResponsible } from "@/app/components/create-responsible"
 
 export default function ResponsiblesPage() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
@@ -84,23 +85,68 @@ export default function ResponsiblesPage() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-4 p-3 md:p-4 pt-3">
-        {/* Filtros de Mês e Ano de Apuração */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card/60 p-3 rounded-xl border border-border/60">
-          <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground">
-            <Calendar className="h-4 w-4 text-primary" />
-            <span>Período de Apuração das Despesas & Saldo:</span>
+      <div className="flex flex-1 flex-col gap-4 p-3 md:p-6 pt-3 max-w-7xl w-full mx-auto">
+        {/* ========================================================================= */}
+        {/* 1. ESTRUTURA MOBILE (< 768px): Header + Período + CTA                     */}
+        {/* ========================================================================= */}
+        <div className="flex flex-col gap-3 md:hidden w-full">
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Responsáveis
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Acompanhe gastos vinculados a pessoas e gere cobranças PIX.
+            </p>
           </div>
 
-          <MonthYearNavigator showFullMonthName compact />
+          {/* Período de Apuração */}
+          <MonthYearNavigator
+            showFullMonthName
+            className="w-full justify-between bg-card/80 border-border/70 h-10 shadow-xs text-xs font-semibold"
+          />
+
+          {/* CTA Principal Full Width */}
+          <CreateResponsible fullWidth className="h-10 font-semibold shadow-xs" />
         </div>
 
-        <div className="bg-muted/40 min-h-[calc(100vh-5rem)] md:min-h-min flex-1 rounded-xl p-3 md:p-4">
+        {/* ========================================================================= */}
+        {/* 2. ESTRUTURA DESKTOP (>= 768px): Header + Período Horizontal              */}
+        {/* ========================================================================= */}
+        <div className="hidden md:flex flex-col gap-4 w-full">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                <Users className="h-6 w-6 text-primary" />
+                Responsáveis
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Cadastre pessoas, vincule a despesas compartilhadas e acompanhe saldos em aberto.
+              </p>
+            </div>
+
+            <CreateResponsible />
+          </div>
+
+          <div className="flex items-center justify-between gap-3 bg-card/60 p-3 rounded-xl border border-border/60">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground">
+              <Calendar className="h-4 w-4 text-primary" />
+              <span>Período de Apuração das Despesas & Saldo:</span>
+            </div>
+
+            <MonthYearNavigator showFullMonthName compact />
+          </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 3. LISTAGEM DE DADOS (MOBILE: ResponsibleList / DESKTOP: DataTable)       */}
+        {/* ========================================================================= */}
+        <div className="w-full">
           {isLoading ? (
-            <LoadingState variant="list" count={5} />
+            <LoadingState variant="list" count={4} />
           ) : error ? (
             <ErrorState
-              title="Erro ao carregar responsáveis"
+              title="Não foi possível carregar os responsáveis"
               message={error.message}
               onRetry={() => refetch()}
             />

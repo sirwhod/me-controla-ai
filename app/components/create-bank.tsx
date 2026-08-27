@@ -21,13 +21,19 @@ import { createBank } from "../http/banks/create-bank"
 import { useWorkspace } from "../hooks/use-workspace"
 import { getBanks } from "../http/banks/get-banks"
 import { useState } from "react" 
-import { Separator } from "./ui/separator"
 import { ImageUploadField } from "./image-upload-field"
+import { Separator } from "./ui/separator"
+import { cn } from "@/app/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
 type CreateBankFormData = CreateBankProps
 
-export function CreateBank() {
+interface CreateBankComponentProps {
+  className?: string
+  fullWidth?: boolean
+}
+
+export function CreateBank({ className, fullWidth }: CreateBankComponentProps = {}) {
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false)
   const [isUploading, setIsUploading] = useState<boolean>(false)
 
@@ -56,7 +62,6 @@ export function CreateBank() {
   })
 
   async function handleCreateBankSubmit(data: CreateBankProps) {
-    console.log(data)
     if (!workspaceActive || isWorkspaceLoading || workspaceError) {
       toast.error("Workspace não está pronto. Tente novamente.")
       return
@@ -82,39 +87,29 @@ export function CreateBank() {
       formData.append("invoiceDueDate", "0");
     }
 
-      // PONTO CRÍTICO AQUI:
     if (data.imageFile && data.imageFile.length > 0) {
       const fileToUpload = data.imageFile[0];
-      console.log("Arquivo que será anexado:", fileToUpload); // Adicione este log
-      console.log("Nome do arquivo:", fileToUpload.name);
-      console.log("Tipo do arquivo:", fileToUpload.type);
-      console.log("Tamanho do arquivo:", fileToUpload.size);
-      formData.append("imageFile", fileToUpload, fileToUpload.name); // Tente adicionar o nome do arquivo como terceiro argumento
-    } else {
-      console.log("Nenhum imageFile para anexar.");
-    }
-
-    // Log para verificar o FormData antes de enviar para a função http
-    console.log("Conteúdo do FormData antes de chamar a API (frontend):");
-    for (const pair of formData.entries()) {
-      console.log(pair[0] + ': ', pair[1]);
+      formData.append("imageFile", fileToUpload, fileToUpload.name);
     }
 
     try {
       const response = await createBankFn({
-        payload: formData,
-        workspaceId: workspaceActive.id
+        workspaceId: workspaceActive.id,
+        payload: formData
       })
 
       if (response) {
         refetch()
-        toast.success(response.message || "Banco criado com sucesso!")
+        toast.success(response.message)
         setModalIsOpen(false)
         form.reset()
       }
+
     } catch (error: unknown) {
-      const errMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido."
-      toast.error(`Erro ao criar novo banco: ${errMessage}`)
+      toast.error(`
+          Erro ao criar novo banco.
+          Erro: ${error}
+        `)
     } finally {
       setIsUploading(false)
     }
@@ -130,12 +125,16 @@ export function CreateBank() {
   return (
     <Dialog open={modalIsOpen} onOpenChange={handleModalOpenChange}>
       <DialogTrigger asChild>
-        <Button onClick={() => setModalIsOpen(true)} variant="default">
+        <Button
+          onClick={() => setModalIsOpen(true)}
+          variant="default"
+          className={cn("gap-2 font-semibold", fullWidth && "w-full", className)}
+        >
           <PlusCircle className="w-4 h-4 mr-2" />
           Novo Banco
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Novo Banco</DialogTitle>
           <DialogDescription>
@@ -146,13 +145,12 @@ export function CreateBank() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleCreateBankSubmit)} className="space-y-6">
 
-            <div className="flex flex-row gap-6 flex-nowrap">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center sm:items-start">
                 <FormField
                   control={form.control}
                   name="imageFile"
                   render={({ field, fieldState }) => (
                     <FormItem>
-                      {/* O RHFImageUploadField pode ter seu próprio label, ou você pode adicionar um FormLabel aqui se preferir */}
                       {/* <FormLabel>Logo do Banco</FormLabel> */} 
                       <FormControl>
                         <ImageUploadField

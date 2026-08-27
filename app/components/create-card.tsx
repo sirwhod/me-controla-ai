@@ -33,8 +33,14 @@ import { getBanks } from "@/app/http/banks/get-banks"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { QuickCreateSelect } from "@/app/components/ui/quick-create-select"
 import { createBank } from "@/app/http/banks/create-bank"
+import { cn } from "@/app/lib/utils"
 
-export function CreateCard() {
+interface CreateCardProps {
+  className?: string
+  fullWidth?: boolean
+}
+
+export function CreateCard({ className, fullWidth }: CreateCardProps = {}) {
   const [open, setOpen] = useState(false)
   const { workspaceActive } = useWorkspace()
   const queryClient = useQueryClient()
@@ -99,13 +105,13 @@ export function CreateCard() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button className={cn("gap-2 font-semibold", fullWidth && "w-full", className)}>
           <PlusCircle className="h-4 w-4" />
           Novo Cartão
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CardIcon className="h-5 w-5 text-primary" />

@@ -22,6 +22,7 @@ import { Button } from "@/app/components/ui/button"
 import { CreditCard as CardIcon, Landmark } from "lucide-react"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
+import { CreateCard } from "@/app/components/create-card"
 
 export default function CardsPage() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
@@ -75,33 +76,75 @@ export default function CardsPage() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-4 p-3 md:p-4 pt-3">
+      <div className="flex flex-1 flex-col gap-4 p-3 md:p-6 pt-3 max-w-7xl w-full mx-auto">
         {/* Alternador de abas Bancos / Cartões */}
         <div className="flex items-center gap-2">
           <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/manage/banks`}>
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 text-muted-foreground hover:text-foreground h-9"
+              className="gap-2 text-muted-foreground hover:text-foreground h-9 text-xs"
             >
               <Landmark className="h-4 w-4" />
               Bancos & Contas
             </Button>
           </Link>
           <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/manage/cards`}>
-            <Button variant="secondary" size="sm" className="gap-2 font-semibold shadow-xs h-9">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="gap-2 font-semibold shadow-xs h-9 text-xs"
+            >
               <CardIcon className="h-4 w-4 text-primary" />
               Cartões de Crédito
             </Button>
           </Link>
         </div>
 
-        <div className="bg-muted/40 min-h-[calc(100vh-5rem)] md:min-h-min flex-1 rounded-xl p-3 md:p-4">
+        {/* ========================================================================= */}
+        {/* 1. ESTRUTURA MOBILE (< 768px): Header + CTA Full Width                    */}
+        {/* ========================================================================= */}
+        <div className="flex flex-col gap-3 md:hidden w-full">
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <CardIcon className="h-5 w-5 text-primary" />
+              Cartões de Crédito
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Acompanhe cartões, faturas, limites e datas de fechamento.
+            </p>
+          </div>
+
+          {/* CTA Principal Full Width */}
+          <CreateCard fullWidth className="h-10 font-semibold shadow-xs" />
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 2. ESTRUTURA DESKTOP (>= 768px): Header Amplo com CTA à Direita           */}
+        {/* ========================================================================= */}
+        <div className="hidden md:flex items-center justify-between gap-3 w-full">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <CardIcon className="h-6 w-6 text-primary" />
+              Cartões de Crédito
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Cadastre cartões vinculados a bancos para gerenciar limites e datas de vencimento de faturas.
+            </p>
+          </div>
+
+          <CreateCard />
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 3. LISTAGEM DE DADOS (MOBILE: CreditCardList / DESKTOP: DataTable)        */}
+        {/* ========================================================================= */}
+        <div className="w-full">
           {isLoading ? (
-            <LoadingState variant="list" count={4} />
+            <LoadingState variant="list" count={3} />
           ) : error ? (
             <ErrorState
-              title="Erro ao carregar cartões de crédito"
+              title="Não foi possível carregar os cartões de crédito"
               message={error.message}
               onRetry={() => refetch()}
             />
