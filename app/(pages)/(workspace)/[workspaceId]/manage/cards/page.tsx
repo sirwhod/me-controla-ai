@@ -65,7 +65,7 @@ export default function CardsPage() {
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem className="hidden md:block">
-                <Link href="/dashboard">
+                <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ''}/dashboard`}>
                   Dashboard
                 </Link>
               </BreadcrumbItem>
@@ -83,13 +83,13 @@ export default function CardsPage() {
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
         {/* Alternador de abas Bancos / Cartões */}
         <div className="flex items-center gap-2">
-          <Link href="/manage/banks">
+          <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ''}/manage/banks`}>
             <Button variant="outline" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
               <Landmark className="h-4 w-4" />
               Bancos & Contas
             </Button>
           </Link>
-          <Link href="/manage/cards">
+          <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ''}/manage/cards`}>
             <Button variant="secondary" size="sm" className="gap-2 font-medium shadow-xs">
               <CardIcon className="h-4 w-4 text-primary" />
               Cartões de Crédito

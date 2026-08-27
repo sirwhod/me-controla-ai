@@ -12,14 +12,19 @@ import { Logo } from "@/app/components/logo"
 import { Skeleton } from "@/app/components/ui/skeleton"
 
 export default function LoginPage() {
-  const { status } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push('/dashboard')
+      const firstWs = session?.user?.workspaceIds?.[0]
+      if (firstWs) {
+        router.push(`/${firstWs}/dashboard`)
+      } else {
+        router.push('/dashboard')
+      }
     }
-  }, [status, router])
+  }, [status, session, router])
 
   return (
     <div className="grid min-h-svh lg:grid-cols-2">

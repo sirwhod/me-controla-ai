@@ -23,72 +23,73 @@ import {
 import { useWorkspace } from "../hooks/use-workspace"
 import { Logo } from "./logo"
 
-const data = {
-  navMain: [
+const navSecondaryData = [
+  {
+    title: "Suporte",
+    url: "#",
+    icon: LifeBuoy,
+  },
+  {
+    title: "Feedback",
+    url: "#",
+    icon: Send,
+  },
+]
+
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { workspaceActive } = useWorkspace()
+  const wsId = workspaceActive?.id || ""
+  const prefix = wsId ? `/${wsId}` : ""
+
+  const navMain = React.useMemo(() => [
     {
       title: "Dashboard",
-      url: "/dashboard",
+      url: `${prefix}/dashboard`,
       icon: HandCoins,
       isActive: true,
       items: [
         {
           title: "Despesas",
-          url: "/dashboard/debits",
+          url: `${prefix}/dashboard/debits`,
         },
         {
           title: "Receitas",
-          url: "/dashboard/credits",
+          url: `${prefix}/dashboard/credits`,
         },
       ],
     },
     {
       title: "Configurações",
-      url: "/manage",
+      url: `${prefix}/manage`,
       icon: Settings2,
       items: [
         {
           title: "Bancos",
-          url: "/manage/banks",
+          url: `${prefix}/manage/banks`,
         },
         {
           title: "Cartões de Crédito",
-          url: "/manage/cards",
+          url: `${prefix}/manage/cards`,
         },
         {
           title: "Categorias",
-          url: "/manage/categories",
+          url: `${prefix}/manage/categories`,
         },
         {
           title: "Metas",
-          url: "/manage/goals",
+          url: `${prefix}/manage/goals`,
         },
         {
           title: "Responsáveis",
-          url: "/manage/responsibles",
+          url: `${prefix}/manage/responsibles`,
         },
         {
           title: "Membros & Acesso",
-          url: "/manage/members",
+          url: `${prefix}/manage/members`,
         },
       ],
     },
-  ],
-  navSecondary: [
-    {
-      title: "Suporte",
-      url: "#",
-      icon: LifeBuoy,
-    },
-    {
-      title: "Feedback",
-      url: "#",
-      icon: Send,
-    },
-  ],
-}
-
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { workspaceActive } = useWorkspace()
+  ], [prefix])
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -114,8 +115,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={navMain} />
+        <NavSecondary items={navSecondaryData} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

@@ -22,6 +22,8 @@ import { useWorkspace } from "../hooks/use-workspace"
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { Label } from "./ui/label"
 
+import { useRouter } from "next/navigation"
+
 const FormSchema = z.object({
   name: z.string().min(2, {
     message: "O Nome da caixinha precisa ter pelo menos 2 caracteres",
@@ -37,6 +39,7 @@ interface WorkspaceFormProps {
 
 export function WorkspaceForm({isDialog = false}: WorkspaceFormProps) {
   const { refetch } = useWorkspace()
+  const router = useRouter()
   const form = useForm<CreateWorkspaceRequest>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -50,15 +53,17 @@ export function WorkspaceForm({isDialog = false}: WorkspaceFormProps) {
   
         if (!result.success) {
            toast.error(result.message || 'Erro desconhecido ao criar caixinha');
+           return
         }
   
-        console.log('Caixinha criado:', result.workspaceId);
-  
+        toast.success("Caixinha criada com sucesso!")
+        await refetch()
+        if (result.workspaceId) {
+          router.push(`/${result.workspaceId}/dashboard`)
+        }
       } catch (err) {
         console.error('Erro ao criar caixinha:', err);
-      } finally {
-        refetch()
-        toast.success("Caixinha criado com sucesso!")
+        toast.error('Erro ao criar caixinha')
       }
   }
 

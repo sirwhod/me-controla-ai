@@ -21,8 +21,8 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
       const isProtected =
-        nextUrl.pathname.startsWith('/dashboard') ||
-        nextUrl.pathname.startsWith('/manage') ||
+        nextUrl.pathname.includes('/dashboard') ||
+        nextUrl.pathname.includes('/manage') ||
         nextUrl.pathname.startsWith('/api/workspaces')
 
       if (isProtected) {

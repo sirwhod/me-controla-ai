@@ -12,15 +12,17 @@ import {
   SidebarTrigger,
 } from "@/app/components/ui/sidebar"
 import WorkspaceSelector from "@/app/components/workspace-selector"
+import { DataTable } from "./data-table"
 import { columns } from "./columns"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { useQuery } from "@tanstack/react-query"
-import { getCategories } from "@/app/http/categories/get-categories"
-import { Category } from "@/app/types/financial"
+import { getBanks } from "@/app/http/banks/get-banks"
+import { Bank } from "@/app/types/financial"
 import { Skeleton } from "@/app/components/ui/skeleton"
 import { Loader } from "@/app/components/ui/loader"
 import Link from "next/link"
-import { DataTable } from "./data-table"
+import { Button } from "@/app/components/ui/button"
+import { CreditCard as CardIcon, Landmark } from "lucide-react"
 
 function LoadPage() {
   return (
@@ -40,9 +42,9 @@ function LoadPage() {
 export default function Page() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
 
-  const { data: categories, isLoading: isCategoriesLoading } = useQuery<Category[], Error>({
-    queryKey: ['categories', workspaceActive?.id],
-    queryFn: () => getCategories(workspaceActive!.id),
+  const { data: banks, isLoading: isBanksLoading } = useQuery<Bank[], Error>({
+    queryKey: ['banks', workspaceActive?.id],
+    queryFn: () => getBanks(workspaceActive!.id),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
@@ -59,26 +61,24 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <Link href="#">
-                    {isWorkspaceLoading || !workspaceActive  &&  (
-                      <Skeleton className="h-5 w-48" />
-                    )}
-                    {isWorkspaceLoading &&  (
-                      <Skeleton className="h-5 w-48" />
-                    )}
-                    <WorkspaceSelector />
-                  </Link>
+                  {isWorkspaceLoading || !workspaceActive  &&  (
+                    <Skeleton className="h-5 w-48" />
+                  )}
+                  {isWorkspaceLoading &&  (
+                    <Skeleton className="h-5 w-48" />
+                  )}
+                  <WorkspaceSelector />
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem className="hidden md:block">
-                  <Link href="/dashboard">
+                  <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ''}/dashboard`}>
                     Dashboard
                   </Link>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   <BreadcrumbPage>
-                    Categorias
+                    Bancos
                   </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
@@ -86,6 +86,22 @@ export default function Page() {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          {/* Alternador de abas Bancos / Cartões */}
+          <div className="flex items-center gap-2">
+            <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ''}/manage/banks`}>
+              <Button variant="secondary" size="sm" className="gap-2 font-medium shadow-xs">
+                <Landmark className="h-4 w-4 text-primary" />
+                Bancos & Contas
+              </Button>
+            </Link>
+            <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ''}/manage/cards`}>
+              <Button variant="outline" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
+                <CardIcon className="h-4 w-4" />
+                Cartões de Crédito
+              </Button>
+            </Link>
+          </div>
+
           <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min p-4">
             {isWorkspaceLoading || !workspaceActive  &&  (
               <LoadPage />
@@ -93,11 +109,11 @@ export default function Page() {
             {isWorkspaceLoading &&  (
               <LoadPage />
             )}
-            {isCategoriesLoading && (
+            {isBanksLoading && (
               <LoadPage />
             )}
-            {categories && (
-              <DataTable columns={columns} data={categories} />
+            {banks && (
+              <DataTable columns={columns} data={banks} />
             )}
           </div>
         </div>
