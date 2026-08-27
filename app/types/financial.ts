@@ -1,6 +1,5 @@
 import { z } from "zod";
 import {
-  iconNames, 
   type IconName, 
 } from 'lucide-react/dynamic'
 
