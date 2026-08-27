@@ -21,6 +21,7 @@ import {
   SidebarMenuItem,
 } from "@/app/components/ui/sidebar"
 import { useWorkspace } from "../hooks/use-workspace"
+import { useDateFilter } from "../contexts/date-filter-context"
 import { Logo } from "./logo"
 
 const navSecondaryData = [
@@ -38,58 +39,59 @@ const navSecondaryData = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { workspaceActive } = useWorkspace()
+  const { queryString } = useDateFilter()
   const wsId = workspaceActive?.id || ""
   const prefix = wsId ? `/${wsId}` : ""
 
   const navMain = React.useMemo(() => [
     {
       title: "Dashboard",
-      url: `${prefix}/dashboard`,
+      url: `${prefix}/dashboard${queryString}`,
       icon: HandCoins,
       isActive: true,
       items: [
         {
           title: "Despesas",
-          url: `${prefix}/dashboard/debits`,
+          url: `${prefix}/dashboard/debits${queryString}`,
         },
         {
           title: "Receitas",
-          url: `${prefix}/dashboard/credits`,
+          url: `${prefix}/dashboard/credits${queryString}`,
         },
       ],
     },
     {
       title: "Configurações",
-      url: `${prefix}/manage`,
+      url: `${prefix}/manage${queryString}`,
       icon: Settings2,
       items: [
         {
           title: "Bancos",
-          url: `${prefix}/manage/banks`,
+          url: `${prefix}/manage/banks${queryString}`,
         },
         {
           title: "Cartões de Crédito",
-          url: `${prefix}/manage/cards`,
+          url: `${prefix}/manage/cards${queryString}`,
         },
         {
           title: "Categorias",
-          url: `${prefix}/manage/categories`,
+          url: `${prefix}/manage/categories${queryString}`,
         },
         {
           title: "Metas",
-          url: `${prefix}/manage/goals`,
+          url: `${prefix}/manage/goals${queryString}`,
         },
         {
           title: "Responsáveis",
-          url: `${prefix}/manage/responsibles`,
+          url: `${prefix}/manage/responsibles${queryString}`,
         },
         {
           title: "Membros & Acesso",
-          url: `${prefix}/manage/members`,
+          url: `${prefix}/manage/members${queryString}`,
         },
       ],
     },
-  ], [prefix])
+  ], [prefix, queryString])
 
   return (
     <Sidebar variant="inset" {...props}>

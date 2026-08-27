@@ -21,28 +21,10 @@ import { PersonResponsible } from "@/app/types/financial"
 import { Skeleton } from "@/app/components/ui/skeleton"
 import { Loader } from "@/app/components/ui/loader"
 import Link from "next/link"
-import { useMemo, useState } from "react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
+import { useMemo } from "react"
 import { Calendar } from "lucide-react"
-
-const meses = [
-  { value: "todos", label: "Todos os Meses" },
-  { value: "janeiro", label: "Janeiro" },
-  { value: "fevereiro", label: "Fevereiro" },
-  { value: "março", label: "Março" },
-  { value: "abril", label: "Abril" },
-  { value: "maio", label: "Maio" },
-  { value: "junho", label: "Junho" },
-  { value: "julho", label: "Julho" },
-  { value: "agosto", label: "Agosto" },
-  { value: "setembro", label: "Setembro" },
-  { value: "outubro", label: "Outubro" },
-  { value: "novembro", label: "Novembro" },
-  { value: "dezembro", label: "Dezembro" },
-]
-
-const mesAtual = meses[new Date().getMonth() + 1].value
-const anoAtual = String(new Date().getFullYear())
+import { useDateFilter } from "@/app/contexts/date-filter-context"
+import { MonthYearNavigator } from "@/app/components/month-year-navigator"
 
 function LoadPage() {
   return (
@@ -57,8 +39,8 @@ function LoadPage() {
 
 export default function ResponsiblesPage() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
-  const [monthFilter, setMonthFilter] = useState<string>(mesAtual)
-  const [yearFilter, setYearFilter] = useState<string>(anoAtual)
+  const { month: monthFilter, year: yearFilterNumber } = useDateFilter()
+  const yearFilter = String(yearFilterNumber)
 
   const { data: responsibles, isLoading: isResponsiblesLoading } = useQuery<(PersonResponsible & { pendingBalance: number })[], Error>({
     queryKey: ['responsibles', workspaceActive?.id, monthFilter, yearFilter],
@@ -115,32 +97,7 @@ export default function ResponsiblesPage() {
             <span>Período de Apuração das Receitas:</span>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Select value={monthFilter} onValueChange={setMonthFilter}>
-              <SelectTrigger className="w-full sm:w-[160px] h-9">
-                <SelectValue placeholder="Selecione o mês" />
-              </SelectTrigger>
-              <SelectContent>
-                {meses.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={yearFilter} onValueChange={setYearFilter}>
-              <SelectTrigger className="w-full sm:w-[110px] h-9">
-                <SelectValue placeholder="Ano" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="2025">2025</SelectItem>
-                <SelectItem value="2026">2026</SelectItem>
-                <SelectItem value="2027">2027</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <MonthYearNavigator />
         </div>
 
         <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min p-4">

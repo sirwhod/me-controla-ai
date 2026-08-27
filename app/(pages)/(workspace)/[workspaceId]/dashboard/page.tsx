@@ -19,10 +19,8 @@ import { getDebits } from "@/app/http/debits/get-debits"
 import { getCredits } from "@/app/http/credits/get-credits"
 import { getGoals } from "@/app/http/goals/get-goals"
 import { Debit, Credit, Goal } from "@/app/types/financial"
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
-import { Input } from "@/app/components/ui/input"
 import {
   ArrowDownCircle,
   ArrowUpCircle,
@@ -59,14 +57,15 @@ const meses = [
   { value: "dezembro", label: "Dezembro", short: "Dez" },
 ]
 
-const mesAtual = meses[new Date().getMonth()].value
 const anoAtual = String(new Date().getFullYear())
+
+import { useDateFilter } from "@/app/contexts/date-filter-context"
+import { MonthYearNavigator } from "@/app/components/month-year-navigator"
 
 export default function Page() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
-
-  const [monthFilter, setMonthFilter] = useState<string>(mesAtual)
-  const [yearFilter, setYearFilter] = useState<string>(anoAtual)
+  const { month: monthFilter, year: yearFilterNumber } = useDateFilter()
+  const yearFilter = String(yearFilterNumber)
 
   const { data: debits, isLoading: isDebitsLoading } = useQuery<Debit[], Error>({
     queryKey: ['debits', workspaceActive?.id],
@@ -299,27 +298,7 @@ export default function Page() {
 
             <Separator orientation="vertical" className="h-6 hidden sm:block mx-1" />
 
-            <Select value={monthFilter} onValueChange={setMonthFilter}>
-              <SelectTrigger className="w-32 h-8 text-xs">
-                <SelectValue placeholder="Selecione o mês" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Ano todo</SelectItem>
-                {meses.map(m => (
-                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Input
-              type="number"
-              min={2000}
-              max={2100}
-              value={yearFilter}
-              onChange={e => setYearFilter(e.target.value)}
-              className="w-20 h-8 text-xs"
-              placeholder="Ano"
-            />
+            <MonthYearNavigator />
           </div>
         </div>
 

@@ -3,7 +3,7 @@
 import { createContext, useState, ReactNode, useEffect, useMemo, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useQuery, UseQueryResult } from '@tanstack/react-query'
-import { useParams, usePathname, useRouter } from 'next/navigation'
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { getWorkspaces, Workspace } from '../http/get-workspaces'
 
 interface WorkspaceContextValue {
@@ -22,6 +22,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession()
   const params = useParams()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const router = useRouter()
 
   const urlWorkspaceId = (params?.workspaceId as string) || null
@@ -55,20 +56,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return workspaces[0]
   }, [workspaces, activeWorkspaceId])
 
-  // Função para trocar a caixinha ativa e navegar na rota correspondente
+  // Função para trocar a caixinha ativa e navegar na rota correspondente preservando query params
   const setActiveWorkspaceId = useCallback((newWorkspaceId: string | null) => {
     if (!newWorkspaceId) return
     setStateWorkspaceId(newWorkspaceId)
 
+    const searchString = searchParams?.toString() ? `?${searchParams.toString()}` : ''
+
     if (urlWorkspaceId && pathname.includes(urlWorkspaceId)) {
       const newPath = pathname.replace(`/${urlWorkspaceId}`, `/${newWorkspaceId}`)
-      router.push(newPath)
+      router.push(`${newPath}${searchString}`)
     } else if (pathname.startsWith('/dashboard') || pathname.startsWith('/manage')) {
-      router.push(`/${newWorkspaceId}${pathname}`)
+      router.push(`/${newWorkspaceId}${pathname}${searchString}`)
     } else {
-      router.push(`/${newWorkspaceId}/dashboard`)
+      router.push(`/${newWorkspaceId}/dashboard${searchString}`)
     }
-  }, [urlWorkspaceId, pathname, router])
+  }, [urlWorkspaceId, pathname, searchParams, router])
 
   const contextValue: WorkspaceContextValue = {
     workspaces,

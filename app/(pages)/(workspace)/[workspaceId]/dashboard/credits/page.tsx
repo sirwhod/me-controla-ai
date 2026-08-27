@@ -24,13 +24,14 @@ import { columns } from "./columns"
 import { CreateCredit } from "@/app/components/create-credit"
 import { useMemo, useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
-import { Input } from "@/app/components/ui/input"
 import { Button } from "@/app/components/ui/button"
 import { getBanks } from "@/app/http/banks/get-banks"
-import { getCategories } from "@/app/http/categories/get-categories"
-import { Banknote, CreditCard, Landmark } from "lucide-react"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
 import Image from "next/image"
+import { useDateFilter } from "@/app/contexts/date-filter-context"
+import { MonthYearNavigator } from "@/app/components/month-year-navigator"
+import { getCategories } from "@/app/http/categories/get-categories"
+import { Banknote, CreditCard, Landmark } from "lucide-react"
 
 function LoadPage() {
   return (
@@ -43,26 +44,10 @@ function LoadPage() {
   )
 }
 
-const meses = [
-  { value: "janeiro", label: "Janeiro" },
-  { value: "fevereiro", label: "Fevereiro" },
-  { value: "março", label: "Março" },
-  { value: "abril", label: "Abril" },
-  { value: "maio", label: "Maio" },
-  { value: "junho", label: "Junho" },
-  { value: "julho", label: "Julho" },
-  { value: "agosto", label: "Agosto" },
-  { value: "setembro", label: "Setembro" },
-  { value: "outubro", label: "Outubro" },
-  { value: "novembro", label: "Novembro" },
-  { value: "dezembro", label: "Dezembro" },
-]
-
-const mesAtual = meses[new Date().getMonth()].value
-const anoAtual = String(new Date().getFullYear())
-
 export default function Page() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
+  const { month: monthFilter, year: yearFilterNumber } = useDateFilter()
+  const yearFilter = String(yearFilterNumber)
 
   const { data: credits, isLoading: isCreditsLoading } = useQuery<Credit[], Error>({
     queryKey: ['credits', workspaceActive?.id],
@@ -85,12 +70,10 @@ export default function Page() {
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
 
-  // Filtros
+  // Filtros locais
   const [categoryFilter, setCategoryFilter] = useState<string>("")
   const [bankFilter, setBankFilter] = useState<string>("")
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("")
-  const [monthFilter, setMonthFilter] = useState<string>(mesAtual)
-  const [yearFilter, setYearFilter] = useState<string>(anoAtual)
 
   const incomeCategories = useMemo(() => {
     return categories?.filter(cat => cat.type === 'income') || categories
@@ -218,46 +201,27 @@ export default function Page() {
                 </SelectContent>
               </Select>
 
-              {/* Período */}
-              <Select value={monthFilter} onValueChange={setMonthFilter}>
-                <SelectTrigger className="w-32 h-6">
-                  <SelectValue placeholder="Todos meses" />
-                </SelectTrigger>
-                <SelectContent>
-                  {meses.map(mes => (
-                    <SelectItem key={mes.value} value={mes.value}>{mes.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {/* Período */}
+                <MonthYearNavigator compact />
 
-              <Input
-                type="number"
-                min={2000}
-                max={2100}
-                value={yearFilter}
-                onChange={e => setYearFilter(e.target.value)}
-                className="w-24 h-6"
-                placeholder="Ano"
-              />
+                {/* Botão limpar */}
+                {(categoryFilter || bankFilter || paymentMethodFilter) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => {
+                      setCategoryFilter("")
+                      setBankFilter("")
+                      setPaymentMethodFilter("")
+                    }}
+                  >
+                    Limpar filtros
+                  </Button>
+                )}
+              </div>
 
-              {/* Botão limpar */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-6 text-xs"
-                onClick={() => {
-                  setCategoryFilter("")
-                  setBankFilter("")
-                  setPaymentMethodFilter("")
-                  setMonthFilter("")
-                  setYearFilter("")
-                }}
-              >
-                Limpar filtros
-              </Button>
-            </div>
-
-            <CreateCredit />
+              <CreateCredit />
           </div>
 
           {(isWorkspaceLoading || !workspaceActive || isCreditsLoading) ? (

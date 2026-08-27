@@ -7,9 +7,11 @@ import {
   SidebarProvider,
 } from "@/app/components/ui/sidebar"
 import { WorkspaceProvider } from "@/app/contexts/workspace-context"
+import { DateFilterProvider } from "@/app/contexts/date-filter-context"
 import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
-import { useEffect } from "react"
+import { Suspense, useEffect } from "react"
+import { Loader } from "@/app/components/ui/loader"
 
 export default function WorkspaceLayout({
   children,
@@ -23,15 +25,26 @@ export default function WorkspaceLayout({
       redirect('/sign-in')
     }
   }, [status])
+
   return (
     <SidebarProvider>
       <QueryProvider>
-        <WorkspaceProvider>
-          <AppSidebar />
-          <SidebarInset>
-            {children}
-          </SidebarInset>
-        </WorkspaceProvider>
+        <Suspense
+          fallback={
+            <div className="flex h-screen w-full items-center justify-center">
+              <Loader size="lg" text="Carregando..." />
+            </div>
+          }
+        >
+          <DateFilterProvider>
+            <WorkspaceProvider>
+              <AppSidebar />
+              <SidebarInset>
+                {children}
+              </SidebarInset>
+            </WorkspaceProvider>
+          </DateFilterProvider>
+        </Suspense>
       </QueryProvider>
     </SidebarProvider>
   )
