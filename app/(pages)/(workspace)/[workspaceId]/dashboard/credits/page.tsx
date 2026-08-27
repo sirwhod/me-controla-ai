@@ -7,7 +7,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/app/components/ui/breadcrumb"
-import { Loader } from "@/app/components/ui/loader"
 import { Separator } from "@/app/components/ui/separator"
 import { SidebarTrigger } from "@/app/components/ui/sidebar"
 import { Skeleton } from "@/app/components/ui/skeleton"
@@ -37,24 +36,21 @@ import { MonthYearNavigator } from "@/app/components/month-year-navigator"
 import { getCategories } from "@/app/http/categories/get-categories"
 import { Banknote, CreditCard, Landmark, Tags, X } from "lucide-react"
 import { SummaryKpiBar } from "@/app/components/summary-kpi-bar"
-
-function LoadPage() {
-  return (
-    <div className="flex w-full flex-col items-center justify-center space-y-8 p-4 h-96">
-      <div className="flex flex-col items-center justify-center gap-2 p-4">
-        <Loader size="lg" text="Carregando" />
-        <span className="text-muted-foreground text-sm">Carregando receitas...</span>
-      </div>
-    </div>
-  )
-}
+import { BottomSheetFilters } from "@/app/components/ui/bottom-sheet-filters"
+import { LoadingState } from "@/app/components/states/loading-state"
+import { ErrorState } from "@/app/components/states/error-state"
 
 export default function Page() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
   const { month: monthFilter, year: yearFilterNumber } = useDateFilter()
   const yearFilter = String(yearFilterNumber)
 
-  const { data: credits, isLoading: isCreditsLoading } = useQuery<Credit[], Error>({
+  const {
+    data: credits,
+    isLoading: isCreditsLoading,
+    error: creditsError,
+    refetch,
+  } = useQuery<Credit[], Error>({
     queryKey: ["credits", workspaceActive?.id],
     queryFn: () => getCredits(workspaceActive!.id),
     staleTime: 1000 * 60 * 5,
@@ -128,6 +124,9 @@ export default function Page() {
     setPaymentMethodFilter("")
   }
 
+  const isLoading = isWorkspaceLoading || !workspaceActive || isCreditsLoading
+  const error = workspaceError || creditsError
+
   return (
     <>
       <header className="flex h-14 md:h-16 shrink-0 items-center gap-2 border-b border-border/40 bg-background/95 backdrop-blur-md px-3 md:px-4">
@@ -166,120 +165,31 @@ export default function Page() {
         <div className="bg-muted/40 min-h-[calc(100vh-5rem)] md:min-h-min flex-1 rounded-xl p-3 md:p-4 gap-3.5 flex flex-col">
           {/* 1. SEÇÃO DE FILTROS & AÇÃO - MOBILE (md:hidden) */}
           <div className="flex flex-col gap-2.5 md:hidden w-full">
-            {/* Linha 1: 3 Filtros em Grid */}
-            <div className="grid grid-cols-3 gap-1.5 w-full">
-              {/* Categoria */}
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full h-8 text-[11px] font-medium bg-card/80 border-border/70 px-2">
-                  <div className="flex items-center gap-1 truncate">
-                    <Tags className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <SelectValue placeholder="Categorias" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent align="start">
-                  {incomeCategories?.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      <DynamicIcon
-                        name={cat.icon as IconName}
-                        className="w-4 h-4 mr-1.5 inline-block"
-                      />
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Banco */}
-              <Select value={bankFilter} onValueChange={setBankFilter}>
-                <SelectTrigger className="w-full h-8 text-[11px] font-medium bg-card/80 border-border/70 px-2">
-                  <div className="flex items-center gap-1 truncate">
-                    <Landmark className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <SelectValue placeholder="Bancos" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent align="center">
-                  {banks?.map((bank) => (
-                    <SelectItem key={bank.id} value={bank.id}>
-                      {bank.iconUrl ? (
-                        <Image
-                          src={bank.iconUrl}
-                          alt=""
-                          width={16}
-                          height={16}
-                          className="h-4 w-4 rounded-xs inline-block mr-1.5"
-                        />
-                      ) : (
-                        <Landmark className="h-4 w-4 inline-block mr-1.5 text-muted-foreground" />
-                      )}
-                      {bank.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Forma de Pagamento */}
-              <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
-                <SelectTrigger className="w-full h-8 text-[11px] font-medium bg-card/80 border-border/70 px-2">
-                  <div className="flex items-center gap-1 truncate">
-                    <CreditCard className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <SelectValue placeholder="Métodos" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent align="end">
-                  <SelectItem value="Pix">
-                    <svg
-                      fill="currentColor"
-                      viewBox="0 0 16 16"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-3.5 h-3.5 mr-1.5 inline-block"
-                    >
-                      <path d="M11.917 11.71a2.046 2.046 0 0 1-1.454-.602l-2.1-2.1a.4.4 0 0 0-.551 0l-2.108 2.108a2.044 2.044 0 0 1-1.454.602h-.414l2.66 2.66c.83.83 2.177.83 3.007 0l2.667-2.668h-.253zM4.25 4.282c.55 0 1.066.214 1.454.602l2.108 2.108a.39.39 0 0 0 .552 0l2.1-2.1a2.044 2.044 0 0 1 1.453-.602h.253L9.503 1.623a2.127 2.127 0 0 0-3.007 0l-2.66 2.66h.414z" />
-                      <path d="m14.377 6.496-1.612-1.612a.307.307 0 0 1-.114.023h-.733c-.379 0-.75.154-1.017.422l-2.1 2.1a1.005 1.005 0 0 1-1.425 0L5.268 5.32a1.448 1.448 0 0 0-1.018-.422h-.9a.306.306 0 0 1-.109-.021L1.623 6.496c-.83.83-.83 2.177 0 3.008l1.618 1.618a.305.305 0 0 1 .108-.022h.901c.38 0 .75-.153 1.018-.421L7.375 8.57a1.034 1.034 0 0 1 1.426 0l2.1 2.1c.267.268.638.421 1.017.421h.733c.04 0 .079.01.114.024l1.612-1.612c.83-.83.83-2.178 0-3.008z" />
-                    </svg>
-                    Pix
-                  </SelectItem>
-                  <SelectItem value="Conta">
-                    <Landmark className="w-4 h-4 mr-1.5 inline-block" />
-                    Conta
-                  </SelectItem>
-                  <SelectItem value="Débito">
-                    <Banknote className="w-4 h-4 mr-1.5 inline-block" />
-                    Débito
-                  </SelectItem>
-                  <SelectItem value="Crédito">
-                    <CreditCard className="w-4 h-4 mr-1.5 inline-block" />
-                    Crédito
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Linha 2: Seletor de Mês/Ano + Botão Nova Receita */}
+            {/* Barra de Período + Filtros em BottomSheet + CTA */}
             <div className="flex items-center justify-between gap-2 w-full">
               <MonthYearNavigator
                 showFullMonthName
                 compact
                 className="flex-1 justify-between bg-card/80 border-border/70 h-9"
               />
+
+              <BottomSheetFilters
+                categories={incomeCategories}
+                banks={banks}
+                categoryFilter={categoryFilter}
+                onCategoryChange={setCategoryFilter}
+                bankFilter={bankFilter}
+                onBankChange={setBankFilter}
+                paymentMethodFilter={paymentMethodFilter}
+                onPaymentMethodChange={setPaymentMethodFilter}
+                onClearFilters={clearFilters}
+                totalCount={filteredCredits.length}
+              />
+
               <div className="shrink-0">
                 <CreateCredit />
               </div>
             </div>
-
-            {/* Botão para limpar filtros ativos */}
-            {hasActiveFilters && (
-              <div className="flex justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 text-xs text-muted-foreground hover:text-foreground gap-1 px-2"
-                  onClick={clearFilters}
-                >
-                  <X className="h-3 w-3" />
-                  Limpar filtros
-                </Button>
-              </div>
-            )}
           </div>
 
           {/* 2. SEÇÃO DE FILTROS & AÇÃO - DESKTOP (hidden md:flex) */}
@@ -398,9 +308,15 @@ export default function Page() {
             dailyAverage={dailyAverage}
           />
 
-          {/* 4. TABELA DE DADOS */}
-          {isWorkspaceLoading || !workspaceActive || isCreditsLoading ? (
-            <LoadPage />
+          {/* 4. LISTAGEM DE DADOS (MOBILE CARDS / DESKTOP TABLE) */}
+          {isLoading ? (
+            <LoadingState variant="list" count={6} />
+          ) : error ? (
+            <ErrorState
+              title="Erro ao carregar receitas"
+              message={error.message}
+              onRetry={() => refetch()}
+            />
           ) : (
             <DataTable columns={columns} data={filteredCredits} />
           )}

@@ -8,9 +8,7 @@ import {
   BreadcrumbSeparator,
 } from "@/app/components/ui/breadcrumb"
 import { Separator } from "@/app/components/ui/separator"
-import {
-  SidebarTrigger,
-} from "@/app/components/ui/sidebar"
+import { SidebarTrigger } from "@/app/components/ui/sidebar"
 import { Skeleton } from "@/app/components/ui/skeleton"
 import WorkspaceSelector from "@/app/components/workspace-selector"
 import { useWorkspace } from "@/app/hooks/use-workspace"
@@ -41,6 +39,11 @@ import { Button } from "@/app/components/ui/button"
 import { CreateDebit } from "@/app/components/create-debit"
 import { CreateCredit } from "@/app/components/create-credit"
 import { InvitationsBanner } from "@/app/components/invitations-banner"
+import { useDateFilter } from "@/app/contexts/date-filter-context"
+import { MonthYearNavigator } from "@/app/components/month-year-navigator"
+import { LoadingState } from "@/app/components/states/loading-state"
+import { EmptyState } from "@/app/components/states/empty-state"
+import { MobileList, MobileListItem } from "@/app/components/data-display/mobile-list"
 
 const meses = [
   { value: "janeiro", label: "Janeiro", short: "Jan" },
@@ -59,30 +62,28 @@ const meses = [
 
 const anoAtual = String(new Date().getFullYear())
 
-import { useDateFilter } from "@/app/contexts/date-filter-context"
-import { MonthYearNavigator } from "@/app/components/month-year-navigator"
-
 export default function Page() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
   const { month: monthFilter, year: yearFilterNumber } = useDateFilter()
   const yearFilter = String(yearFilterNumber)
+  const prefix = workspaceActive?.id ? `/${workspaceActive.id}` : ""
 
   const { data: debits, isLoading: isDebitsLoading } = useQuery<Debit[], Error>({
-    queryKey: ['debits', workspaceActive?.id],
+    queryKey: ["debits", workspaceActive?.id],
     queryFn: () => getDebits(workspaceActive!.id),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
 
   const { data: credits, isLoading: isCreditsLoading } = useQuery<Credit[], Error>({
-    queryKey: ['credits', workspaceActive?.id],
+    queryKey: ["credits", workspaceActive?.id],
     queryFn: () => getCredits(workspaceActive!.id),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
 
   const { data: goals, isLoading: isGoalsLoading } = useQuery<Goal[], Error>({
-    queryKey: ['goals', workspaceActive?.id],
+    queryKey: ["goals", workspaceActive?.id],
     queryFn: () => getGoals(workspaceActive!.id),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
@@ -91,7 +92,7 @@ export default function Page() {
   // Despesas filtradas por período
   const filteredDebits = useMemo(() => {
     if (!debits) return []
-    return debits.filter(d => {
+    return debits.filter((d) => {
       const matchMonth = monthFilter === "todos" ? true : d.month?.toLowerCase() === monthFilter.toLowerCase()
       const matchYear = yearFilter ? String(d.year) === yearFilter : true
       return matchMonth && matchYear
@@ -101,7 +102,7 @@ export default function Page() {
   // Receitas filtradas por período
   const filteredCredits = useMemo(() => {
     if (!credits) return []
-    return credits.filter(c => {
+    return credits.filter((c) => {
       const matchMonth = monthFilter === "todos" ? true : c.month?.toLowerCase() === monthFilter.toLowerCase()
       const matchYear = yearFilter ? String(c.year) === yearFilter : true
       return matchMonth && matchYear
@@ -129,14 +130,14 @@ export default function Page() {
   // Total de gastos no Cartão de Crédito
   const creditCardTotal = useMemo(() => {
     return filteredDebits
-      .filter(d => d.paymentMethod === 'Crédito')
+      .filter((d) => d.paymentMethod === "Crédito")
       .reduce((acc, curr) => acc + (Number(curr.value) || 0), 0)
   }, [filteredDebits])
 
   // Agrupamento de despesas por categoria
   const expensesByCategory = useMemo(() => {
     const map: Record<string, { name: string; icon: string; total: number }> = {}
-    filteredDebits.forEach(d => {
+    filteredDebits.forEach((d) => {
       const catName = d.categoryName || "Outros"
       const catIcon = d.categoryUrl || "Tag"
       const val = Number(d.value) || 0
@@ -156,7 +157,7 @@ export default function Page() {
       Débito: 0,
       Conta: 0,
     }
-    filteredDebits.forEach(d => {
+    filteredDebits.forEach((d) => {
       const method = d.paymentMethod || "Outros"
       if (map[method] !== undefined) {
         map[method] += Number(d.value) || 0
@@ -172,13 +173,13 @@ export default function Page() {
     if (!debits && !credits) return []
     const targetYear = yearFilter || anoAtual
 
-    return meses.map(m => {
+    return meses.map((m) => {
       const monthCredits = (credits || [])
-        .filter(c => String(c.year) === targetYear && c.month?.toLowerCase() === m.value.toLowerCase())
+        .filter((c) => String(c.year) === targetYear && c.month?.toLowerCase() === m.value.toLowerCase())
         .reduce((sum, c) => sum + (Number(c.value) || 0), 0)
 
       const monthDebits = (debits || [])
-        .filter(d => String(d.year) === targetYear && d.month?.toLowerCase() === m.value.toLowerCase())
+        .filter((d) => String(d.year) === targetYear && d.month?.toLowerCase() === m.value.toLowerCase())
         .reduce((sum, d) => sum + (Number(d.value) || 0), 0)
 
       return {
@@ -193,7 +194,7 @@ export default function Page() {
 
   const maxMonthlyValue = useMemo(() => {
     return Math.max(
-      ...annualMonthlyOverview.map(m => Math.max(m.credits, m.debits)),
+      ...annualMonthlyOverview.map((m) => Math.max(m.credits, m.debits)),
       1
     )
   }, [annualMonthlyOverview])
@@ -202,7 +203,7 @@ export default function Page() {
   const recentTransactions = useMemo(() => {
     const list: Array<{
       id: string
-      type: 'debit' | 'credit'
+      type: "debit" | "credit"
       description: string
       value: number
       date: string
@@ -211,10 +212,10 @@ export default function Page() {
       bankName?: string
     }> = []
 
-    filteredDebits.forEach(d => {
+    filteredDebits.forEach((d) => {
       list.push({
         id: `deb-${d.id}`,
-        type: 'debit',
+        type: "debit",
         description: d.description,
         value: Number(d.value) || 0,
         date: String(d.date),
@@ -224,10 +225,10 @@ export default function Page() {
       })
     })
 
-    filteredCredits.forEach(c => {
+    filteredCredits.forEach((c) => {
       list.push({
         id: `cred-${c.id}`,
-        type: 'credit',
+        type: "credit",
         description: c.description,
         value: Number(c.value) || 0,
         date: String(c.date),
@@ -256,10 +257,7 @@ export default function Page() {
       <header className="flex h-14 md:h-16 shrink-0 items-center gap-2 border-b border-border/40 bg-background/95 backdrop-blur-md px-3 md:px-4">
         <div className="flex items-center gap-2 w-full">
           <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
-          <Separator
-            orientation="vertical"
-            className="mr-1 md:mr-2 h-4"
-          />
+          <Separator orientation="vertical" className="mr-1 md:mr-2 h-4" />
           <Breadcrumb>
             <BreadcrumbList className="text-xs sm:text-sm">
               <BreadcrumbItem>
@@ -280,37 +278,36 @@ export default function Page() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
+      <div className="flex flex-1 flex-col gap-5 p-3 md:p-6 pt-3">
         <InvitationsBanner />
 
         {/* Barra superior de boas-vindas, botões de ação e filtros */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Visão Geral</h1>
-            <p className="text-sm text-muted-foreground">
-              Acompanhe suas receitas, despesas, faturas e saldo da caixinha ativa.
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Visão Geral</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Acompanhe suas receitas, despesas, faturas e saldo consolidado.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <CreateCredit />
-            <CreateDebit />
-
-            <Separator orientation="vertical" className="h-6 hidden sm:block mx-1" />
-
-            <MonthYearNavigator />
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            <MonthYearNavigator showFullMonthName compact className="flex-1 sm:flex-initial" />
+            <div className="flex items-center gap-1.5 shrink-0">
+              <CreateCredit />
+              <CreateDebit />
+            </div>
           </div>
         </div>
 
         {/* Cards de Métricas Principais (5 cards em grid responsivo) */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {/* Saldo / Balanço */}
-          <Card className="shadow-xs">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {/* 1. Saldo / Balanço (Destaque Principal) */}
+          <Card className="shadow-xs border-border/70 bg-card/70 backdrop-blur-xs">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Balanço do Período
               </CardTitle>
-              <div className={`p-2 rounded-full ${balance >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+              <div className={`p-2 rounded-full ${balance >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
                 <Wallet className="h-4 w-4" />
               </div>
             </CardHeader>
@@ -319,19 +316,19 @@ export default function Page() {
                 <Skeleton className="h-7 w-28" />
               ) : (
                 <>
-                  <div className={`text-xl font-bold ${balance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <div className={`text-xl font-bold ${balance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                     {formatCurrency(balance)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                     {balance >= 0 ? (
                       <>
                         <TrendingUp className="h-3.5 w-3.5 text-emerald-500 inline" />
-                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">Superávit</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Superávit</span>
                       </>
                     ) : (
                       <>
-                        <TrendingDown className="h-3.5 w-3.5 text-red-500 inline" />
-                        <span className="text-red-600 dark:text-red-400 font-medium">Déficit</span>
+                        <TrendingDown className="h-3.5 w-3.5 text-rose-500 inline" />
+                        <span className="text-rose-600 dark:text-rose-400 font-semibold">Déficit</span>
                       </>
                     )}
                   </p>
@@ -340,10 +337,10 @@ export default function Page() {
             </CardContent>
           </Card>
 
-          {/* Total de Receitas */}
-          <Card className="shadow-xs">
+          {/* 2. Total de Receitas */}
+          <Card className="shadow-xs border-border/70 bg-card/70">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Receitas
               </CardTitle>
               <div className="p-2 rounded-full bg-emerald-500/10 text-emerald-500">
@@ -366,13 +363,13 @@ export default function Page() {
             </CardContent>
           </Card>
 
-          {/* Total de Despesas */}
-          <Card className="shadow-xs">
+          {/* 3. Total de Despesas */}
+          <Card className="shadow-xs border-border/70 bg-card/70">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Despesas
               </CardTitle>
-              <div className="p-2 rounded-full bg-red-500/10 text-red-500">
+              <div className="p-2 rounded-full bg-rose-500/10 text-rose-500">
                 <ArrowDownCircle className="h-4 w-4" />
               </div>
             </CardHeader>
@@ -381,7 +378,7 @@ export default function Page() {
                 <Skeleton className="h-7 w-28" />
               ) : (
                 <>
-                  <div className="text-xl font-bold text-red-600 dark:text-red-400">
+                  <div className="text-xl font-bold text-rose-600 dark:text-rose-400">
                     - {formatCurrency(totalDebits)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -392,13 +389,13 @@ export default function Page() {
             </CardContent>
           </Card>
 
-          {/* Fatura do Cartão */}
-          <Card className="shadow-xs">
+          {/* 4. Fatura do Cartão */}
+          <Card className="shadow-xs border-border/70 bg-card/70">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Fatura Cartão
               </CardTitle>
-              <div className="p-2 rounded-full bg-purple-500/10 text-purple-500">
+              <div className="p-2 rounded-full bg-violet-500/10 text-violet-500">
                 <CreditCard className="h-4 w-4" />
               </div>
             </CardHeader>
@@ -407,7 +404,7 @@ export default function Page() {
                 <Skeleton className="h-7 w-28" />
               ) : (
                 <>
-                  <div className="text-xl font-bold text-purple-600 dark:text-purple-400">
+                  <div className="text-xl font-bold text-violet-600 dark:text-violet-400">
                     {formatCurrency(creditCardTotal)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -418,10 +415,10 @@ export default function Page() {
             </CardContent>
           </Card>
 
-          {/* Taxa de Economia */}
-          <Card className="shadow-xs">
+          {/* 5. Taxa de Economia */}
+          <Card className="shadow-xs border-border/70 bg-card/70">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Taxa Poupança
               </CardTitle>
               <div className="p-2 rounded-full bg-blue-500/10 text-blue-500">
@@ -433,7 +430,7 @@ export default function Page() {
                 <Skeleton className="h-7 w-20" />
               ) : (
                 <>
-                  <div className="text-xl font-bold">
+                  <div className="text-xl font-bold text-foreground">
                     {savingsRate > 0 ? `${savingsRate}%` : "0%"}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -446,25 +443,25 @@ export default function Page() {
         </div>
 
         {/* Gráfico Comparativo de Evolução Anual (Receitas vs Despesas) */}
-        <Card className="shadow-xs">
+        <Card className="shadow-xs border-border/70 bg-card/70">
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div>
-                <CardTitle className="text-base flex items-center gap-2">
+                <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-primary" />
                   Evolução Financeira Mensal ({yearFilter || anoAtual})
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Comparativo de receitas (verde) vs despesas (vermelho) em cada mês do ano
+                  Comparativo de receitas (verde) vs despesas (vermelho) em cada mês
                 </CardDescription>
               </div>
               <div className="flex items-center gap-4 text-xs">
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1.5 font-medium">
                   <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 inline-block" />
                   Receitas
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red-500 inline-block" />
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="h-2.5 w-2.5 rounded-full bg-rose-500 inline-block" />
                   Despesas
                 </span>
               </div>
@@ -474,7 +471,7 @@ export default function Page() {
             {isLoading ? (
               <Skeleton className="h-32 w-full" />
             ) : (
-              <div className="grid grid-cols-6 sm:grid-cols-12 gap-2 items-end pt-4 pb-2 min-h-[140px]">
+              <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 sm:gap-2 items-end pt-4 pb-2 min-h-[140px]">
                 {annualMonthlyOverview.map((item) => {
                   const creditHeightPct = Math.max(8, Math.round((item.credits / maxMonthlyValue) * 100))
                   const debitHeightPct = Math.max(8, Math.round((item.debits / maxMonthlyValue) * 100))
@@ -486,17 +483,17 @@ export default function Page() {
                         <div
                           title={`${item.fullMonth}: Receitas ${formatCurrency(item.credits)}`}
                           className={`w-2.5 sm:w-3 rounded-t-sm transition-all duration-300 ${
-                            item.credits > 0 ? 'bg-emerald-500 group-hover:bg-emerald-400' : 'bg-muted/40'
+                            item.credits > 0 ? "bg-emerald-500 group-hover:bg-emerald-400" : "bg-muted/40"
                           }`}
-                          style={{ height: item.credits > 0 ? `${creditHeightPct}%` : '4px' }}
+                          style={{ height: item.credits > 0 ? `${creditHeightPct}%` : "4px" }}
                         />
                         {/* Barra de Despesas */}
                         <div
                           title={`${item.fullMonth}: Despesas ${formatCurrency(item.debits)}`}
                           className={`w-2.5 sm:w-3 rounded-t-sm transition-all duration-300 ${
-                            item.debits > 0 ? 'bg-red-500 group-hover:bg-red-400' : 'bg-muted/40'
+                            item.debits > 0 ? "bg-rose-500 group-hover:bg-rose-400" : "bg-muted/40"
                           }`}
-                          style={{ height: item.debits > 0 ? `${debitHeightPct}%` : '4px' }}
+                          style={{ height: item.debits > 0 ? `${debitHeightPct}%` : "4px" }}
                         />
                       </div>
                       <span className="text-[11px] font-medium text-muted-foreground">
@@ -513,88 +510,70 @@ export default function Page() {
         {/* Seções Analíticas: Transações Recentes + Categorias + Formas de Pagamento */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
           {/* Lançamentos Recentes (4 colunas) */}
-          <Card className="lg:col-span-4 shadow-xs">
-            <CardHeader className="flex flex-row items-center justify-between">
+          <Card className="lg:col-span-4 shadow-xs border-border/70 bg-card/70">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div>
-                <CardTitle className="text-base">Lançamentos Recentes</CardTitle>
+                <CardTitle className="text-sm sm:text-base">Lançamentos Recentes</CardTitle>
                 <CardDescription className="text-xs">
                   Últimas movimentações no período selecionado
                 </CardDescription>
               </div>
-              <div className="flex gap-2">
-                <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ''}/dashboard/debits`}>
-                  <Button variant="outline" size="sm" className="h-7 text-xs">
-                    Ver Despesas
+              <div className="flex gap-1.5">
+                <Link href={`${prefix}/dashboard/debits`}>
+                  <Button variant="outline" size="sm" className="h-7 text-xs px-2.5">
+                    Despesas
                   </Button>
                 </Link>
-                <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ''}/dashboard/credits`}>
-                  <Button variant="outline" size="sm" className="h-7 text-xs">
-                    Ver Receitas
+                <Link href={`${prefix}/dashboard/credits`}>
+                  <Button variant="outline" size="sm" className="h-7 text-xs px-2.5">
+                    Receitas
                   </Button>
                 </Link>
               </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="space-y-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
+                <LoadingState variant="list" count={4} />
               ) : recentTransactions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
-                  <Banknote className="h-8 w-8 mb-2 opacity-40" />
-                  <p className="text-sm">Nenhuma transação encontrada no período selecionado.</p>
-                </div>
+                <EmptyState
+                  icon={Banknote}
+                  title="Nenhum lançamento no período"
+                  description="Crie despesas ou receitas para visualizar seu histórico recente."
+                />
               ) : (
-                <div className="space-y-2.5">
+                <MobileList className="bg-transparent border-0 divide-border/30">
                   {recentTransactions.map((tx) => (
-                    <div
+                    <MobileListItem
                       key={tx.id}
-                      className="flex items-center justify-between p-2.5 rounded-lg border bg-card/50 hover:bg-accent/40 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
+                      className="px-0 py-2.5"
+                      icon={
                         <div
-                          className={`p-2 rounded-md ${
-                            tx.type === 'credit'
-                              ? 'bg-emerald-500/10 text-emerald-500'
-                              : 'bg-red-500/10 text-red-500'
+                          className={`p-2 rounded-lg ${
+                            tx.type === "credit"
+                              ? "bg-emerald-500/10 text-emerald-500"
+                              : "bg-rose-500/10 text-rose-500"
                           }`}
                         >
-                          {tx.type === 'credit' ? (
+                          {tx.type === "credit" ? (
                             <ArrowUpCircle className="h-4 w-4" />
                           ) : (
                             <ArrowDownCircle className="h-4 w-4" />
                           )}
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium line-clamp-1">{tx.description}</span>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {tx.categoryName && <span>{tx.categoryName}</span>}
-                            {tx.bankName && (
-                              <>
-                                <span>•</span>
-                                <span>{tx.bankName}</span>
-                              </>
-                            )}
-                            <span>•</span>
-                            <span>{tx.date ? format(new Date(tx.date), "dd/MM/yyyy") : ""}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div
-                        className={`text-sm font-semibold whitespace-nowrap ${
-                          tx.type === 'credit'
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : 'text-red-600 dark:text-red-400'
-                        }`}
-                      >
-                        {tx.type === 'credit' ? `+ ${formatCurrency(tx.value)}` : `- ${formatCurrency(tx.value)}`}
-                      </div>
-                    </div>
+                      }
+                      title={tx.description}
+                      subtitle={
+                        <span>
+                          {tx.categoryName || "Geral"}
+                          {tx.bankName && ` • ${tx.bankName}`}
+                        </span>
+                      }
+                      meta={<span>{tx.date ? format(new Date(tx.date), "dd/MM/yyyy") : ""}</span>}
+                      value={`${tx.type === "credit" ? "+" : "-"} ${formatCurrency(tx.value)}`}
+                      valueColor={tx.type === "credit" ? "positive" : "negative"}
+                    />
                   ))}
-                </div>
+                </MobileList>
               )}
             </CardContent>
           </Card>
@@ -602,9 +581,9 @@ export default function Page() {
           {/* Categorias + Formas de Pagamento + Metas (3 colunas) */}
           <div className="lg:col-span-3 flex flex-col gap-6">
             {/* Gastos por Categoria */}
-            <Card className="shadow-xs">
+            <Card className="shadow-xs border-border/70 bg-card/70">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
+                <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                   <PieChart className="h-4 w-4 text-primary" />
                   Gastos por Categoria
                 </CardTitle>
@@ -651,10 +630,10 @@ export default function Page() {
             </Card>
 
             {/* Formas de Pagamento Utilizadas */}
-            <Card className="shadow-xs">
+            <Card className="shadow-xs border-border/70 bg-card/70">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-purple-500" />
+                <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-violet-500" />
                   Formas de Pagamento (Despesas)
                 </CardTitle>
               </CardHeader>
@@ -665,31 +644,28 @@ export default function Page() {
                   <p className="text-xs text-muted-foreground text-center py-2">Sem dados no período.</p>
                 ) : (
                   <div className="grid grid-cols-2 gap-2.5">
-                    <div className="p-2 rounded-lg border bg-muted/30 flex flex-col">
+                    <div className="p-2.5 rounded-lg border bg-muted/30 flex flex-col">
                       <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                        <CreditCard className="h-3 w-3 text-purple-500" /> Crédito
+                        <CreditCard className="h-3 w-3 text-violet-500" /> Crédito
                       </span>
                       <span className="text-xs font-bold mt-0.5">{formatCurrency(paymentMethodsBreakdown.Crédito || 0)}</span>
                     </div>
 
-                    <div className="p-2 rounded-lg border bg-muted/30 flex flex-col">
+                    <div className="p-2.5 rounded-lg border bg-muted/30 flex flex-col">
                       <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                        <svg fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-teal-500">
-                          <path d="M11.917 11.71a2.046 2.046 0 0 1-1.454-.602l-2.1-2.1a.4.4 0 0 0-.551 0l-2.108 2.108a2.044 2.044 0 0 1-1.454.602h-.414l2.66 2.66c.83.83 2.177.83 3.007 0l2.667-2.668h-.253zM4.25 4.282c.55 0 1.066.214 1.454.602l2.108 2.108a.39.39 0 0 0 .552 0l2.1-2.1a2.044 2.044 0 0 1 1.453-.602h.253L9.503 1.623a2.127 2.127 0 0 0-3.007 0l-2.66 2.66h.414z"/>
-                        </svg>
-                        Pix
+                        <span className="text-emerald-500">⚡</span> Pix
                       </span>
                       <span className="text-xs font-bold mt-0.5">{formatCurrency(paymentMethodsBreakdown.Pix || 0)}</span>
                     </div>
 
-                    <div className="p-2 rounded-lg border bg-muted/30 flex flex-col">
+                    <div className="p-2.5 rounded-lg border bg-muted/30 flex flex-col">
                       <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <Banknote className="h-3 w-3 text-emerald-500" /> Débito
                       </span>
                       <span className="text-xs font-bold mt-0.5">{formatCurrency(paymentMethodsBreakdown.Débito || 0)}</span>
                     </div>
 
-                    <div className="p-2 rounded-lg border bg-muted/30 flex flex-col">
+                    <div className="p-2.5 rounded-lg border bg-muted/30 flex flex-col">
                       <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <Landmark className="h-3 w-3 text-blue-500" /> Conta
                       </span>
@@ -701,15 +677,15 @@ export default function Page() {
             </Card>
 
             {/* Resumo de Metas */}
-            <Card className="shadow-xs">
+            <Card className="shadow-xs border-border/70 bg-card/70">
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                     <Target className="h-4 w-4 text-emerald-500" />
                     Metas em Andamento
                   </CardTitle>
                 </div>
-                <Link href="/manage/goals">
+                <Link href={`${prefix}/manage/goals`}>
                   <Button variant="ghost" size="sm" className="h-7 text-xs">
                     Gerenciar
                   </Button>
@@ -725,8 +701,8 @@ export default function Page() {
                 ) : (
                   <div className="space-y-3">
                     {goals.slice(0, 3).map((goal) => {
-                      const current = goal.currentAmount || 0
-                      const target = goal.targetAmount || 1
+                      const current = Number(goal.currentAmount) || 0
+                      const target = Number(goal.targetAmount) || 1
                       const pct = Math.min(100, Math.round((current / target) * 100))
                       return (
                         <div key={goal.id} className="space-y-1">
