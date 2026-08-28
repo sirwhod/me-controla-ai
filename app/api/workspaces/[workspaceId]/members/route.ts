@@ -38,22 +38,22 @@ export async function GET(_req: NextRequest, props: RouteParams) {
 
     // Buscar dados dos usuários membros
     const allUserIds = Array.from(new Set([ownerId, ...memberIds])).filter(Boolean)
-    const membersList = []
-
-    for (const uId of allUserIds) {
-      const userDoc = await db.collection('users').doc(uId).get()
-      if (userDoc.exists) {
+    const userDocs = allUserIds.length > 0
+      ? await db.getAll(...allUserIds.map((userId) => db.collection('users').doc(userId)))
+      : []
+    const membersList = userDocs
+      .filter((userDoc) => userDoc.exists)
+      .map((userDoc) => {
         const uData = userDoc.data()
-        membersList.push({
-          id: uId,
+        return {
+          id: userDoc.id,
           name: uData?.name || 'Usuário',
           email: uData?.email || '',
           image: uData?.image || null,
-          role: uId === ownerId ? 'owner' : 'member',
+          role: userDoc.id === ownerId ? 'owner' : 'member',
           joinedAt: serializeFirestoreDate(uData?.createdAt),
-        })
-      }
-    }
+        }
+      })
 
     // Buscar convites pendentes deste workspace
     const invitesSnapshot = await db
