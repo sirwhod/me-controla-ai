@@ -181,7 +181,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
     }
 
     await debitRef.update(dataToUpdate)
-    const previous = debitDoc.data()
+    const previous = debitDoc.data() || {}
     const next = { ...previous, ...dataToUpdate }
     await applyMonthlyAnalyticsDelta({ workspaceId, month: String(previous.month || ''), year: Number(previous.year), expenses: -Number(previous.value || 0), debitCount: -1 })
     await applyMonthlyAnalyticsDelta({ workspaceId, month: String(next.month || ''), year: Number(next.year), expenses: Number(next.value || 0), debitCount: 1 })
