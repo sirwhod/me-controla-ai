@@ -4,6 +4,7 @@ import { db } from '@/app/lib/firebase'
 import { createDebitSchema, Debit, TypeDebit } from '@/app/types/financial'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { DocumentReference } from 'firebase-admin/firestore'
+import { FieldPath } from 'firebase-admin/firestore'
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestId, logFirestoreQuery, logHttpRequest } from '@/app/lib/observability'
 
@@ -35,11 +36,27 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
     const { searchParams } = new URL(req.url)
     const month = searchParams.get('month')
     const year = searchParams.get('year')
+    const requestedLimit = Number(searchParams.get('limit'))
+    const pageLimit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(Math.floor(requestedLimit), 100) : null
+    const cursor = searchParams.get('cursor')
 
     let debitsQuery: FirebaseFirestore.Query = db
       .collection('workspaces')
       .doc(workspaceId)
       .collection('debits')
+
+    if (pageLimit || cursor) {
+      debitsQuery = debitsQuery.orderBy('date', 'desc').orderBy(FieldPath.documentId(), 'desc')
+      if (cursor) {
+        try {
+          const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { date: string; id: string }
+          debitsQuery = debitsQuery.startAfter(new Date(decoded.date), decoded.id)
+        } catch {
+          return NextResponse.json({ message: 'Cursor inválido' }, { status: 400 })
+        }
+      }
+      if (pageLimit) debitsQuery = debitsQuery.limit(pageLimit)
+    }
 
     if (month && month !== 'todos') {
       debitsQuery = debitsQuery.where('month', '==', month.toLowerCase())
@@ -68,8 +85,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
       return right - left
     })
 
+    const lastDoc = querySnapshot.docs.at(-1)
+    const nextCursor = pageLimit && lastDoc && querySnapshot.size === pageLimit
+      ? Buffer.from(JSON.stringify({ date: lastDoc.data().date.toDate?.()?.toISOString?.() || new Date(lastDoc.data().date).toISOString(), id: lastDoc.id })).toString('base64url')
+      : null
     logHttpRequest({ requestId, endpoint: '/api/workspaces/:workspaceId/debits', method: 'GET', status: 200, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId })
-    return NextResponse.json(debits, { status: 200, headers: { 'x-request-id': requestId } })
+    return NextResponse.json(debits, { status: 200, headers: { 'x-request-id': requestId, ...(nextCursor ? { 'x-next-cursor': nextCursor } : {}) } })
   } catch (error) {
     console.error('Erro ao listar débitos:', error)
     return NextResponse.json({ message: 'Erro interno do servidor ao listar débitos' }, { status: 500 })
