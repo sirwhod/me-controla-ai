@@ -25,6 +25,7 @@ import {
   createCreditSchema,
   PersonResponsible,
   TypeCredit,
+  Credit,
 } from "@/app/types/financial"
 import { IconName } from "lucide-react/dynamic"
 
@@ -248,7 +249,24 @@ export function NewCreditForm() {
       })
 
       if (response) {
-        await queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive.id] })
+        if (payload.type === "Comum" && response.creditId) {
+          const date = new Date(payload.date || new Date().toISOString())
+          const month = date.toLocaleString("pt-BR", { month: "long" })
+          const optimisticCredit = {
+            ...payload,
+            id: response.creditId,
+            workspaceId: workspaceActive.id,
+            month,
+            year: date.getFullYear(),
+            date,
+          } as unknown as Credit
+          queryClient.setQueryData<Credit[]>(
+            ["credits", workspaceActive.id, month, String(date.getFullYear())],
+            (cached) => cached ? [optimisticCredit, ...cached] : [optimisticCredit]
+          )
+        } else {
+          await queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive.id] })
+        }
         toast.success(response.message || "Receita criada com sucesso!")
         router.push(`/${workspaceActive.id}/dashboard/credits`)
       }
