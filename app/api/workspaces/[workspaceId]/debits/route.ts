@@ -129,6 +129,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       }
     }
 
+    let cardDocData: Record<string, unknown> | null = null
+    if (creditCardId) {
+      const cardRef = db.collection('workspaces').doc(workspaceId).collection('cards').doc(creditCardId)
+      const cardDoc = await cardRef.get()
+      if (cardDoc.exists) {
+        cardDocData = cardDoc.data() || null
+      }
+    }
+
     let categoryDocData: Record<string, unknown> | null = null
     if (categoryId) {
       const categoryRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc(categoryId)
@@ -147,11 +156,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
     }
 
     // Regra de Fechamento de Fatura de Cartão de Crédito
-    const bankClosingDay = typeof bankDocData?.invoiceClosingDay === 'string' ? bankDocData.invoiceClosingDay : null
+    const closingDayRaw = cardDocData?.closingDay ?? bankDocData?.invoiceClosingDay
     const getInvoiceDate = (baseDate: Date) => {
-      if (paymentMethod === 'Crédito' && bankClosingDay) {
-        const closingDay = parseInt(bankClosingDay, 10)
-        if (!isNaN(closingDay) && baseDate.getDate() > closingDay) {
+      if (paymentMethod === 'Crédito' && closingDayRaw !== undefined && closingDayRaw !== null) {
+        const closingDay = typeof closingDayRaw === 'number' ? closingDayRaw : parseInt(String(closingDayRaw), 10)
+        if (!isNaN(closingDay) && closingDay > 0 && baseDate.getDate() > closingDay) {
           // Compra após o fechamento: entra na fatura do mês subsequente
           return new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 1)
         }
@@ -274,37 +283,57 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       case 'Parcelamento': {
         const effStartDate = startDateObj || dateObj || new Date()
         const numInstallments = totalInstallments || 2
+        const currInstallment = currentInstallment || 1
 
         newDebitData.isTemplate = false
         newDebitData.startDate = effStartDate
         newDebitData.totalInstallments = numInstallments
 
+        // Cálculo com ajuste exato de centavos a partir do valor total digitado
+        const totalCents = Math.round(value * 100)
+        const baseInstallmentCents = Math.floor(totalCents / numInstallments)
+        const remainderCents = totalCents % numInstallments
+
         const parcelasToCreate: Array<Debit & { ref: DocumentReference }> = []
-        const baseParcelaDate = getInvoiceDate(effStartDate)
-        const parcelaDate = new Date(baseParcelaDate.getFullYear(), baseParcelaDate.getMonth(), 1)
+
+        // A data base da 1ª parcela retrocede a partir da parcela atual
+        const baseDay = effStartDate.getDate() || 1
+        const firstInstallmentBaseDate = new Date(
+          effStartDate.getFullYear(),
+          effStartDate.getMonth() - (currInstallment - 1),
+          baseDay
+        )
 
         // Criar referências antecipadas para vincular originalDebitId
         const firstRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
 
         for (let i = 1; i <= numInstallments; i++) {
           const ref = i === 1 ? firstRef : db.collection('workspaces').doc(workspaceId).collection('debits').doc()
-          const installmentStatus = i <= currentInstallment ? 'paid' : 'pending'
+          const installmentCents = i === 1 ? baseInstallmentCents + remainderCents : baseInstallmentCents
+          const installmentValue = installmentCents / 100
+
+          const installmentDate = new Date(
+            firstInstallmentBaseDate.getFullYear(),
+            firstInstallmentBaseDate.getMonth() + (i - 1),
+            baseDay
+          )
+          const invoiceDate = getInvoiceDate(installmentDate)
 
           const parcelaData: Debit & { ref: DocumentReference } = {
             ...newDebitData,
+            value: installmentValue,
             currentInstallment: i,
-            date: new Date(parcelaDate),
-            month: parcelaDate.toLocaleString('pt-BR', { month: 'long' }),
-            year: parcelaDate.getFullYear(),
+            date: installmentDate,
+            month: invoiceDate.toLocaleString('pt-BR', { month: 'long' }),
+            year: invoiceDate.getFullYear(),
             description: `Parcela ${i}/${numInstallments} - ${newDebitData.description}`,
             createdAt: new Date(),
             updatedAt: new Date(),
             originalDebitId: firstRef.id,
-            status: installmentStatus,
+            status: status || 'pending',
             ref,
           }
           parcelasToCreate.push(parcelaData)
-          parcelaDate.setMonth(parcelaDate.getMonth() + 1)
         }
 
         const parcelaBatch = db.batch()
@@ -317,7 +346,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
           message: 'Parcelamento criado com sucesso!',
           originalDebitId: firstRef.id,
           totalInstallments: numInstallments,
-          currentInstallment,
+          currentInstallment: currInstallment,
         }, { status: 201 })
       }
 
