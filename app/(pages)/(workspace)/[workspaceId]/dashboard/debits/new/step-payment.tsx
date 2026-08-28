@@ -46,10 +46,8 @@ export function StepPayment({
   onQuickCreateBank,
   onQuickCreateResponsible,
 }: StepPaymentProps) {
-  const debitType = form.watch("type")
-  const isParcelado = debitType === "Parcelamento"
   const currentPaymentMethod = form.watch("paymentMethod")
-  const isCreditPayment = currentPaymentMethod === "Crédito" || isParcelado
+  const isCreditPayment = currentPaymentMethod === "Crédito"
 
   const categoryItems = categories.map((cat) => ({
     id: cat.id,
@@ -100,8 +98,7 @@ export function StepPayment({
               <FormLabel className="text-xs font-semibold">Forma de Pagamento</FormLabel>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5" role="radiogroup" aria-label="Forma de Pagamento">
                 {PAYMENT_METHODS.map((method) => {
-                  const isSelected = (isParcelado && method.value === "Crédito") || field.value === method.value
-                  const isDisabled = isParcelado && method.value !== "Crédito"
+                  const isSelected = field.value === method.value
 
                   return (
                     <button
@@ -109,24 +106,20 @@ export function StepPayment({
                       type="button"
                       role="radio"
                       aria-checked={isSelected}
-                      disabled={isDisabled}
                       onClick={() => {
-                        if (!isDisabled) {
-                          field.onChange(method.value)
-                          if (method.value === "Crédito") {
-                            form.setValue("bankId", "")
-                          } else {
-                            form.setValue("creditCardId", "")
-                          }
+                        field.onChange(method.value)
+                        if (method.value === "Crédito") {
+                          form.setValue("bankId", "")
+                        } else {
+                          form.setValue("creditCardId", "")
                         }
                       }}
                       className={cn(
-                        "flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all duration-200 gap-1.5",
+                        "flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all duration-200 gap-1.5 cursor-pointer",
                         "bg-card/70 hover:bg-accent/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary",
                         isSelected
                           ? "border-primary bg-primary/10 ring-2 ring-primary/30 shadow-xs text-foreground font-semibold"
-                          : "border-border/70 text-muted-foreground hover:text-foreground",
-                        isDisabled && "opacity-40 cursor-not-allowed hover:bg-transparent"
+                          : "border-border/70 text-muted-foreground hover:text-foreground"
                       )}
                     >
                       <div className={cn("transition-colors", isSelected ? "text-primary" : "text-muted-foreground")}>
@@ -137,11 +130,6 @@ export function StepPayment({
                   )
                 })}
               </div>
-              {isParcelado && (
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  Compras parceladas utilizam exclusivamente Cartão de Crédito.
-                </p>
-              )}
               <FormMessage />
             </FormItem>
           )}

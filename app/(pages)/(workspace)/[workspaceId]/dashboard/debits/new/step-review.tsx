@@ -100,7 +100,7 @@ export function StepReview({
             <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
             <div className="flex flex-col">
               <span className="text-muted-foreground font-medium">
-                {isParcelado ? "Data da Compra / Fatura" : "Data da Despesa"}
+                {isParcelado ? "Data da 1ª Parcela / Compra" : "Data da Despesa"}
               </span>
               <span className="text-foreground font-semibold">
                 {formattedDate}

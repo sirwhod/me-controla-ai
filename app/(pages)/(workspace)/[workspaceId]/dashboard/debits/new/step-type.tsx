@@ -43,7 +43,7 @@ const TYPE_OPTIONS: TypeOption[] = [
   {
     type: "Parcelamento",
     title: "Parcelado",
-    description: "Despesa paga em várias parcelas no cartão.",
+    description: "Despesa dividida em várias parcelas mensais (Pix, Cartão, etc.).",
     icon: <CreditCard className="h-6 w-6 text-purple-500" />,
     iconBg: "bg-purple-500/10 text-purple-500",
   },

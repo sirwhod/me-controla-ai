@@ -35,7 +35,7 @@ export function StepDetails({ form }: StepDetailsProps) {
         </h2>
         <p className="text-xs sm:text-sm text-muted-foreground">
           {isParcelado
-            ? "Informe as parcelas e o valor total da compra no cartão."
+            ? "Informe as parcelas e o valor total da despesa."
             : "Preencha as informações básicas para registrar seu gasto."}
         </p>
       </div>
@@ -48,7 +48,7 @@ export function StepDetails({ form }: StepDetailsProps) {
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel className="text-xs font-semibold">
-                {isParcelado ? "Data da Compra / Fatura" : isFixoOuAssinatura ? "Data de Início" : "Data da Despesa"}
+                {isParcelado ? "Data da 1ª Parcela / Compra" : isFixoOuAssinatura ? "Data de Início" : "Data da Despesa"}
               </FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
@@ -212,7 +212,7 @@ export function StepDetails({ form }: StepDetailsProps) {
           render={({ field }) => (
             <FormItem className="w-full">
               <FormLabel className="text-xs font-semibold">
-                {isParcelado ? "Valor Total da Compra (R$)" : "Valor (R$)"}
+                {isParcelado ? "Valor Total da Despesa (R$)" : "Valor (R$)"}
               </FormLabel>
               <FormControl>
                 <Input
@@ -227,7 +227,7 @@ export function StepDetails({ form }: StepDetailsProps) {
               </FormControl>
               {isParcelado && (
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Informe o valor total da compra. O sistema dividirá automaticamente entre as parcelas.
+                  Informe o valor total. O sistema dividirá automaticamente entre as parcelas.
                 </p>
               )}
               <FormMessage />

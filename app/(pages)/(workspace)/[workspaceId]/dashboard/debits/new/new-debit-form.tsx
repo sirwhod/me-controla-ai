@@ -226,8 +226,6 @@ export function NewDebitForm() {
     }
 
     if (currentStep === 3) {
-      const type = form.getValues("type")
-      const isParcelado = type === "Parcelamento"
       const paymentMethod = form.getValues("paymentMethod")
 
       if (!paymentMethod) {
@@ -235,7 +233,7 @@ export function NewDebitForm() {
         return
       }
 
-      if (isParcelado || paymentMethod === "Crédito") {
+      if (paymentMethod === "Crédito") {
         const cardId = form.getValues("creditCardId")
         if (!cardId) {
           form.setError("creditCardId", { message: "Selecione o cartão de crédito." })
