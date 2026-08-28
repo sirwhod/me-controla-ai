@@ -35,7 +35,17 @@ import { searchCatalogIcons } from "../lib/icons-catalog"
 
 type CreateCategoryFormData = CreateCategoryProps
 
-export function CreateCategory() {
+interface CreateCategoryComponentProps {
+  className?: string
+  fullWidth?: boolean
+  label?: string
+}
+
+export function CreateCategory({
+  className,
+  fullWidth,
+  label = "Nova Categoria",
+}: CreateCategoryComponentProps = {}) {
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false)
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -102,12 +112,16 @@ export function CreateCategory() {
   return (
     <Dialog open={modalIsOpen} onOpenChange={handleModalOpenChange}>
       <DialogTrigger asChild>
-        <Button onClick={() => setModalIsOpen(true)} variant="default">
+        <Button
+          onClick={() => setModalIsOpen(true)}
+          variant="default"
+          className={cn("gap-2 font-semibold", fullWidth && "w-full", className)}
+        >
           <PlusCircle className="w-4 h-4 mr-2" />
-          Nova Categoria
+          {label}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Nova Categoria</DialogTitle>
           <DialogDescription>

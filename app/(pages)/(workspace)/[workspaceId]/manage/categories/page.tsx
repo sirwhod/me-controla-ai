@@ -20,6 +20,8 @@ import Link from "next/link"
 import { DataTable } from "./data-table"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
+import { Tags } from "lucide-react"
+import { CreateCategory } from "@/app/components/create-category"
 
 export default function Page() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
@@ -73,13 +75,51 @@ export default function Page() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-4 p-3 md:p-4 pt-3">
-        <div className="bg-muted/40 min-h-[calc(100vh-5rem)] md:min-h-min flex-1 rounded-xl p-3 md:p-4">
+      <div className="flex flex-1 flex-col gap-4 p-3 md:p-6 pt-3 max-w-7xl w-full mx-auto pb-20 md:pb-6">
+        {/* ========================================================================= */}
+        {/* 1. ESTRUTURA MOBILE (< 768px): Header + CTA Full Width                    */}
+        {/* ========================================================================= */}
+        <div className="flex flex-col gap-3 md:hidden w-full">
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Tags className="h-5 w-5 text-primary" />
+              Categorias
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Classifique e organize seus lançamentos de receitas e despesas.
+            </p>
+          </div>
+
+          {/* CTA Principal Full Width */}
+          <CreateCategory fullWidth className="h-10 font-semibold shadow-xs" label="Nova Categoria" />
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 2. ESTRUTURA DESKTOP (>= 768px): Header Amplo com CTA à Direita           */}
+        {/* ========================================================================= */}
+        <div className="hidden md:flex items-center justify-between gap-3 w-full">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Tags className="h-6 w-6 text-primary" />
+              Categorias
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Gerencie as categorias de receitas e despesas desta caixinha.
+            </p>
+          </div>
+
+          <CreateCategory label="Nova Categoria" />
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 3. LISTAGEM DE DADOS (MOBILE: CategoryList / DESKTOP: DataTable)          */}
+        {/* ========================================================================= */}
+        <div className="w-full">
           {isLoading ? (
             <LoadingState variant="list" count={5} />
           ) : error ? (
             <ErrorState
-              title="Erro ao carregar categorias"
+              title="Não foi possível carregar as categorias"
               message={error.message}
               onRetry={() => refetch()}
             />

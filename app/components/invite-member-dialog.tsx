@@ -31,13 +31,25 @@ import { Input } from "@/app/components/ui/input"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { inviteWorkspaceMember } from "@/app/http/members"
 
+import { cn } from "@/app/lib/utils"
+
 const inviteSchema = z.object({
   email: z.string().email("Por favor, insira um e-mail válido"),
 })
 
 type InviteFormData = z.infer<typeof inviteSchema>
 
-export function InviteMemberDialog() {
+interface InviteMemberDialogProps {
+  className?: string
+  fullWidth?: boolean
+  label?: string
+}
+
+export function InviteMemberDialog({
+  className,
+  fullWidth,
+  label = "Convidar Membro",
+}: InviteMemberDialogProps = {}) {
   const [open, setOpen] = useState(false)
   const { workspaceActive } = useWorkspace()
   const queryClient = useQueryClient()
@@ -71,13 +83,13 @@ export function InviteMemberDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button className={cn("gap-2 font-semibold", fullWidth && "w-full", className)}>
           <UserPlus className="h-4 w-4" />
-          Convidar Usuário
+          {label}
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5 text-primary" />

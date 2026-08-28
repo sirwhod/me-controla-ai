@@ -85,7 +85,7 @@ export default function ResponsiblesPage() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-4 p-3 md:p-6 pt-3 max-w-7xl w-full mx-auto">
+      <div className="flex flex-1 flex-col gap-4 p-3 md:p-6 pt-3 max-w-7xl w-full mx-auto pb-20 md:pb-6">
         {/* ========================================================================= */}
         {/* 1. ESTRUTURA MOBILE (< 768px): Header + Período + CTA                     */}
         {/* ========================================================================= */}

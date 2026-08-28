@@ -24,9 +24,10 @@ import { useState } from "react"
 import { DataTablePagination } from "@/app/components/table/pagination"
 import { EmptyState } from "@/app/components/states/empty-state"
 import { Credit } from "@/app/types/financial"
-import { HandCoins, RotateCcw } from "lucide-react"
+import { HandCoins, RotateCcw, Search } from "lucide-react"
 import { RevenueList, RevenueListItem } from "./revenue-list"
 import { Button } from "@/app/components/ui/button"
+import { Input } from "@/app/components/ui/input"
 import { CreateCredit } from "@/app/components/create-credit"
 
 interface DataTableProps<TData, TValue> {
@@ -61,9 +62,31 @@ export function DataTable<TData extends Credit, TValue>({
   })
 
   const rows = table.getRowModel().rows
+  const searchValue = (table.getColumn("description")?.getFilterValue() as string) ?? ""
+  const isFiltering = Boolean(searchValue || hasActiveFilters)
+
+  const clearAll = () => {
+    table.getColumn("description")?.setFilterValue("")
+    if (onClearFilters) {
+      onClearFilters()
+    }
+  }
 
   return (
     <div className="flex flex-col space-y-4 w-full">
+      {/* Campo de Busca Rápida */}
+      <div className="relative w-full sm:max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar receitas..."
+          value={searchValue}
+          onChange={(event) =>
+            table.getColumn("description")?.setFilterValue(event.target.value)
+          }
+          className="pl-9 h-10 sm:h-9 text-xs sm:text-sm bg-card/60 border-border/70 w-full"
+        />
+      </div>
+
       {/* 1. VISÃO MOBILE (< 768px): RevenueList com Cards Estruturados */}
       <div className="block md:hidden w-full">
         {rows.length ? (
@@ -72,24 +95,22 @@ export function DataTable<TData extends Credit, TValue>({
               <RevenueListItem key={row.id} credit={row.original as Credit} />
             ))}
           </RevenueList>
-        ) : hasActiveFilters ? (
+        ) : isFiltering ? (
           <EmptyState
             icon={HandCoins}
             title="Nenhuma receita encontrada"
-            description="Não encontramos receitas para os filtros selecionados."
+            description="Não encontramos receitas para os filtros ou busca aplicados."
             action={
-              onClearFilters ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={onClearFilters}
-                  className="gap-1.5 text-xs"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  Limpar filtros
-                </Button>
-              ) : undefined
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={clearAll}
+                className="gap-1.5 text-xs"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Limpar filtros
+              </Button>
             }
           />
         ) : (
@@ -144,24 +165,22 @@ export function DataTable<TData extends Credit, TValue>({
                   colSpan={columns.length}
                   className="h-32 text-center"
                 >
-                  {hasActiveFilters ? (
+                  {isFiltering ? (
                     <EmptyState
                       icon={HandCoins}
                       title="Nenhuma receita encontrada"
-                      description="Não há lançamentos correspondentes aos filtros aplicados."
+                      description="Não há lançamentos correspondentes aos filtros ou busca aplicados."
                       action={
-                        onClearFilters ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={onClearFilters}
-                            className="gap-1.5 text-xs"
-                          >
-                            <RotateCcw className="h-3.5 w-3.5" />
-                            Limpar filtros
-                          </Button>
-                        ) : undefined
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={clearAll}
+                          className="gap-1.5 text-xs"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                          Limpar filtros
+                        </Button>
                       }
                     />
                   ) : (

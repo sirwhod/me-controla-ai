@@ -44,48 +44,63 @@ export function MobileNav() {
     (pathname.includes("/dashboard") && !isDebitsActive && !isCreditsActive)
   const isManageActive = pathname.includes("/manage")
 
-  const manageLinks = [
+  const manageSections = [
     {
-      title: "Bancos & Contas",
-      description: "Gerencie contas, saldos e chaves PIX",
-      href: `${prefix}/manage/banks${queryString}`,
-      icon: Landmark,
+      title: "Acesso & Pessoas",
+      links: [
+        {
+          title: "Membros & Acesso",
+          description: "Acessos e compartilhamento",
+          href: `${prefix}/manage/members${queryString}`,
+          icon: Users,
+        },
+        {
+          title: "Responsáveis",
+          description: "Gestão de pessoas e cobrança PIX",
+          href: `${prefix}/manage/responsibles${queryString}`,
+          icon: UserCheck,
+        },
+      ],
     },
     {
-      title: "Cartões de Crédito",
-      description: "Limites, faturas e dias de vencimento",
-      href: `${prefix}/manage/cards${queryString}`,
-      icon: CreditCard,
+      title: "Estrutura Financeira",
+      links: [
+        {
+          title: "Bancos & Contas",
+          description: "Gerencie contas, saldos e chaves PIX",
+          href: `${prefix}/manage/banks${queryString}`,
+          icon: Landmark,
+        },
+        {
+          title: "Cartões de Crédito",
+          description: "Limites, faturas e dias de vencimento",
+          href: `${prefix}/manage/cards${queryString}`,
+          icon: CreditCard,
+        },
+        {
+          title: "Categorias",
+          description: "Categorias de receitas e despesas",
+          href: `${prefix}/manage/categories${queryString}`,
+          icon: Tags,
+        },
+        {
+          title: "Metas Financeiras",
+          description: "Acompanhamento de objetivos e aportes",
+          href: `${prefix}/manage/goals${queryString}`,
+          icon: Target,
+        },
+      ],
     },
     {
-      title: "Categorias",
-      description: "Categorias universais de receitas e despesas",
-      href: `${prefix}/manage/categories${queryString}`,
-      icon: Tags,
-    },
-    {
-      title: "Metas Financeiras",
-      description: "Acompanhamento de objetivos e aportes",
-      href: `${prefix}/manage/goals${queryString}`,
-      icon: Target,
-    },
-    {
-      title: "Responsáveis",
-      description: "Gestão de pessoas e cobrança PIX",
-      href: `${prefix}/manage/responsibles${queryString}`,
-      icon: UserCheck,
-    },
-    {
-      title: "Membros da Caixinha",
-      description: "Acessos e compartilhamento",
-      href: `${prefix}/manage/members${queryString}`,
-      icon: Users,
-    },
-    {
-      title: "Painel de Configurações",
-      description: "Visão geral das preferências da caixinha",
-      href: `${prefix}/manage${queryString}`,
-      icon: Settings,
+      title: "Visão Geral",
+      links: [
+        {
+          title: "Painel de Configurações",
+          description: "Visão geral da caixinha",
+          href: `${prefix}/manage${queryString}`,
+          icon: Settings,
+        },
+      ],
     },
   ]
 
@@ -205,44 +220,53 @@ export function MobileNav() {
               </SheetDescription>
             </SheetHeader>
 
-            <div className="grid gap-1.5 py-3">
-              {manageLinks.map((item) => {
-                const Icon = item.icon
-                const isCurrent = pathname === item.href.split("?")[0]
-                return (
-                  <Link
-                    key={item.title}
-                    href={item.href}
-                    onClick={() => setSheetOpen(false)}
-                    className={cn(
-                      "flex items-center justify-between p-3 rounded-xl border transition-all",
-                      isCurrent
-                        ? "bg-primary/10 border-primary/40 text-primary font-medium"
-                        : "bg-card hover:bg-accent border-border/50 text-foreground"
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          "p-2 rounded-lg shrink-0",
-                          isCurrent
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground"
-                        )}
-                      >
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <div className="flex flex-col text-left">
-                        <span className="text-sm font-semibold leading-tight">{item.title}</span>
-                        <span className="text-xs text-muted-foreground line-clamp-1">
-                          {item.description}
-                        </span>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
-                  </Link>
-                )
-              })}
+            <div className="space-y-3 py-3">
+              {manageSections.map((section) => (
+                <div key={section.title} className="space-y-1.5">
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-primary pl-1">
+                    {section.title}
+                  </span>
+                  <div className="grid gap-1">
+                    {section.links.map((item) => {
+                      const Icon = item.icon
+                      const isCurrent = pathname === item.href.split("?")[0]
+                      return (
+                        <Link
+                          key={item.title}
+                          href={item.href}
+                          onClick={() => setSheetOpen(false)}
+                          className={cn(
+                            "flex items-center justify-between p-2.5 rounded-xl border transition-all",
+                            isCurrent
+                              ? "bg-primary/10 border-primary/40 text-primary font-medium"
+                              : "bg-card hover:bg-accent border-border/50 text-foreground"
+                          )}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className={cn(
+                                "p-2 rounded-lg shrink-0",
+                                isCurrent
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted text-muted-foreground"
+                              )}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="flex flex-col text-left">
+                              <span className="text-sm font-semibold leading-tight">{item.title}</span>
+                              <span className="text-xs text-muted-foreground line-clamp-1">
+                                {item.description}
+                              </span>
+                            </div>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </SheetContent>
         </Sheet>

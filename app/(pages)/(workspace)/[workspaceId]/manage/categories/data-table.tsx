@@ -24,23 +24,11 @@ import { useState } from "react"
 import { Input } from "@/app/components/ui/input"
 import { DataTablePagination } from "@/app/components/table/pagination"
 import { CreateCategory } from "@/app/components/create-category"
-import { MobileList } from "@/app/components/data-display/mobile-list"
 import { EmptyState } from "@/app/components/states/empty-state"
 import { Category } from "@/app/types/financial"
-import { MoreHorizontal, Search, Tags } from "lucide-react"
-import { DynamicIcon, IconName } from "lucide-react/dynamic"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/app/components/ui/dropdown-menu"
+import { RotateCcw, Search, Tags } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
-import { EditCategory } from "@/app/components/edit-category"
-import { DeleteCategory } from "@/app/components/delete-category"
-import { Badge } from "@/app/components/ui/badge"
+import { CategoryList, CategoryListItem } from "./category-list"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -70,114 +58,71 @@ export function DataTable<TData extends Category, TValue>({
   })
 
   const rows = table.getRowModel().rows
+  const searchValue = (table.getColumn("name")?.getFilterValue() as string) ?? ""
+  const isFiltering = Boolean(searchValue)
 
-  const getTypeBadge = (type?: string) => {
-    switch (type) {
-      case "expense":
-        return (
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-rose-500 border-rose-500/30 bg-rose-500/10">
-            Despesa
-          </Badge>
-        )
-      case "income":
-        return (
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-emerald-500 border-emerald-500/30 bg-emerald-500/10">
-            Receita
-          </Badge>
-        )
-      default:
-        return (
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-            Geral
-          </Badge>
-        )
-    }
+  const clearSearch = () => {
+    table.getColumn("name")?.setFilterValue("")
   }
 
   return (
-    <div className="flex flex-col space-y-4">
-      {/* Barra de Busca + CTA Criar Categoria */}
+    <div className="flex flex-col space-y-4 w-full">
+      {/* Barra de Busca + CTA Criar Categoria (Desktop) */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative flex-1 w-full sm:max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar categorias..."
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+            value={searchValue}
             onChange={(event) =>
               table.getColumn("name")?.setFilterValue(event.target.value)
             }
-            className="pl-8 h-9 text-xs"
+            className="pl-9 h-10 sm:h-9 text-xs sm:text-sm bg-card/60 border-border/70 w-full"
           />
         </div>
 
-        <CreateCategory />
+        <div className="hidden sm:block">
+          <CreateCategory />
+        </div>
       </div>
 
-      {/* 1. VISÃO MOBILE (< 768px): CategoryCards em MobileList */}
-      <div className="block md:hidden">
+      {/* 1. VISÃO MOBILE (< 768px): CategoryList com Items Compactos */}
+      <div className="block md:hidden w-full">
         {rows.length ? (
-          <MobileList>
-            {rows.map((row) => {
-              const category = row.original as Category
-              const icon = category.icon as IconName
-
-              return (
-                <div
-                  key={row.id}
-                  className="p-3.5 flex items-center justify-between gap-3 border-b border-border/40 last:border-b-0"
-                >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
-                      <DynamicIcon name={icon} size={18} />
-                    </div>
-
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <strong className="text-sm font-semibold text-foreground truncate">
-                        {category.name}
-                      </strong>
-                      <div className="mt-0.5">
-                        {getTypeBadge(category.type)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground shrink-0"
-                        aria-label="Opções da categoria"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                      <DropdownMenuItem
-                        onClick={() => navigator.clipboard.writeText(category.id)}
-                      >
-                        Copiar ID da categoria
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <EditCategory category={category} asDropdownItem />
-                      <DeleteCategory categoryId={category.id} />
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              )
-            })}
-          </MobileList>
-        ) : (
+          <CategoryList>
+            {rows.map((row) => (
+              <CategoryListItem key={row.id} category={row.original as Category} />
+            ))}
+          </CategoryList>
+        ) : isFiltering ? (
           <EmptyState
             icon={Tags}
             title="Nenhuma categoria encontrada"
-            description="Cadastre categorias personalizadas para classificar seus lançamentos."
+            description="Não encontramos categorias correspondentes à busca."
+            action={
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={clearSearch}
+                className="gap-1.5 text-xs"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Limpar busca
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            icon={Tags}
+            title="Nenhuma categoria cadastrada"
+            description="Cadastre suas categorias personalizadas para organizar receitas e despesas."
+            action={<CreateCategory />}
           />
         )}
       </div>
 
-      {/* 2. VISÃO DESKTOP (>= 768px): Tabela Tradicional */}
+      {/* 2. VISÃO DESKTOP (>= 768px): Tabela Tradicional Completa */}
       <div className="hidden md:block rounded-xl border border-border/60 bg-card overflow-hidden">
         <Table>
           <TableHeader>
@@ -219,11 +164,32 @@ export function DataTable<TData extends Category, TValue>({
                   colSpan={columns.length}
                   className="h-32 text-center"
                 >
-                  <EmptyState
-                    icon={Tags}
-                    title="Nenhuma categoria cadastrada"
-                    description="Crie sua primeira categoria para organizar gastos e ganhos."
-                  />
+                  {isFiltering ? (
+                    <EmptyState
+                      icon={Tags}
+                      title="Nenhuma categoria encontrada"
+                      description="Não há categorias correspondentes aos filtros selecionados."
+                      action={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={clearSearch}
+                          className="gap-1.5 text-xs"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                          Limpar busca
+                        </Button>
+                      }
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={Tags}
+                      title="Nenhuma categoria cadastrada"
+                      description="Crie sua primeira categoria para organizar despesas e receitas."
+                      action={<CreateCategory />}
+                    />
+                  )}
                 </TableCell>
               </TableRow>
             )}

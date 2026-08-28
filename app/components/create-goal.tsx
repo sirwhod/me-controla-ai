@@ -30,7 +30,17 @@ import { Calendar } from "./ui/calendar"
 
 type CreateGoalFormData = CreateGoalProps
 
-export function CreateGoal() {
+interface CreateGoalComponentProps {
+  className?: string
+  fullWidth?: boolean
+  label?: string
+}
+
+export function CreateGoal({
+  className,
+  fullWidth,
+  label = "Nova Meta",
+}: CreateGoalComponentProps = {}) {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false)
 
@@ -96,12 +106,16 @@ export function CreateGoal() {
   return (
     <Dialog open={modalIsOpen} onOpenChange={handleModalOpenChange}>
       <DialogTrigger asChild>
-        <Button onClick={() => setModalIsOpen(true)} variant="default">
+        <Button
+          onClick={() => setModalIsOpen(true)}
+          variant="default"
+          className={cn("gap-2 font-semibold", fullWidth && "w-full", className)}
+        >
           <PlusCircle className="w-4 h-4 mr-2" />
-          Nova Meta
+          {label}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />

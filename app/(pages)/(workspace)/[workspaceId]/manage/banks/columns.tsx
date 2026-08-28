@@ -135,7 +135,7 @@ export const columns: ColumnDef<Bank>[] = [
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <EditBank bank={bank} asDropdownItem />
-              <DeleteBank bankId={bank.id} />
+              <DeleteBank bankId={bank.id} bankName={bank.name} />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

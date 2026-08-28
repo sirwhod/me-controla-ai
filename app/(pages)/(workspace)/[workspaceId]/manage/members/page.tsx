@@ -12,28 +12,33 @@ import { SidebarTrigger } from "@/app/components/ui/sidebar"
 import WorkspaceSelector from "@/app/components/workspace-selector"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { getWorkspaceMembers, removeWorkspaceMember, cancelWorkspaceInvitation, WorkspaceMembersResponse } from "@/app/http/members"
+import {
+  getWorkspaceMembers,
+  removeWorkspaceMember,
+  cancelWorkspaceInvitation,
+  WorkspaceMembersResponse,
+  WorkspaceMemberInfo,
+  WorkspacePendingInvite,
+} from "@/app/http/members"
 import { Skeleton } from "@/app/components/ui/skeleton"
 import Link from "next/link"
-import { Button } from "@/app/components/ui/button"
-import { Users, Crown, Mail, Clock, Trash2, ShieldCheck, UserMinus } from "lucide-react"
+import { Users, Clock, ShieldCheck } from "lucide-react"
 import { InviteMemberDialog } from "@/app/components/invite-member-dialog"
 import { toast } from "sonner"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card"
-import { Badge } from "@/app/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
 import { ConfirmationDialog } from "@/app/components/ui/confirmation-dialog"
 import { useState } from "react"
+import { MemberList, MemberListItem, PendingInviteItem } from "./member-list"
+import { EmptyState } from "@/app/components/states/empty-state"
 
 export default function MembersPage() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
   const queryClient = useQueryClient()
 
   // Estados de confirmação
-  const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null)
-  const [inviteToCancel, setInviteToCancel] = useState<{ id: string; email: string } | null>(null)
+  const [memberToRemove, setMemberToRemove] = useState<WorkspaceMemberInfo | null>(null)
+  const [inviteToCancel, setInviteToCancel] = useState<WorkspacePendingInvite | null>(null)
 
   const { data, isLoading, error: membersError, refetch } = useQuery<WorkspaceMembersResponse, Error>({
     queryKey: ["workspace-members", workspaceActive?.id],
@@ -103,145 +108,121 @@ export default function MembersPage() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-4 p-3 md:p-4 pt-3">
-        <div className="bg-muted/40 min-h-[calc(100vh-5rem)] md:min-h-min flex-1 rounded-xl p-3 md:p-4 space-y-6">
+      <div className="flex flex-1 flex-col gap-5 p-3 md:p-6 pt-3 max-w-7xl w-full mx-auto pb-20 md:pb-6">
+        {/* ========================================================================= */}
+        {/* 1. ESTRUTURA MOBILE (< 768px): Header + CTA Full Width                    */}
+        {/* ========================================================================= */}
+        <div className="flex flex-col gap-3 md:hidden w-full">
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Membros & Acesso
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              {data?.workspace?.name
+                ? `Gerencie os acessos e permissões da caixinha "${data.workspace.name}".`
+                : "Gerencie os membros com acesso a esta caixinha."}
+            </p>
+          </div>
+
+          {/* CTA Principal Full Width */}
+          <InviteMemberDialog fullWidth className="h-10 font-semibold shadow-xs" label="Convidar Membro" />
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 2. ESTRUTURA DESKTOP (>= 768px): Header Amplo com CTA à Direita           */}
+        {/* ========================================================================= */}
+        <div className="hidden md:flex items-center justify-between gap-3 w-full">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Users className="h-6 w-6 text-primary" />
+              Membros com Acesso à Caixinha
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {data?.workspace?.name
+                ? `Gerencie quem pode visualizar e lançar despesas na caixinha "${data.workspace.name}".`
+                : "Gerencie os membros e convites desta caixinha."}
+            </p>
+          </div>
+
+          <InviteMemberDialog label="Convidar Membro" />
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 3. CONTEÚDO PRINCIPAL: MEMBROS ATIVOS E CONVITES PENDENTES               */}
+        {/* ========================================================================= */}
+        <div className="w-full space-y-6">
           {isPageLoading ? (
-            <LoadingState variant="list" count={4} />
+            <LoadingState variant="list" count={3} />
           ) : error ? (
             <ErrorState
-              title="Erro ao carregar membros"
+              title="Não foi possível carregar os membros"
               message={error.message}
               onRetry={() => refetch()}
             />
           ) : data ? (
             <>
-              {/* Header da Seção */}
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-lg sm:text-xl font-bold tracking-tight flex items-center gap-2">
-                    <Users className="h-5 w-5 text-primary" />
-                    Membros com Acesso à Caixinha
-                  </h1>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                    Gerencie quem pode visualizar e lançar despesas nesta caixinha ({data.workspace.name}).
-                  </p>
+              {/* Seção: Membros Ativos */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                    <h2 className="text-sm sm:text-base font-semibold text-foreground">
+                      Membros Ativos ({data.members.length})
+                    </h2>
+                  </div>
+                  <span className="text-xs text-muted-foreground hidden sm:inline">
+                    Usuários com permissão ativa nesta caixinha
+                  </span>
                 </div>
 
-                <InviteMemberDialog />
+                {data.members.length > 0 ? (
+                  <MemberList>
+                    {data.members.map((member) => (
+                      <MemberListItem
+                        key={member.id}
+                        member={member}
+                        isOwner={data.isOwner}
+                        onRemove={(m) => setMemberToRemove(m)}
+                      />
+                    ))}
+                  </MemberList>
+                ) : (
+                  <EmptyState
+                    icon={Users}
+                    title="Nenhum membro ativo encontrado"
+                    description="Convide novos membros para compartilhar o gerenciamento financeiro."
+                    action={<InviteMemberDialog label="Convidar Membro" />}
+                  />
+                )}
               </div>
 
-              {/* Lista de Membros Ativos */}
-              <Card className="border-border/60 bg-card/60">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                    Membros Ativos ({data.members.length})
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Usuários com permissão ativa nesta caixinha.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="divide-y divide-border/40">
-                  {data.members.map((member) => (
-                    <div
-                      key={member.id}
-                      className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0 gap-3"
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <Avatar className="h-10 w-10 shrink-0 border border-border/50">
-                          {member.image && <AvatarImage src={member.image} />}
-                          <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                            {member.name.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-sm text-foreground truncate">
-                              {member.name}
-                            </span>
-                            {member.role === "owner" ? (
-                              <Badge
-                                variant="secondary"
-                                className="gap-1 text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                              >
-                                <Crown className="h-3 w-3" />
-                                Proprietário
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-[10px]">
-                                Membro
-                              </Badge>
-                            )}
-                          </div>
-                          <span className="text-xs text-muted-foreground truncate">
-                            {member.email}
-                          </span>
-                        </div>
-                      </div>
-
-                      {data.isOwner && member.role !== "owner" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:bg-destructive/10 gap-1.5 text-xs h-8 px-2.5 shrink-0"
-                          onClick={() => setMemberToRemove({ id: member.id, name: member.name })}
-                        >
-                          <UserMinus className="h-3.5 w-3.5" />
-                          <span className="hidden sm:inline">Remover Acesso</span>
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Lista de Convites Pendentes */}
+              {/* Seção: Convites Pendentes (renderizada se existirem convites) */}
               {data.pendingInvites && data.pendingInvites.length > 0 && (
-                <Card className="border-border/60 bg-card/60">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-amber-500" />
-                      Convites Pendentes ({data.pendingInvites.length})
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      Convites enviados aguardando confirmação do usuário.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="divide-y divide-border/40">
-                    {data.pendingInvites.map((invite) => (
-                      <div
-                        key={invite.id}
-                        className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0 gap-3"
-                      >
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <div className="bg-muted p-2 rounded-full text-muted-foreground shrink-0">
-                            <Mail className="h-4 w-4" />
-                          </div>
-                          <div className="flex flex-col min-w-0 flex-1">
-                            <span className="font-medium text-xs sm:text-sm text-foreground truncate">
-                              {invite.inviteeEmail}
-                            </span>
-                            <span className="text-[11px] text-amber-500 font-medium">
-                              Aguardando aceite
-                            </span>
-                          </div>
-                        </div>
+                      <h2 className="text-sm sm:text-base font-semibold text-foreground">
+                        Convites Pendentes ({data.pendingInvites.length})
+                      </h2>
+                    </div>
+                    <span className="text-xs text-muted-foreground hidden sm:inline">
+                      Aguardando confirmação por e-mail
+                    </span>
+                  </div>
 
-                        {data.isOwner && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-muted-foreground hover:text-destructive text-xs gap-1.5 h-8 px-2.5 shrink-0"
-                            onClick={() => setInviteToCancel({ id: invite.id, email: invite.inviteeEmail })}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            <span className="hidden sm:inline">Cancelar</span>
-                          </Button>
-                        )}
-                      </div>
+                  <MemberList>
+                    {data.pendingInvites.map((invite) => (
+                      <PendingInviteItem
+                        key={invite.id}
+                        invite={invite}
+                        isOwner={data.isOwner}
+                        onCancel={(inv) => setInviteToCancel(inv)}
+                      />
                     ))}
-                  </CardContent>
-                </Card>
+                  </MemberList>
+                </div>
               )}
 
               {/* Dialog de Confirmação: Remover Membro */}
@@ -249,8 +230,8 @@ export default function MembersPage() {
                 open={!!memberToRemove}
                 onOpenChange={(open) => !open && setMemberToRemove(null)}
                 title="Remover Acesso do Membro"
-                description={`Tem certeza de que deseja revogar o acesso de "${memberToRemove?.name}" a esta caixinha? Ele não poderá mais visualizar lançamentos nem criar novos registros.`}
-                confirmText="Remover Membro"
+                description={`Tem certeza de que deseja revogar o acesso de "${memberToRemove?.name}" a esta caixinha? O usuário não poderá mais visualizar dados nem lançar transações.`}
+                confirmText="Remover Acesso"
                 isPending={isRemoving}
                 onConfirm={() => {
                   if (memberToRemove) removeMemberMutation(memberToRemove.id)
@@ -262,7 +243,7 @@ export default function MembersPage() {
                 open={!!inviteToCancel}
                 onOpenChange={(open) => !open && setInviteToCancel(null)}
                 title="Cancelar Convite"
-                description={`Deseja cancelar o convite enviado para "${inviteToCancel?.email}"? O link de convite deixará de ser válido.`}
+                description={`Deseja cancelar o convite enviado para "${inviteToCancel?.inviteeEmail}"? O link de convite deixará de ser válido imediatamente.`}
                 confirmText="Cancelar Convite"
                 isPending={isCancelingInvite}
                 onConfirm={() => {

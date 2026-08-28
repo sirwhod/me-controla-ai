@@ -1,61 +1,85 @@
 "use client"
 
+import { useState } from "react"
 import { Trash2 } from "lucide-react"
-import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu"
+import { DropdownMenuItem } from "@/app/components/ui/dropdown-menu"
 import { useWorkspace } from "../hooks/use-workspace"
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { deleteBank } from "../http/banks/delete-bank"
-import { Bank } from "../types/financial"
-import { getBanks } from "../http/banks/get-banks"
 import { toast } from "sonner"
+import { ConfirmationDialog } from "@/app/components/ui/confirmation-dialog"
+import { Button } from "./ui/button"
 
 interface DeleteBankProps {
   bankId: string
+  bankName?: string
+  asDropdownItem?: boolean
 }
 
-export function DeleteBank({ bankId }: DeleteBankProps) {
-  const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
+export function DeleteBank({
+  bankId,
+  bankName = "este banco/conta",
+  asDropdownItem = true,
+}: DeleteBankProps) {
+  const [open, setOpen] = useState(false)
+  const { workspaceActive } = useWorkspace()
+  const queryClient = useQueryClient()
 
-  const { mutateAsync: deleteBankFn } = useMutation({
-    mutationFn: deleteBank
+  const { mutateAsync: deleteBankFn, isPending } = useMutation({
+    mutationFn: () =>
+      deleteBank({
+        bankId,
+        workspaceId: workspaceActive!.id,
+      }),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["banks", workspaceActive?.id] })
+      toast.success(response.message || "Banco excluído com sucesso!")
+      setOpen(false)
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao excluir banco.")
+    },
   })
 
-  const { refetch } = useQuery<Bank[], Error>({
-    queryKey: ['banks', workspaceActive?.id],
-    queryFn: () => getBanks(workspaceActive!.id),
-    staleTime: 1000 * 60 * 5,
-    enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
-  })
-
-  async function handleDeleteBank() {
-    try {
-      if (!!workspaceActive && !isWorkspaceLoading && !workspaceError) {
-        const response = await deleteBankFn({
-          bankId,
-          workspaceId: workspaceActive.id
-        })
-
-        if (response) {
-          refetch()
-          toast.success(response.message)
-        }
-      }
-
-    } catch(error: unknown) {
-      toast.error(`
-          Erro ao criar novo banco.
-          Erro: ${error}
-        `)
-    }
+  const handleDeleteBank = async () => {
+    if (!workspaceActive || !bankId) return
+    await deleteBankFn()
   }
 
   return (
-    <DropdownMenuItem 
-      className="focus:bg-accent focus:text-accent-foreground data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:focus:text-destructive data-[variant=destructive]:*:[svg]:!text-destructive [&_svg:not([class*='text-'])]:text-muted-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4" 
-      onClick={handleDeleteBank}
-    >
-      <Trash2 className="h-4 w-4" />
-      Deletar Banco
-    </DropdownMenuItem>
+    <>
+      {asDropdownItem ? (
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault()
+            setOpen(true)
+          }}
+          className="cursor-pointer gap-2 text-destructive focus:text-destructive text-xs"
+        >
+          <Trash2 className="h-4 w-4" />
+          Excluir banco
+        </DropdownMenuItem>
+      ) : (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setOpen(true)}
+          className="gap-1.5 text-destructive hover:bg-destructive/10"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Excluir
+        </Button>
+      )}
+
+      <ConfirmationDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Excluir Banco / Conta"
+        description={`Tem certeza de que deseja excluir "${bankName}"? As transações existentes não serão apagadas, mas o vínculo bancário será removido.`}
+        confirmText="Excluir Banco"
+        isPending={isPending}
+        onConfirm={handleDeleteBank}
+      />
+    </>
   )
 }

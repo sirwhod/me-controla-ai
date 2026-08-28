@@ -98,7 +98,7 @@ export const columns: ColumnDef<CreditCard>[] = [
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <EditCard card={card} asDropdownItem />
-              <DeleteCard cardId={card.id} asDropdownItem />
+              <DeleteCard cardId={card.id} cardName={card.name} asDropdownItem />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

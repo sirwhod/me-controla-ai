@@ -100,7 +100,7 @@ export function RevenueListItem({ credit }: RevenueListItemProps) {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <EditCredit credit={credit} asDropdownItem />
-            <DeleteCredit creditId={credit.id} />
+            <DeleteCredit creditId={credit.id} creditDescription={credit.description} />
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

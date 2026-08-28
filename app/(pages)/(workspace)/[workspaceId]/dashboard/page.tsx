@@ -24,6 +24,7 @@ import {
   ArrowUpCircle,
   Banknote,
   BarChart3,
+  ChevronRight,
   CreditCard,
   Landmark,
   PieChart,
@@ -43,7 +44,6 @@ import { useDateFilter } from "@/app/contexts/date-filter-context"
 import { MonthYearNavigator } from "@/app/components/month-year-navigator"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { EmptyState } from "@/app/components/states/empty-state"
-import { MobileList, MobileListItem } from "@/app/components/data-display/mobile-list"
 
 const meses = [
   { value: "janeiro", label: "Janeiro", short: "Jan" },
@@ -240,7 +240,7 @@ export default function Page() {
 
     return list
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 7)
+      .slice(0, 5)
   }, [filteredDebits, filteredCredits])
 
   const formatCurrency = (val: number) => {
@@ -278,36 +278,181 @@ export default function Page() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-5 p-3 md:p-6 pt-3">
+      <div className="flex flex-1 flex-col gap-4 md:gap-5 p-3 md:p-6 pt-3 max-w-7xl w-full mx-auto pb-20 md:pb-6">
         <InvitationsBanner />
 
-        {/* Barra superior de boas-vindas, botões de ação e filtros */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        {/* ========================================================================= */}
+        {/* 1. HEADER & CONTROLES MOBILE (< 768px): Cascata limpa                     */}
+        {/* ========================================================================= */}
+        <div className="flex flex-col gap-3 md:hidden w-full">
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Visão Geral</h1>
+            <p className="text-xs text-muted-foreground">
+              Resumo financeiro da caixinha no período selecionado.
+            </p>
+          </div>
+
+          {/* Seletor de Período em largura total */}
+          <MonthYearNavigator
+            showFullMonthName
+            className="w-full justify-between bg-card/80 border-border/70 h-10 shadow-xs text-xs font-semibold"
+          />
+
+          {/* Ações Rápidas: Despesa (Primário) e Receita (Secundário) */}
+          <div className="grid grid-cols-2 gap-2 w-full">
+            <CreateDebit fullWidth className="h-10 font-semibold shadow-xs" label="Nova Despesa" />
+            <CreateCredit
+              fullWidth
+              className="h-10 font-semibold shadow-xs bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border/60"
+              label="Nova Receita"
+            />
+          </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 2. HEADER & CONTROLES DESKTOP (>= 768px): Header amplo                    */}
+        {/* ========================================================================= */}
+        <div className="hidden md:flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Visão Geral</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Visão Geral</h1>
             <p className="text-xs sm:text-sm text-muted-foreground">
               Acompanhe suas receitas, despesas, faturas e saldo consolidado.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-            <MonthYearNavigator showFullMonthName compact className="flex-1 sm:flex-initial" />
-            <div className="flex items-center gap-1.5 shrink-0">
-              <CreateCredit />
-              <CreateDebit />
-            </div>
+          <div className="flex items-center gap-2">
+            <MonthYearNavigator showFullMonthName compact />
+            <CreateCredit label="Nova Receita" className="bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border/60" />
+            <CreateDebit label="Nova Despesa" />
           </div>
         </div>
 
-        {/* Cards de Métricas Principais (5 cards em grid responsivo) */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {/* 1. Saldo / Balanço (Destaque Principal) */}
-          <Card className="shadow-xs border-border/70 bg-card/70 backdrop-blur-xs">
+        {/* ========================================================================= */}
+        {/* 3. RESUMO FINANCEIRO PRINCIPAL (PRIMEIRA DOBRA)                           */}
+        {/* ========================================================================= */}
+        {/* Mobile: Balanço em destaque + 4 cards compactos (2x2) */}
+        <div className="flex flex-col gap-2.5 md:hidden w-full">
+          {/* Card Principal: Balanço do Período */}
+          <Card className="shadow-xs border-border/70 bg-card/80 backdrop-blur-xs p-3.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Balanço do Período
+              </span>
+              <div
+                className={`p-1.5 rounded-lg ${
+                  balance >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                }`}
+              >
+                <Wallet className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="mt-1">
+              {isLoading ? (
+                <Skeleton className="h-8 w-36" />
+              ) : (
+                <div
+                  className={`text-2xl font-bold tracking-tight ${
+                    balance >= 0 ? "text-emerald-500" : "text-rose-500"
+                  }`}
+                >
+                  {formatCurrency(balance)}
+                </div>
+              )}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+              {balance >= 0 ? (
+                <>
+                  <TrendingUp className="h-3.5 w-3.5 text-emerald-500 inline" />
+                  <span className="text-emerald-500 font-semibold">Superávit no período</span>
+                </>
+              ) : (
+                <>
+                  <TrendingDown className="h-3.5 w-3.5 text-rose-500 inline" />
+                  <span className="text-rose-500 font-semibold">Déficit no período</span>
+                </>
+              )}
+            </div>
+          </Card>
+
+          {/* Grid 2x2 de Cards Secundários */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* Receitas */}
+            <Card className="shadow-xs border-border/70 bg-card/70 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Receitas
+                </span>
+                <ArrowUpCircle className="h-3.5 w-3.5 text-emerald-500" />
+              </div>
+              <div className="text-sm sm:text-base font-bold text-emerald-500 mt-1 truncate">
+                {isLoading ? <Skeleton className="h-5 w-20" /> : `+ ${formatCurrency(totalCredits)}`}
+              </div>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">
+                {filteredCredits.length} entrada(s)
+              </span>
+            </Card>
+
+            {/* Despesas */}
+            <Card className="shadow-xs border-border/70 bg-card/70 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Despesas
+                </span>
+                <ArrowDownCircle className="h-3.5 w-3.5 text-rose-500" />
+              </div>
+              <div className="text-sm sm:text-base font-bold text-rose-500 mt-1 truncate">
+                {isLoading ? <Skeleton className="h-5 w-20" /> : `- ${formatCurrency(totalDebits)}`}
+              </div>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">
+                {filteredDebits.length} despesa(s)
+              </span>
+            </Card>
+
+            {/* Fatura Cartão */}
+            <Card className="shadow-xs border-border/70 bg-card/70 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Fatura Cartão
+                </span>
+                <CreditCard className="h-3.5 w-3.5 text-violet-500" />
+              </div>
+              <div className="text-sm sm:text-base font-bold text-violet-400 mt-1 truncate">
+                {isLoading ? <Skeleton className="h-5 w-20" /> : formatCurrency(creditCardTotal)}
+              </div>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">No crédito</span>
+            </Card>
+
+            {/* Taxa Poupança */}
+            <Card className="shadow-xs border-border/70 bg-card/70 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Poupança
+                </span>
+                <Target className="h-3.5 w-3.5 text-blue-500" />
+              </div>
+              <div className="text-sm sm:text-base font-bold text-foreground mt-1 truncate">
+                {isLoading ? <Skeleton className="h-5 w-16" /> : `${savingsRate > 0 ? savingsRate : 0}%`}
+              </div>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block truncate">
+                {savingsRate > 0 ? "Guardado" : "Sem sobra"}
+              </span>
+            </Card>
+          </div>
+        </div>
+
+        {/* Desktop: 5 cards em grid equilibrado */}
+        <div className="hidden md:grid gap-3 grid-cols-5">
+          {/* 1. Saldo / Balanço */}
+          <Card className="shadow-xs border-border/70 bg-card/70">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Balanço do Período
+                Balanço
               </CardTitle>
-              <div className={`p-2 rounded-full ${balance >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+              <div
+                className={`p-1.5 rounded-lg ${
+                  balance >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                }`}
+              >
                 <Wallet className="h-4 w-4" />
               </div>
             </CardHeader>
@@ -316,19 +461,23 @@ export default function Page() {
                 <Skeleton className="h-7 w-28" />
               ) : (
                 <>
-                  <div className={`text-xl font-bold ${balance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                  <div
+                    className={`text-lg sm:text-xl font-bold ${
+                      balance >= 0 ? "text-emerald-500" : "text-rose-500"
+                    }`}
+                  >
                     {formatCurrency(balance)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                     {balance >= 0 ? (
                       <>
                         <TrendingUp className="h-3.5 w-3.5 text-emerald-500 inline" />
-                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Superávit</span>
+                        <span className="text-emerald-500 font-medium">Superávit</span>
                       </>
                     ) : (
                       <>
                         <TrendingDown className="h-3.5 w-3.5 text-rose-500 inline" />
-                        <span className="text-rose-600 dark:text-rose-400 font-semibold">Déficit</span>
+                        <span className="text-rose-500 font-medium">Déficit</span>
                       </>
                     )}
                   </p>
@@ -343,7 +492,7 @@ export default function Page() {
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Receitas
               </CardTitle>
-              <div className="p-2 rounded-full bg-emerald-500/10 text-emerald-500">
+              <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500">
                 <ArrowUpCircle className="h-4 w-4" />
               </div>
             </CardHeader>
@@ -352,7 +501,7 @@ export default function Page() {
                 <Skeleton className="h-7 w-28" />
               ) : (
                 <>
-                  <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                  <div className="text-lg sm:text-xl font-bold text-emerald-500">
                     + {formatCurrency(totalCredits)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -369,7 +518,7 @@ export default function Page() {
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Despesas
               </CardTitle>
-              <div className="p-2 rounded-full bg-rose-500/10 text-rose-500">
+              <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500">
                 <ArrowDownCircle className="h-4 w-4" />
               </div>
             </CardHeader>
@@ -378,7 +527,7 @@ export default function Page() {
                 <Skeleton className="h-7 w-28" />
               ) : (
                 <>
-                  <div className="text-xl font-bold text-rose-600 dark:text-rose-400">
+                  <div className="text-lg sm:text-xl font-bold text-rose-500">
                     - {formatCurrency(totalDebits)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -395,7 +544,7 @@ export default function Page() {
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Fatura Cartão
               </CardTitle>
-              <div className="p-2 rounded-full bg-violet-500/10 text-violet-500">
+              <div className="p-1.5 rounded-lg bg-violet-500/10 text-violet-500">
                 <CreditCard className="h-4 w-4" />
               </div>
             </CardHeader>
@@ -404,7 +553,7 @@ export default function Page() {
                 <Skeleton className="h-7 w-28" />
               ) : (
                 <>
-                  <div className="text-xl font-bold text-violet-600 dark:text-violet-400">
+                  <div className="text-lg sm:text-xl font-bold text-violet-400">
                     {formatCurrency(creditCardTotal)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -421,7 +570,7 @@ export default function Page() {
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Taxa Poupança
               </CardTitle>
-              <div className="p-2 rounded-full bg-blue-500/10 text-blue-500">
+              <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500">
                 <Target className="h-4 w-4" />
               </div>
             </CardHeader>
@@ -430,7 +579,7 @@ export default function Page() {
                 <Skeleton className="h-7 w-20" />
               ) : (
                 <>
-                  <div className="text-xl font-bold text-foreground">
+                  <div className="text-lg sm:text-xl font-bold text-foreground">
                     {savingsRate > 0 ? `${savingsRate}%` : "0%"}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -442,9 +591,11 @@ export default function Page() {
           </Card>
         </div>
 
-        {/* Gráfico Comparativo de Evolução Anual (Receitas vs Despesas) */}
+        {/* ========================================================================= */}
+        {/* 4. EVOLUÇÃO FINANCEIRA ANUAL                                              */}
+        {/* ========================================================================= */}
         <Card className="shadow-xs border-border/70 bg-card/70">
-          <CardHeader className="pb-2">
+          <CardHeader className="p-3.5 sm:p-5 pb-2 sm:pb-3">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div>
                 <CardTitle className="text-sm sm:text-base flex items-center gap-2">
@@ -452,51 +603,51 @@ export default function Page() {
                   Evolução Financeira Mensal ({yearFilter || anoAtual})
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Comparativo de receitas (verde) vs despesas (vermelho) em cada mês
+                  Comparativo de receitas (verde) vs despesas (vermelho)
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-3 text-xs">
                 <span className="flex items-center gap-1.5 font-medium">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 inline-block" />
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block" />
                   Receitas
                 </span>
                 <span className="flex items-center gap-1.5 font-medium">
-                  <span className="h-2.5 w-2.5 rounded-full bg-rose-500 inline-block" />
+                  <span className="h-2 w-2 rounded-full bg-rose-500 inline-block" />
                   Despesas
                 </span>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="pt-4">
+          <CardContent className="p-3.5 sm:p-5 pt-0 sm:pt-0">
             {isLoading ? (
-              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-28 w-full" />
             ) : (
-              <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 sm:gap-2 items-end pt-4 pb-2 min-h-[140px]">
+              <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 sm:gap-2 items-end pt-3 pb-1 min-h-[120px]">
                 {annualMonthlyOverview.map((item) => {
                   const creditHeightPct = Math.max(8, Math.round((item.credits / maxMonthlyValue) * 100))
                   const debitHeightPct = Math.max(8, Math.round((item.debits / maxMonthlyValue) * 100))
 
                   return (
-                    <div key={item.month} className="flex flex-col items-center gap-1.5 group">
-                      <div className="flex items-end gap-1 h-24 w-full justify-center">
+                    <div key={item.month} className="flex flex-col items-center gap-1 group">
+                      <div className="flex items-end gap-1 h-20 sm:h-24 w-full justify-center">
                         {/* Barra de Receitas */}
                         <div
                           title={`${item.fullMonth}: Receitas ${formatCurrency(item.credits)}`}
-                          className={`w-2.5 sm:w-3 rounded-t-sm transition-all duration-300 ${
-                            item.credits > 0 ? "bg-emerald-500 group-hover:bg-emerald-400" : "bg-muted/40"
+                          className={`w-2 sm:w-2.5 rounded-t-xs transition-all duration-300 ${
+                            item.credits > 0 ? "bg-emerald-500 group-hover:bg-emerald-400" : "bg-muted/30"
                           }`}
                           style={{ height: item.credits > 0 ? `${creditHeightPct}%` : "4px" }}
                         />
                         {/* Barra de Despesas */}
                         <div
                           title={`${item.fullMonth}: Despesas ${formatCurrency(item.debits)}`}
-                          className={`w-2.5 sm:w-3 rounded-t-sm transition-all duration-300 ${
-                            item.debits > 0 ? "bg-rose-500 group-hover:bg-rose-400" : "bg-muted/40"
+                          className={`w-2 sm:w-2.5 rounded-t-xs transition-all duration-300 ${
+                            item.debits > 0 ? "bg-rose-500 group-hover:bg-rose-400" : "bg-muted/30"
                           }`}
                           style={{ height: item.debits > 0 ? `${debitHeightPct}%` : "4px" }}
                         />
                       </div>
-                      <span className="text-[11px] font-medium text-muted-foreground">
+                      <span className="text-[10px] sm:text-xs font-medium text-muted-foreground">
                         {item.month}
                       </span>
                     </div>
@@ -507,11 +658,13 @@ export default function Page() {
           </CardContent>
         </Card>
 
-        {/* Seções Analíticas: Transações Recentes + Categorias + Formas de Pagamento */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        {/* ========================================================================= */}
+        {/* 5. LANÇAMENTOS RECENTES + GASTOS POR CATEGORIA + METAS                   */}
+        {/* ========================================================================= */}
+        <div className="grid gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-7">
           {/* Lançamentos Recentes (4 colunas) */}
           <Card className="lg:col-span-4 shadow-xs border-border/70 bg-card/70">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardHeader className="p-3.5 sm:p-5 flex flex-row items-center justify-between pb-2 sm:pb-3">
               <div>
                 <CardTitle className="text-sm sm:text-base">Lançamentos Recentes</CardTitle>
                 <CardDescription className="text-xs">
@@ -531,7 +684,7 @@ export default function Page() {
                 </Link>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3.5 sm:p-5 pt-0 sm:pt-0">
               {isLoading ? (
                 <LoadingState variant="list" count={4} />
               ) : recentTransactions.length === 0 ? (
@@ -541,17 +694,18 @@ export default function Page() {
                   description="Crie despesas ou receitas para visualizar seu histórico recente."
                 />
               ) : (
-                <MobileList className="bg-transparent border-0 divide-border/30">
+                <div className="divide-y divide-border/40">
                   {recentTransactions.map((tx) => (
-                    <MobileListItem
+                    <div
                       key={tx.id}
-                      className="px-0 py-2.5"
-                      icon={
+                      className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0 gap-3"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div
-                          className={`p-2 rounded-lg ${
+                          className={`p-2 rounded-lg shrink-0 ${
                             tx.type === "credit"
-                              ? "bg-emerald-500/10 text-emerald-500"
-                              : "bg-rose-500/10 text-rose-500"
+                              ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                              : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
                           }`}
                         >
                           {tx.type === "credit" ? (
@@ -560,60 +714,85 @@ export default function Page() {
                             <ArrowDownCircle className="h-4 w-4" />
                           )}
                         </div>
-                      }
-                      title={tx.description}
-                      subtitle={
-                        <span>
-                          {tx.categoryName || "Geral"}
-                          {tx.bankName && ` • ${tx.bankName}`}
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="font-semibold text-xs sm:text-sm text-foreground truncate">
+                            {tx.description}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground truncate">
+                            {tx.categoryName || "Geral"}
+                            {tx.bankName && ` • ${tx.bankName}`}
+                            {tx.date && ` • ${format(new Date(tx.date), "dd/MM/yyyy")}`}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end shrink-0">
+                        <span
+                          className={`text-xs sm:text-sm font-bold ${
+                            tx.type === "credit" ? "text-emerald-500" : "text-rose-500"
+                          }`}
+                        >
+                          {tx.type === "credit" ? "+" : "-"} {formatCurrency(tx.value)}
                         </span>
-                      }
-                      meta={<span>{tx.date ? format(new Date(tx.date), "dd/MM/yyyy") : ""}</span>}
-                      value={`${tx.type === "credit" ? "+" : "-"} ${formatCurrency(tx.value)}`}
-                      valueColor={tx.type === "credit" ? "positive" : "negative"}
-                    />
+                      </div>
+                    </div>
                   ))}
-                </MobileList>
+
+                  <div className="pt-2">
+                    <Link href={`${prefix}/dashboard/debits`}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-xs text-muted-foreground hover:text-foreground h-8 justify-between"
+                      >
+                        <span>Ver todas as despesas</span>
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
 
           {/* Categorias + Formas de Pagamento + Metas (3 colunas) */}
-          <div className="lg:col-span-3 flex flex-col gap-6">
+          <div className="lg:col-span-3 flex flex-col gap-4 md:gap-6">
             {/* Gastos por Categoria */}
             <Card className="shadow-xs border-border/70 bg-card/70">
-              <CardHeader className="pb-3">
+              <CardHeader className="p-3.5 sm:p-5 pb-2 sm:pb-3">
                 <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                   <PieChart className="h-4 w-4 text-primary" />
                   Gastos por Categoria
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Distribuição proporcional de despesas
+                  Distribuição de despesas no período
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3.5 sm:p-5 pt-0 sm:pt-0">
                 {isLoading ? (
-                  <div className="space-y-3">
-                    {[...Array(4)].map((_, i) => (
-                      <Skeleton key={i} className="h-8 w-full" />
+                  <div className="space-y-2.5">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-6 w-full" />
                     ))}
                   </div>
                 ) : expensesByCategory.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">
+                  <p className="text-xs text-muted-foreground text-center py-3">
                     Sem despesas registradas no período.
                   </p>
                 ) : (
-                  <div className="space-y-3">
-                    {expensesByCategory.slice(0, 5).map((cat) => {
+                  <div className="space-y-2.5">
+                    {expensesByCategory.slice(0, 4).map((cat) => {
                       const percentage = totalDebits > 0 ? Math.round((cat.total / totalDebits) * 100) : 0
                       return (
                         <div key={cat.name} className="space-y-1">
                           <div className="flex items-center justify-between text-xs font-medium">
-                            <span className="flex items-center gap-1.5">
-                              <DynamicIcon name={cat.icon as IconName} className="h-3.5 w-3.5 text-muted-foreground" />
-                              {cat.name}
+                            <span className="flex items-center gap-1.5 truncate">
+                              <DynamicIcon name={cat.icon as IconName} className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span className="truncate">{cat.name}</span>
                             </span>
-                            <span>{formatCurrency(cat.total)} ({percentage}%)</span>
+                            <span className="shrink-0 text-muted-foreground">
+                              <strong className="text-foreground">{formatCurrency(cat.total)}</strong> ({percentage}%)
+                            </span>
                           </div>
                           <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                             <div
@@ -631,45 +810,53 @@ export default function Page() {
 
             {/* Formas de Pagamento Utilizadas */}
             <Card className="shadow-xs border-border/70 bg-card/70">
-              <CardHeader className="pb-3">
+              <CardHeader className="p-3.5 sm:p-5 pb-2 sm:pb-3">
                 <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-violet-500" />
-                  Formas de Pagamento (Despesas)
+                  Formas de Pagamento
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3.5 sm:p-5 pt-0 sm:pt-0">
                 {isLoading ? (
-                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-14 w-full" />
                 ) : totalDebits === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-2">Sem dados no período.</p>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className="p-2.5 rounded-lg border bg-muted/30 flex flex-col">
-                      <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 rounded-lg border border-border/40 bg-muted/20 flex flex-col">
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                         <CreditCard className="h-3 w-3 text-violet-500" /> Crédito
                       </span>
-                      <span className="text-xs font-bold mt-0.5">{formatCurrency(paymentMethodsBreakdown.Crédito || 0)}</span>
-                    </div>
-
-                    <div className="p-2.5 rounded-lg border bg-muted/30 flex flex-col">
-                      <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                        <span className="text-emerald-500">⚡</span> Pix
+                      <span className="text-xs font-bold mt-0.5 text-foreground truncate">
+                        {formatCurrency(paymentMethodsBreakdown.Crédito || 0)}
                       </span>
-                      <span className="text-xs font-bold mt-0.5">{formatCurrency(paymentMethodsBreakdown.Pix || 0)}</span>
                     </div>
 
-                    <div className="p-2.5 rounded-lg border bg-muted/30 flex flex-col">
-                      <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <div className="p-2 rounded-lg border border-border/40 bg-muted/20 flex flex-col">
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <span className="text-emerald-500 font-bold">⚡</span> Pix
+                      </span>
+                      <span className="text-xs font-bold mt-0.5 text-foreground truncate">
+                        {formatCurrency(paymentMethodsBreakdown.Pix || 0)}
+                      </span>
+                    </div>
+
+                    <div className="p-2 rounded-lg border border-border/40 bg-muted/20 flex flex-col">
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                         <Banknote className="h-3 w-3 text-emerald-500" /> Débito
                       </span>
-                      <span className="text-xs font-bold mt-0.5">{formatCurrency(paymentMethodsBreakdown.Débito || 0)}</span>
+                      <span className="text-xs font-bold mt-0.5 text-foreground truncate">
+                        {formatCurrency(paymentMethodsBreakdown.Débito || 0)}
+                      </span>
                     </div>
 
-                    <div className="p-2.5 rounded-lg border bg-muted/30 flex flex-col">
-                      <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <div className="p-2 rounded-lg border border-border/40 bg-muted/20 flex flex-col">
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                         <Landmark className="h-3 w-3 text-blue-500" /> Conta
                       </span>
-                      <span className="text-xs font-bold mt-0.5">{formatCurrency(paymentMethodsBreakdown.Conta || 0)}</span>
+                      <span className="text-xs font-bold mt-0.5 text-foreground truncate">
+                        {formatCurrency(paymentMethodsBreakdown.Conta || 0)}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -678,28 +865,26 @@ export default function Page() {
 
             {/* Resumo de Metas */}
             <Card className="shadow-xs border-border/70 bg-card/70">
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                    <Target className="h-4 w-4 text-emerald-500" />
-                    Metas em Andamento
-                  </CardTitle>
-                </div>
+              <CardHeader className="p-3.5 sm:p-5 flex flex-row items-center justify-between pb-2 sm:pb-3">
+                <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                  <Target className="h-4 w-4 text-emerald-500" />
+                  Metas em Andamento
+                </CardTitle>
                 <Link href={`${prefix}/manage/goals`}>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs">
-                    Gerenciar
+                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2">
+                    Ver metas
                   </Button>
                 </Link>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3.5 sm:p-5 pt-0 sm:pt-0">
                 {isLoading ? (
-                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-10 w-full" />
                 ) : !goals || goals.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-2">
                     Nenhuma meta cadastrada ainda.
                   </p>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     {goals.slice(0, 3).map((goal) => {
                       const current = Number(goal.currentAmount) || 0
                       const target = Number(goal.targetAmount) || 1
@@ -707,8 +892,8 @@ export default function Page() {
                       return (
                         <div key={goal.id} className="space-y-1">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-medium">{goal.name}</span>
-                            <span className="text-muted-foreground">{pct}%</span>
+                            <span className="font-medium truncate">{goal.name}</span>
+                            <span className="text-muted-foreground shrink-0">{pct}%</span>
                           </div>
                           <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                             <div
