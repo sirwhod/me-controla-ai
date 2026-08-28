@@ -32,18 +32,20 @@ export async function GET(req: NextRequest, { params }: {params: Promise<BankRou
        return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
-    const [banksSnapshot, cardsSnapshot] = await Promise.all([
-      db.collection('workspaces').doc(workspaceId).collection('banks').orderBy('name', 'asc').get(),
-      db.collection('workspaces').doc(workspaceId).collection('cards').get(),
-    ])
+    const workspaceRef = db.collection('workspaces').doc(workspaceId)
+    const banksSnapshot = await workspaceRef.collection('banks').orderBy('name', 'asc').get()
+    const cardCounts = await Promise.all(
+      banksSnapshot.docs.map(async (bankDoc) => {
+        const countSnapshot = await workspaceRef
+          .collection('cards')
+          .where('bankId', '==', bankDoc.id)
+          .count()
+          .get()
 
-    const cardsByBank = new Map<string, number>()
-    cardsSnapshot.docs.forEach((cardDoc) => {
-      const bId = cardDoc.data()?.bankId
-      if (bId) {
-        cardsByBank.set(bId, (cardsByBank.get(bId) || 0) + 1)
-      }
-    })
+        return [bankDoc.id, countSnapshot.data().count] as const
+      })
+    )
+    const cardsByBank = new Map(cardCounts)
 
     const banks = banksSnapshot.docs.map(doc => {
       const data = doc.data()
