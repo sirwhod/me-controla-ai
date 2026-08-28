@@ -19,6 +19,7 @@ import {
 import { deleteDebit } from "@/app/http/debits/delete-debit"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { DropdownMenuItem } from "@/app/components/ui/dropdown-menu"
+import type { Debit } from "@/app/types/financial"
 
 interface DeleteDebitProps {
   debitId: string
@@ -33,7 +34,10 @@ export function DeleteDebit({ debitId, asDropdownItem = false }: DeleteDebitProp
   const { mutateAsync: deleteDebitMutation, isPending } = useMutation({
     mutationFn: () => deleteDebit(workspaceActive!.id, debitId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive?.id] })
+      queryClient.setQueriesData<Debit[]>(
+        { queryKey: ["debits", workspaceActive?.id] },
+        (cached) => cached?.filter((debit) => debit.id !== debitId)
+      )
       toast.success("Despesa excluída com sucesso!")
       setOpen(false)
     },
