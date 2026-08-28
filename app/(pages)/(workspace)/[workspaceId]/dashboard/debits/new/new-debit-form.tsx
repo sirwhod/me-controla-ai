@@ -61,8 +61,8 @@ export function NewDebitForm() {
       date: new Date().toISOString(),
       startDate: new Date().toISOString(),
       frequency: "monthly",
-      totalInstallments: 2,
-      currentInstallment: 1,
+      totalInstallments: undefined,
+      currentInstallment: undefined,
       bankId: "",
       creditCardId: "",
       categoryId: "",
@@ -202,14 +202,21 @@ export function NewDebitForm() {
       }
 
       if (isParcelado) {
-        const total = form.getValues("totalInstallments") || 2
-        const cur = form.getValues("currentInstallment") || 1
-        if (total < 2) {
-          form.setError("totalInstallments", { message: "Mínimo de 2 parcelas." })
+        const total = form.getValues("totalInstallments")
+        const cur = form.getValues("currentInstallment")
+        if (!total || isNaN(total) || total < 2) {
+          form.setError("totalInstallments", { message: "Informe um total de no mínimo 2 parcelas." })
+          toast.error("Informe um total de pelo menos 2 parcelas.")
+          return
+        }
+        if (!cur || isNaN(cur) || cur < 1) {
+          form.setError("currentInstallment", { message: "Informe a parcela deste mês (mínimo 1)." })
+          toast.error("Informe a parcela deste mês.")
           return
         }
         if (cur > total) {
-          form.setError("currentInstallment", { message: `A parcela atual deve ser entre 1 e ${total}.` })
+          form.setError("currentInstallment", { message: `A parcela atual não pode ser maior que o total (${total}).` })
+          toast.error(`A parcela atual deve ser entre 1 e ${total}.`)
           return
         }
       }
@@ -247,6 +254,16 @@ export function NewDebitForm() {
       setCurrentStep((prev) => prev - 1)
     } else {
       router.push(`/${workspaceActive?.id}/dashboard/debits`)
+    }
+  }
+
+  // Prevenir submit involuntário nos steps 1, 2 e 3
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (currentStep < 4) {
+      handleNextStep()
+    } else {
+      form.handleSubmit(onSubmit)(e)
     }
   }
 
@@ -294,12 +311,16 @@ export function NewDebitForm() {
       <ExpenseStepper
         currentStep={currentStep}
         steps={STEPS}
-        onStepClick={(step) => setCurrentStep(step)}
+        onStepClick={(step) => {
+          if (step < currentStep) {
+            setCurrentStep(step)
+          }
+        }}
       />
 
       {/* Form Container */}
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleFormSubmit} className="space-y-6">
           <div className="rounded-2xl border border-border/70 bg-card/40 p-4 sm:p-7 backdrop-blur-xs shadow-xs">
             {currentStep === 1 && (
               <StepType

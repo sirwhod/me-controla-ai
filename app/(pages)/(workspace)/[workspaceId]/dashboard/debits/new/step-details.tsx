@@ -103,19 +103,19 @@ export function StepDetails({ form }: StepDetailsProps) {
                     <FormLabel className="text-xs font-semibold">Total de Parcelas</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min={2}
-                        max={120}
-                        placeholder="12"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="Ex: 12"
                         className="h-10 bg-card/60 border-border/80"
-                        {...field}
-                        value={field.value ?? 2}
+                        value={field.value !== undefined && field.value !== null ? String(field.value) : ""}
                         onChange={(e) => {
-                          const val = Number(e.target.value) || 2
-                          field.onChange(val)
-                          const cur = form.getValues("currentInstallment") || 1
-                          if (cur > val) {
-                            form.setValue("currentInstallment", val)
+                          const rawVal = e.target.value.replace(/\D/g, "")
+                          const numVal = rawVal === "" ? undefined : Number(rawVal)
+                          field.onChange(numVal)
+                          const cur = form.getValues("currentInstallment")
+                          if (cur && numVal && cur > numVal) {
+                            form.setValue("currentInstallment", numVal)
                           }
                         }}
                       />
@@ -133,14 +133,17 @@ export function StepDetails({ form }: StepDetailsProps) {
                     <FormLabel className="text-xs font-semibold">Parcela Deste Mês</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min={1}
-                        max={form.watch("totalInstallments") || 120}
-                        placeholder="1"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="Ex: 1"
                         className="h-10 bg-card/60 border-border/80"
-                        {...field}
-                        value={field.value ?? 1}
-                        onChange={(e) => field.onChange(Number(e.target.value) || 1)}
+                        value={field.value !== undefined && field.value !== null ? String(field.value) : ""}
+                        onChange={(e) => {
+                          const rawVal = e.target.value.replace(/\D/g, "")
+                          const numVal = rawVal === "" ? undefined : Number(rawVal)
+                          field.onChange(numVal)
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -157,12 +160,23 @@ export function StepDetails({ form }: StepDetailsProps) {
                   Resumo do Parcelamento
                 </span>
                 <span className="text-primary font-bold text-sm">
-                  {totalInstallments}x de {formatCurrency(installmentApprox)}
+                  {totalInstallments > 0
+                    ? `${totalInstallments}x de ${formatCurrency(installmentApprox)}`
+                    : "Aguardando parcelas..."}
                 </span>
               </div>
               <div className="flex items-center justify-between text-muted-foreground pt-2 border-t border-primary/10 text-[11px] sm:text-xs">
                 <span>Valor Total da Compra: <strong className="text-foreground">{formatCurrency(totalValue)}</strong></span>
-                <span>Parcela deste mês: <strong className="text-foreground">{currentInstallment}ª de {totalInstallments}</strong></span>
+                <span>
+                  Parcela deste mês:{" "}
+                  <strong className="text-foreground">
+                    {currentInstallment > 0 && totalInstallments > 0
+                      ? `${currentInstallment}ª de ${totalInstallments}`
+                      : currentInstallment > 0
+                      ? `${currentInstallment}ª`
+                      : "—"}
+                  </strong>
+                </span>
               </div>
             </div>
           </div>
