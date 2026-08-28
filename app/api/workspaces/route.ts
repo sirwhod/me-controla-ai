@@ -2,8 +2,11 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
+import { getRequestId, logFirestoreQuery, logHttpRequest } from '@/app/lib/observability'
 
-export async function GET() {
+export async function GET(req: Request) {
+  const requestId = getRequestId(req)
+  const startedAt = performance.now()
   try {
     const session = await auth()
 
@@ -32,6 +35,7 @@ export async function GET() {
           workspaceMap.set(doc.id, { id: doc.id, ...doc.data() })
         }
       })
+      logFirestoreQuery({ requestId, endpoint: '/api/workspaces', collection: 'workspaces', operation: 'getAll', documents: workspaceDocs.filter((doc) => doc.exists).length, durationMs: performance.now() - startedAt, userId, origin: 'workspaces.list' })
     } else {
       // Fallback para sessões legadas sem workspaceIds.
       const [memberSnap, ownerSnap] = await Promise.all([
@@ -46,6 +50,7 @@ export async function GET() {
       ownerSnap.docs.forEach((doc) => {
         workspaceMap.set(doc.id, { id: doc.id, ...doc.data() })
       })
+      logFirestoreQuery({ requestId, endpoint: '/api/workspaces', collection: 'workspaces', operation: 'query.get', documents: memberSnap.size + ownerSnap.size, durationMs: performance.now() - startedAt, userId, origin: 'workspaces.list.legacy' })
     }
 
     // Se o usuário ainda não tiver nenhuma caixinha, cria uma pessoal automaticamente (auto-healing)
@@ -99,7 +104,8 @@ export async function GET() {
       updatedAt: serializeFirestoreDate(ws.updatedAt),
     }))
 
-    return NextResponse.json(workspaces, { status: 200 })
+    logHttpRequest({ requestId, endpoint: '/api/workspaces', method: 'GET', status: 200, durationMs: performance.now() - startedAt, userId })
+    return NextResponse.json(workspaces, { status: 200, headers: { 'x-request-id': requestId } })
   } catch (error) {
     console.error('Erro ao listar workspaces:', error)
     return NextResponse.json({ message: 'Erro interno do servidor ao listar workspaces' }, { status: 500 })

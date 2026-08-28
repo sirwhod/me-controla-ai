@@ -4,12 +4,15 @@ import { db } from '@/app/lib/firebase'
 import { createCreditSchema } from '@/app/types/financial'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { NextRequest, NextResponse } from 'next/server'
+import { getRequestId, logFirestoreQuery, logHttpRequest } from '@/app/lib/observability'
 
 interface CreditsRouteParams {
   workspaceId: string;
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
+  const requestId = getRequestId(req)
+  const startedAt = performance.now()
   try {
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
@@ -46,6 +49,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
     }
 
     const querySnapshot = await creditsQuery.get()
+    logFirestoreQuery({ requestId, endpoint: '/api/workspaces/:workspaceId/credits', collection: 'credits', operation: 'query.get', documents: querySnapshot.size, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId, origin: 'credits.list' })
 
     const credits = querySnapshot.docs.map(doc => {
       const data = doc.data()
@@ -62,7 +66,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
       return right - left
     })
 
-    return NextResponse.json(credits, { status: 200 })
+    logHttpRequest({ requestId, endpoint: '/api/workspaces/:workspaceId/credits', method: 'GET', status: 200, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId })
+    return NextResponse.json(credits, { status: 200, headers: { 'x-request-id': requestId } })
 
   } catch (error) {
     const searchParams = await params

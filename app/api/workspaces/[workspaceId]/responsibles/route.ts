@@ -4,6 +4,7 @@ import { db } from '@/app/lib/firebase'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { createPersonResponsibleSchema } from '@/app/types/financial'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
+import { getRequestId, logFirestoreQuery } from '@/app/lib/observability'
 
 interface RouteParams {
   params: Promise<{
@@ -12,6 +13,8 @@ interface RouteParams {
 }
 
 export async function GET(req: NextRequest, props: RouteParams) {
+  const requestId = getRequestId(req)
+  const startedAt = performance.now()
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -39,6 +42,7 @@ export async function GET(req: NextRequest, props: RouteParams) {
       .collection('responsibles')
       .orderBy('name', 'asc')
       .get()
+    logFirestoreQuery({ requestId, endpoint: '/api/workspaces/:workspaceId/responsibles', collection: 'responsibles', operation: 'query.get', documents: responsiblesSnap.size, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId, origin: 'responsibles.list' })
 
     let debitsQuery: FirebaseFirestore.Query = db
       .collection('workspaces')
@@ -61,6 +65,10 @@ export async function GET(req: NextRequest, props: RouteParams) {
     const [debitsSnap, creditsSnap] = includeBalances
       ? await Promise.all([debitsQuery.get(), creditsQuery.get()])
       : [null, null]
+    if (includeBalances) {
+      logFirestoreQuery({ requestId, endpoint: '/api/workspaces/:workspaceId/responsibles', collection: 'debits', operation: 'query.get', documents: debitsSnap?.size || 0, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId, origin: 'responsibles.balance' })
+      logFirestoreQuery({ requestId, endpoint: '/api/workspaces/:workspaceId/responsibles', collection: 'credits', operation: 'query.get', documents: creditsSnap?.size || 0, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId, origin: 'responsibles.balance' })
+    }
 
     // Calcular total de despesas e receitas por responsável no período
     const totalDebitsByResp: Record<string, number> = {}

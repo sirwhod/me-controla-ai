@@ -5,12 +5,15 @@ import { createDebitSchema, Debit, TypeDebit } from '@/app/types/financial'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { DocumentReference } from 'firebase-admin/firestore'
 import { NextRequest, NextResponse } from 'next/server'
+import { getRequestId, logFirestoreQuery, logHttpRequest } from '@/app/lib/observability'
 
 interface DebitsRouteParams {
   workspaceId: string
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<DebitsRouteParams> }) {
+  const requestId = getRequestId(req)
+  const startedAt = performance.now()
   try {
     const { workspaceId } = await params
     const session = await auth()
@@ -46,6 +49,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
     }
 
     const querySnapshot = await debitsQuery.get()
+    logFirestoreQuery({ requestId, endpoint: '/api/workspaces/:workspaceId/debits', collection: 'debits', operation: 'query.get', documents: querySnapshot.size, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId, origin: 'debits.list' })
 
     const debits = querySnapshot.docs.map((doc) => {
       const data = doc.data()
@@ -64,7 +68,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
       return right - left
     })
 
-    return NextResponse.json(debits, { status: 200 })
+    logHttpRequest({ requestId, endpoint: '/api/workspaces/:workspaceId/debits', method: 'GET', status: 200, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId })
+    return NextResponse.json(debits, { status: 200, headers: { 'x-request-id': requestId } })
   } catch (error) {
     console.error('Erro ao listar débitos:', error)
     return NextResponse.json({ message: 'Erro interno do servidor ao listar débitos' }, { status: 500 })
