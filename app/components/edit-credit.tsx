@@ -92,6 +92,7 @@ export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) 
         { queryKey: ["credits", workspaceActive?.id] },
         (cached) => cached?.map((item) => item.id === credit.id ? ({ ...item, ...variables } as unknown as Credit) : item)
       )
+      queryClient.invalidateQueries({ queryKey: ["monthly-summary", workspaceActive?.id] })
       toast.success("Receita atualizada com sucesso!")
       setOpen(false)
     },
