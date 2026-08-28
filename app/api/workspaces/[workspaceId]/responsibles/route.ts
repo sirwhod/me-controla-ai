@@ -19,7 +19,11 @@ export async function GET(req: NextRequest, props: RouteParams) {
     }
 
     const { workspaceId } = await props.params
-    const isMember = await checkIsWorkspaceMember({ workspaceId, userId: session.user.id })
+    const isMember = await checkIsWorkspaceMember({
+      workspaceId,
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
+    })
     if (!isMember) {
       return NextResponse.json({ message: 'Acesso negado' }, { status: 403 })
     }
@@ -27,65 +31,98 @@ export async function GET(req: NextRequest, props: RouteParams) {
     const { searchParams } = new URL(req.url)
     const month = searchParams.get('month')
     const year = searchParams.get('year')
+    const includeBalances = searchParams.get('includeBalances') === 'true'
 
-    const [responsiblesSnap, debitsSnap, creditsSnap] = await Promise.all([
-      db.collection('workspaces').doc(workspaceId).collection('responsibles').orderBy('name', 'asc').get(),
-      db.collection('workspaces').doc(workspaceId).collection('debits').get(),
-      db.collection('workspaces').doc(workspaceId).collection('credits').get(),
-    ])
+    const responsiblesSnap = await db
+      .collection('workspaces')
+      .doc(workspaceId)
+      .collection('responsibles')
+      .orderBy('name', 'asc')
+      .get()
+
+    let debitsQuery: FirebaseFirestore.Query = db
+      .collection('workspaces')
+      .doc(workspaceId)
+      .collection('debits')
+    let creditsQuery: FirebaseFirestore.Query = db
+      .collection('workspaces')
+      .doc(workspaceId)
+      .collection('credits')
+
+    if (month && month !== 'todos') {
+      debitsQuery = debitsQuery.where('month', '==', month.toLowerCase())
+      creditsQuery = creditsQuery.where('month', '==', month.toLowerCase())
+    }
+    if (year && year !== 'todos') {
+      debitsQuery = debitsQuery.where('year', '==', Number(year))
+      creditsQuery = creditsQuery.where('year', '==', Number(year))
+    }
+
+    const [debitsSnap, creditsSnap] = includeBalances
+      ? await Promise.all([debitsQuery.get(), creditsQuery.get()])
+      : [null, null]
 
     // Calcular total de despesas e receitas por responsável no período
     const totalDebitsByResp: Record<string, number> = {}
     const totalCreditsByResp: Record<string, number> = {}
 
-    debitsSnap.docs.forEach((doc) => {
+    debitsSnap?.docs.forEach((doc) => {
       const data = doc.data()
       if (data.responsibleId) {
-        if (month && month !== 'todos' && data.month && data.month.toLowerCase() !== month.toLowerCase()) {
-          return
-        }
-        if (year && year !== 'todos' && data.year && Number(data.year) !== Number(year)) {
-          return
-        }
         totalDebitsByResp[data.responsibleId] =
           (totalDebitsByResp[data.responsibleId] || 0) + (data.value || 0)
       }
     })
 
-    creditsSnap.docs.forEach((doc) => {
+    creditsSnap?.docs.forEach((doc) => {
       const data = doc.data()
       if (data.responsibleId) {
-        if (month && month !== 'todos' && data.month && data.month.toLowerCase() !== month.toLowerCase()) {
-          return
-        }
-        if (year && year !== 'todos' && data.year && Number(data.year) !== Number(year)) {
-          return
-        }
         totalCreditsByResp[data.responsibleId] =
           (totalCreditsByResp[data.responsibleId] || 0) + (data.value || 0)
       }
     })
 
-    // Mapear responsáveis e verificar se o e-mail corresponde a um usuário cadastrado
-    const responsibles = await Promise.all(
-      responsiblesSnap.docs.map(async (doc) => {
+    const linkedUserIds = Array.from(new Set(
+      responsiblesSnap.docs
+        .map((doc) => doc.data().linkedUserId as string | undefined)
+        .filter((id): id is string => Boolean(id))
+    ))
+    const linkedUserDocs = linkedUserIds.length > 0
+      ? await db.getAll(...linkedUserIds.map((id) => db.collection('users').doc(id)))
+      : []
+    const linkedUsers = new Map(
+      linkedUserDocs
+        .filter((doc) => doc.exists)
+        .map((doc) => [doc.id, doc.data()])
+    )
+    const unlinkedEmails = Array.from(new Set(
+      responsiblesSnap.docs
+        .filter((doc) => !doc.data().linkedUserId && doc.data().email)
+        .map((doc) => String(doc.data().email).toLowerCase().trim())
+    ))
+    const emailChunks = Array.from(
+      { length: Math.ceil(unlinkedEmails.length / 30) },
+      (_, index) => unlinkedEmails.slice(index * 30, index * 30 + 30)
+    )
+    const legacyUserSnapshots = await Promise.all(
+      emailChunks.map((emails) => db.collection('users').where('email', 'in', emails).get())
+    )
+    const legacyUsersByEmail = new Map(
+      legacyUserSnapshots.flatMap((snapshot) => snapshot.docs.map((doc) => {
+        const user = doc.data()
+        return [String(user.email).toLowerCase().trim(), user] as const
+      }))
+    )
+
+    const responsibles = responsiblesSnap.docs.map((doc) => {
         const data = doc.data()
-        let userImage: string | null = null
-        let isRegisteredUser = false
-
-        if (data.email) {
-          const userSnap = await db
-            .collection('users')
-            .where('email', '==', data.email.toLowerCase().trim())
-            .limit(1)
-            .get()
-
-          if (!userSnap.empty) {
-            const userData = userSnap.docs[0].data()
-            userImage = userData.image || null
-            isRegisteredUser = true
-          }
-        }
+        const normalizedEmail = data.email ? String(data.email).toLowerCase().trim() : null
+        const linkedUser = data.linkedUserId
+          ? linkedUsers.get(data.linkedUserId)
+          : normalizedEmail
+            ? legacyUsersByEmail.get(normalizedEmail)
+            : undefined
+        const isRegisteredUser = Boolean(linkedUser)
 
         const debitsVal = totalDebitsByResp[doc.id] || 0
         const creditsVal = totalCreditsByResp[doc.id] || 0
@@ -96,7 +133,7 @@ export async function GET(req: NextRequest, props: RouteParams) {
           workspaceId,
           name: data.name,
           email: data.email || null,
-          userImage,
+          userImage: linkedUser?.image || null,
           isRegisteredUser,
           status: isRegisteredUser ? 'linked' : data.status || 'active',
           linkedUserId: data.linkedUserId || null,
@@ -107,7 +144,6 @@ export async function GET(req: NextRequest, props: RouteParams) {
           updatedAt: serializeFirestoreDate(data.updatedAt),
         }
       })
-    )
 
     return NextResponse.json(responsibles, { status: 200 })
   } catch (error) {
@@ -124,7 +160,11 @@ export async function POST(req: NextRequest, props: RouteParams) {
     }
 
     const { workspaceId } = await props.params
-    const isMember = await checkIsWorkspaceMember({ workspaceId, userId: session.user.id })
+    const isMember = await checkIsWorkspaceMember({
+      workspaceId,
+      workspaceIds: session.user.workspaceIds,
+      userId: session.user.id,
+    })
     if (!isMember) {
       return NextResponse.json({ message: 'Acesso negado' }, { status: 403 })
     }

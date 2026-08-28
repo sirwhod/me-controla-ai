@@ -25,7 +25,7 @@ export interface ResponsibleDetails extends PersonResponsible {
 
 export async function getResponsibles(
   workspaceId: string,
-  params?: { month?: string; year?: string }
+  params?: { month?: string; year?: string; includeBalances?: boolean }
 ): Promise<(PersonResponsible & { pendingBalance: number })[]> {
   const response = await api.get<(PersonResponsible & { pendingBalance: number })[]>(
     `/workspaces/${workspaceId}/responsibles`,

@@ -122,10 +122,10 @@ export function ResponsiblePixModal({
       })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["responsibles"] })
-      queryClient.invalidateQueries({ queryKey: ["responsible-details"] })
-      queryClient.invalidateQueries({ queryKey: ["credits"] })
-      queryClient.invalidateQueries({ queryKey: ["debits"] })
+      queryClient.invalidateQueries({ queryKey: ["responsibles", workspaceActive?.id] })
+      queryClient.invalidateQueries({ queryKey: ["responsible-details", workspaceActive?.id] })
+      queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive?.id] })
+      queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive?.id] })
       toast.success(`Receita de ${formatCurrency(total)} gerada com sucesso! Saldo abatido.`)
       setOpen(false)
     },

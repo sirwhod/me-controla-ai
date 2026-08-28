@@ -10,7 +10,7 @@ interface DebitsRouteParams {
   workspaceId: string
 }
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<DebitsRouteParams> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<DebitsRouteParams> }) {
   try {
     const { workspaceId } = await params
     const session = await auth()
@@ -29,11 +29,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<Debit
       return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
-    const debitsQuery = db
+    const { searchParams } = new URL(req.url)
+    const month = searchParams.get('month')
+    const year = searchParams.get('year')
+
+    let debitsQuery: FirebaseFirestore.Query = db
       .collection('workspaces')
       .doc(workspaceId)
       .collection('debits')
-      .orderBy('date', 'desc')
+
+    if (month && month !== 'todos') {
+      debitsQuery = debitsQuery.where('month', '==', month.toLowerCase())
+    }
+    if (year && year !== 'todos') {
+      debitsQuery = debitsQuery.where('year', '==', Number(year))
+    }
 
     const querySnapshot = await debitsQuery.get()
 
@@ -48,6 +58,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<Debit
         startDate: serializeFirestoreDate(data.startDate),
         endDate: serializeFirestoreDate(data.endDate),
       }
+    }).sort((a, b) => {
+      const left = a.date ? new Date(String(a.date)).getTime() : 0
+      const right = b.date ? new Date(String(b.date)).getTime() : 0
+      return right - left
     })
 
     return NextResponse.json(debits, { status: 200 })

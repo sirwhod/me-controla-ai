@@ -60,8 +60,8 @@ export default function Page() {
     error: debitsError,
     refetch,
   } = useQuery<Debit[], Error>({
-    queryKey: ["debits", workspaceActive?.id],
-    queryFn: () => getDebits(workspaceActive!.id),
+    queryKey: ["debits", workspaceActive?.id, monthFilter, yearFilter],
+    queryFn: () => getDebits(workspaceActive!.id, { month: monthFilter, year: yearFilter }),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })

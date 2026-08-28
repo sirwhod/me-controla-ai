@@ -58,8 +58,8 @@ export default function Page() {
     error: creditsError,
     refetch,
   } = useQuery<Credit[], Error>({
-    queryKey: ["credits", workspaceActive?.id],
-    queryFn: () => getCredits(workspaceActive!.id),
+    queryKey: ["credits", workspaceActive?.id, monthFilter, yearFilter],
+    queryFn: () => getCredits(workspaceActive!.id, { month: monthFilter, year: yearFilter }),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })

@@ -5,6 +5,7 @@ import { api } from "@/app/lib/axios"
 import { toast } from "sonner"
 import { Check, MailCheck, X, Loader2 } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
+import { useSession } from "next-auth/react"
 
 interface InvitationItem {
   id: string
@@ -17,13 +18,15 @@ interface InvitationItem {
 
 export function InvitationsBanner() {
   const queryClient = useQueryClient()
+  const { data: session } = useSession()
 
   const { data: invitations = [] } = useQuery<InvitationItem[]>({
-    queryKey: ["user-invitations"],
+    queryKey: ["user-invitations", session?.user?.id],
     queryFn: async () => {
       const res = await api.get<InvitationItem[]>("/invitations")
       return res.data
     },
+    enabled: !!session?.user?.id,
   })
 
   const { mutateAsync: processInvitationMutation, isPending } = useMutation({

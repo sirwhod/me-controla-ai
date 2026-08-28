@@ -38,6 +38,17 @@ function assert(suite: string, name: string, condition: boolean, message?: strin
 }
 
 async function runTestSuite() {
+  const projectId = process.env.FIREBASE_PROJECT_ID || ''
+  const isEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST)
+  const isExplicitlyAllowedTestProject =
+    process.env.ALLOW_FIRESTORE_TEST_SUITE === 'true' && /(test|dev|demo|local)/i.test(projectId)
+
+  if (!isEmulator && !isExplicitlyAllowedTestProject) {
+    throw new Error(
+      'Execução bloqueada: use o Firestore Emulator ou defina ALLOW_FIRESTORE_TEST_SUITE=true em um projeto cujo ID contenha test/dev/demo/local.'
+    )
+  }
+
   console.log('\n======================================================')
   console.log('🚀 INICIANDO BATERIA COMPLETA DE TESTES AUTOMATIZADOS')
   console.log('   MeControla.AI - Cobertura de Funcionalidades Ponta a Ponta')

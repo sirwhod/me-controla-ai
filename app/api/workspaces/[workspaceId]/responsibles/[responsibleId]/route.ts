@@ -20,7 +20,7 @@ export async function GET(req: NextRequest, props: RouteParams) {
     }
 
     const { workspaceId, responsibleId } = await props.params
-    const isMember = await checkIsWorkspaceMember({ workspaceId, userId: session.user.id })
+    const isMember = await checkIsWorkspaceMember({ workspaceId, workspaceIds: session.user.workspaceIds, userId: session.user.id })
     if (!isMember) {
       return NextResponse.json({ message: 'Acesso negado' }, { status: 403 })
     }
@@ -43,10 +43,21 @@ export async function GET(req: NextRequest, props: RouteParams) {
     const responsibleData = responsibleDoc.data()!
 
     // Buscar todas as DESPESAS e RECEITAS deste responsável
-    const [debitsSnap, creditsSnap] = await Promise.all([
-      db.collection('workspaces').doc(workspaceId).collection('debits').where('responsibleId', '==', responsibleId).get(),
-      db.collection('workspaces').doc(workspaceId).collection('credits').where('responsibleId', '==', responsibleId).get(),
-    ])
+    let debitsQuery: FirebaseFirestore.Query = db.collection('workspaces').doc(workspaceId)
+      .collection('debits').where('responsibleId', '==', responsibleId)
+    let creditsQuery: FirebaseFirestore.Query = db.collection('workspaces').doc(workspaceId)
+      .collection('credits').where('responsibleId', '==', responsibleId)
+
+    if (month && month !== 'todos') {
+      debitsQuery = debitsQuery.where('month', '==', month.toLowerCase())
+      creditsQuery = creditsQuery.where('month', '==', month.toLowerCase())
+    }
+    if (year && year !== 'todos') {
+      debitsQuery = debitsQuery.where('year', '==', Number(year))
+      creditsQuery = creditsQuery.where('year', '==', Number(year))
+    }
+
+    const [debitsSnap, creditsSnap] = await Promise.all([debitsQuery.get(), creditsQuery.get()])
 
     let totalDebits = 0
     let totalCredits = 0
@@ -139,7 +150,7 @@ export async function PATCH(req: NextRequest, props: RouteParams) {
     }
 
     const { workspaceId, responsibleId } = await props.params
-    const isMember = await checkIsWorkspaceMember({ workspaceId, userId: session.user.id })
+    const isMember = await checkIsWorkspaceMember({ workspaceId, workspaceIds: session.user.workspaceIds, userId: session.user.id })
     if (!isMember) {
       return NextResponse.json({ message: 'Acesso negado' }, { status: 403 })
     }
@@ -202,7 +213,7 @@ export async function DELETE(_req: NextRequest, props: RouteParams) {
     }
 
     const { workspaceId, responsibleId } = await props.params
-    const isMember = await checkIsWorkspaceMember({ workspaceId, userId: session.user.id })
+    const isMember = await checkIsWorkspaceMember({ workspaceId, workspaceIds: session.user.workspaceIds, userId: session.user.id })
     if (!isMember) {
       return NextResponse.json({ message: 'Acesso negado' }, { status: 403 })
     }

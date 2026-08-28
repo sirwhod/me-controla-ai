@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest, props: RouteParams) {
     }
 
     const { workspaceId, goalId } = await props.params
-    const isMember = await checkIsWorkspaceMember({ workspaceId, userId: session.user.id })
+    const isMember = await checkIsWorkspaceMember({ workspaceId, workspaceIds: session.user.workspaceIds, userId: session.user.id })
     if (!isMember) {
       return NextResponse.json({ message: 'Acesso negado' }, { status: 403 })
     }
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest, props: RouteParams) {
     }
 
     const { workspaceId, goalId } = await props.params
-    const isMember = await checkIsWorkspaceMember({ workspaceId, userId: session.user.id })
+    const isMember = await checkIsWorkspaceMember({ workspaceId, workspaceIds: session.user.workspaceIds, userId: session.user.id })
     if (!isMember) {
       return NextResponse.json({ message: 'Acesso negado' }, { status: 403 })
     }

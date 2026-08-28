@@ -42,7 +42,11 @@ export default function ResponsiblesPage() {
     refetch,
   } = useQuery<(PersonResponsible & { pendingBalance: number })[], Error>({
     queryKey: ["responsibles", effectiveWorkspaceId, monthFilter, yearFilter],
-    queryFn: () => getResponsibles(effectiveWorkspaceId, { month: monthFilter, year: yearFilter }),
+    queryFn: () => getResponsibles(effectiveWorkspaceId, {
+      month: monthFilter,
+      year: yearFilter,
+      includeBalances: true,
+    }),
     staleTime: 1000 * 60 * 2,
     enabled: !!effectiveWorkspaceId,
   })

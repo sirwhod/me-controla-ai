@@ -70,15 +70,15 @@ export default function Page() {
   const prefix = workspaceActive?.id ? `/${workspaceActive.id}` : ""
 
   const { data: debits, isLoading: isDebitsLoading } = useQuery<Debit[], Error>({
-    queryKey: ["debits", workspaceActive?.id],
-    queryFn: () => getDebits(workspaceActive!.id),
+    queryKey: ["debits", workspaceActive?.id, monthFilter, yearFilter],
+    queryFn: () => getDebits(workspaceActive!.id, { month: monthFilter, year: yearFilter }),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
 
   const { data: credits, isLoading: isCreditsLoading } = useQuery<Credit[], Error>({
-    queryKey: ["credits", workspaceActive?.id],
-    queryFn: () => getCredits(workspaceActive!.id),
+    queryKey: ["credits", workspaceActive?.id, monthFilter, yearFilter],
+    queryFn: () => getCredits(workspaceActive!.id, { month: monthFilter, year: yearFilter }),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })

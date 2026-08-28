@@ -29,8 +29,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
         return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
-    const creditsQuery = db.collection('workspaces').doc(workspaceId).collection('credits')
-      .orderBy('date', 'desc')
+    const { searchParams: requestSearchParams } = new URL(req.url)
+    const month = requestSearchParams.get('month')
+    const year = requestSearchParams.get('year')
+
+    let creditsQuery: FirebaseFirestore.Query = db
+      .collection('workspaces')
+      .doc(workspaceId)
+      .collection('credits')
+
+    if (month && month !== 'todos') {
+      creditsQuery = creditsQuery.where('month', '==', month.toLowerCase())
+    }
+    if (year && year !== 'todos') {
+      creditsQuery = creditsQuery.where('year', '==', Number(year))
+    }
 
     const querySnapshot = await creditsQuery.get()
 
@@ -43,6 +56,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
         createdAt: serializeFirestoreDate(data.createdAt),
         updatedAt: serializeFirestoreDate(data.updatedAt),
       }
+    }).sort((a, b) => {
+      const left = a.date ? new Date(String(a.date)).getTime() : 0
+      const right = b.date ? new Date(String(b.date)).getTime() : 0
+      return right - left
     })
 
     return NextResponse.json(credits, { status: 200 })
