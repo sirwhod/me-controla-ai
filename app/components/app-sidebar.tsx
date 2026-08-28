@@ -2,8 +2,10 @@
 
 import * as React from "react"
 import {
-  HandCoins,
+  CircleDollarSign,
+  LayoutDashboard,
   LifeBuoy,
+  ReceiptText,
   Send,
   Settings2,
 } from "lucide-react"
@@ -19,6 +21,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@/app/components/ui/sidebar"
 import { useWorkspace } from "../hooks/use-workspace"
 import { useDateFilter } from "../contexts/date-filter-context"
@@ -47,19 +50,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     {
       title: "Dashboard",
       url: `${prefix}/dashboard${queryString}`,
-      icon: HandCoins,
-      isActive: true,
-      items: [
-        {
-          title: "Despesas",
-          url: `${prefix}/dashboard/debits${queryString}`,
-        },
-        {
-          title: "Receitas",
-          url: `${prefix}/dashboard/credits${queryString}`,
-        },
-      ],
+      icon: LayoutDashboard,
+      exact: true,
     },
+    {
+      title: "Despesas",
+      url: `${prefix}/dashboard/debits${queryString}`,
+      icon: ReceiptText,
+    },
+    {
+      title: "Receitas",
+      url: `${prefix}/dashboard/credits${queryString}`,
+      icon: CircleDollarSign,
+    },
+  ], [prefix, queryString])
+
+  const settingsItems = React.useMemo(() => [
     {
       title: "Configurações",
       url: `${prefix}/manage${queryString}`,
@@ -94,16 +100,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   ], [prefix, queryString])
 
   return (
-    <Sidebar variant="inset" {...props}>
-      <SidebarHeader>
+    <Sidebar
+      variant="inset"
+      collapsible="icon"
+      className="p-3 pr-2"
+      {...props}
+    >
+      <SidebarHeader className="px-3 pb-5 pt-3">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
+            <SidebarMenuButton size="lg" asChild className="h-14 px-1 hover:bg-transparent active:bg-transparent">
               <div>
-                <Logo className="text-primary min-w-8 min-h-8" />
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-primary/45 bg-primary/10 shadow-[0_0_24px_-8px_var(--primary)]">
+                  <Logo className="size-7 text-primary" />
+                </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">MeControla.AI</span>
-                  <span className="truncate text-xs">
+                  <span className="truncate text-base font-semibold tracking-tight">MeControla.AI</span>
+                  <span className="mt-0.5 truncate text-xs text-muted-foreground">
                     {
                       workspaceActive?.type && workspaceActive.type === "personal" ?
                       "Pessoal" :
@@ -116,11 +129,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="px-1">
         <NavMain items={navMain} />
-        <NavSecondary items={navSecondaryData} className="mt-auto" />
+        <SidebarSeparator className="my-1" />
+        <NavMain items={settingsItems} showLabel={false} />
+        <NavSecondary items={navSecondaryData} className="mt-auto pb-1" />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-sidebar-border/60 px-3 py-3">
         <NavUser />
       </SidebarFooter>
     </Sidebar>

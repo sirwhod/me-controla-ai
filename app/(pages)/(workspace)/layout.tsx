@@ -29,7 +29,13 @@ export default function WorkspaceLayout({
   }, [status])
 
   return (
-    <SidebarProvider>
+    <SidebarProvider
+      style={{
+        "--sidebar-width": "18rem",
+        "--sidebar-width-icon": "4.5rem",
+      } as React.CSSProperties}
+      className="bg-sidebar"
+    >
       <QueryProvider>
         <Suspense
           fallback={
@@ -41,7 +47,7 @@ export default function WorkspaceLayout({
           <DateFilterProvider>
             <WorkspaceProvider>
               <AppSidebar />
-              <SidebarInset className="pb-20 md:pb-0">
+              <SidebarInset className="pb-20 md:my-3 md:mr-3 md:ml-0 md:rounded-2xl md:border md:border-border/50 md:pb-0 md:shadow-sm">
                 {children}
               </SidebarInset>
               <MobileNav />

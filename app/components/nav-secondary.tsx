@@ -9,6 +9,7 @@ import {
   SidebarMenuItem,
 } from "@/app/components/ui/sidebar"
 import Link from "next/link"
+import { cn } from "@/app/lib/utils"
 
 export function NavSecondary({
   items,
@@ -21,12 +22,12 @@ export function NavSecondary({
   }[]
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   return (
-    <SidebarGroup {...props}>
+    <SidebarGroup {...props} className={cn("px-2", props.className)}>
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild size="sm">
+              <SidebarMenuButton asChild className="h-9 rounded-xl px-3 text-muted-foreground hover:text-sidebar-accent-foreground">
                 <Link href={item.url}>
                   <item.icon />
                   <span>{item.title}</span>
