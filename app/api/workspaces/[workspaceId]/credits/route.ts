@@ -6,6 +6,7 @@ import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { NextRequest, NextResponse } from 'next/server'
 import { FieldPath } from 'firebase-admin/firestore'
 import { getRequestId, logFirestoreQuery, logHttpRequest } from '@/app/lib/observability'
+import { applyMonthlyAnalyticsDelta } from '@/app/lib/firestore-analytics'
 import { InvalidWorkspaceReferenceError, validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
 
 interface CreditsRouteParams {
@@ -225,6 +226,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
 
     const newCreditRef = db.collection('workspaces').doc(workspaceId).collection('credits').doc()
     await newCreditRef.set(baseCreditData)
+    await applyMonthlyAnalyticsDelta({ workspaceId, month, year, income: value, creditCount: 1 })
 
     return NextResponse.json({ message: 'Receita criada com sucesso!', creditId: newCreditRef.id }, { status: 201 })
 
