@@ -16,6 +16,7 @@ import { useWorkspace } from "@/app/hooks/use-workspace"
 import { useQuery } from "@tanstack/react-query"
 import { getDebits } from "@/app/http/debits/get-debits"
 import { getCredits } from "@/app/http/credits/get-credits"
+import { getMonthlySummary } from "@/app/http/summary/get-monthly-summary"
 import { getGoals } from "@/app/http/goals/get-goals"
 import { Debit, Credit, Goal } from "@/app/types/financial"
 import { useMemo } from "react"
@@ -82,6 +83,12 @@ export default function Page() {
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
+  const { data: monthlySummary } = useQuery({
+    queryKey: ["monthly-summary", workspaceActive?.id, monthFilter, yearFilter],
+    queryFn: () => getMonthlySummary(workspaceActive!.id, monthFilter, Number(yearFilter)),
+    enabled: Boolean(workspaceActive?.id && monthFilter !== "todos" && yearFilter !== "todos"),
+    staleTime: 60_000,
+  })
 
   const { data: goals, isLoading: isGoalsLoading } = useQuery<Goal[], Error>({
     queryKey: ["goals", workspaceActive?.id],
@@ -112,12 +119,14 @@ export default function Page() {
 
   // Métricas calculadas
   const totalDebits = useMemo(() => {
+    if (monthlySummary) return monthlySummary.totalExpenses
     return filteredDebits.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0)
-  }, [filteredDebits])
+  }, [filteredDebits, monthlySummary])
 
   const totalCredits = useMemo(() => {
+    if (monthlySummary) return monthlySummary.totalIncome
     return filteredCredits.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0)
-  }, [filteredCredits])
+  }, [filteredCredits, monthlySummary])
 
   const balance = useMemo(() => {
     return totalCredits - totalDebits
