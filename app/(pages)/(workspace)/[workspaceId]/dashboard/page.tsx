@@ -17,6 +17,7 @@ import { useQuery } from "@tanstack/react-query"
 import { getDebits } from "@/app/http/debits/get-debits"
 import { getCredits } from "@/app/http/credits/get-credits"
 import { getMonthlySummary } from "@/app/http/summary/get-monthly-summary"
+import { getAnnualSummary } from "@/app/http/summary/get-annual-summary"
 import { getGoals } from "@/app/http/goals/get-goals"
 import { Debit, Credit, Goal } from "@/app/types/financial"
 import { useMemo } from "react"
@@ -87,6 +88,12 @@ export default function Page() {
     queryKey: ["monthly-summary", workspaceActive?.id, monthFilter, yearFilter],
     queryFn: () => getMonthlySummary(workspaceActive!.id, monthFilter, Number(yearFilter)),
     enabled: Boolean(workspaceActive?.id && monthFilter !== "todos" && yearFilter !== "todos"),
+    staleTime: 60_000,
+  })
+  const { data: annualSummary } = useQuery({
+    queryKey: ["annual-summary", workspaceActive?.id, yearFilter],
+    queryFn: () => getAnnualSummary(workspaceActive!.id, Number(yearFilter || anoAtual)),
+    enabled: Boolean(workspaceActive?.id && yearFilter !== "todos"),
     staleTime: 60_000,
   })
 
@@ -182,6 +189,16 @@ export default function Page() {
   const annualMonthlyOverview = useMemo(() => {
     if (!debits && !credits) return []
     const targetYear = yearFilter || anoAtual
+    const hasCompleteSummary = annualSummary?.length === 12 && annualSummary.every((item) => item.ready)
+    if (hasCompleteSummary) {
+      return meses.map((m, index) => ({
+        month: m.short,
+        fullMonth: m.label,
+        credits: annualSummary[index].totalIncome,
+        debits: annualSummary[index].totalExpenses,
+        balance: annualSummary[index].balance,
+      }))
+    }
 
     return meses.map((m) => {
       const monthCredits = (credits || [])
@@ -200,7 +217,7 @@ export default function Page() {
         balance: monthCredits - monthDebits,
       }
     })
-  }, [debits, credits, yearFilter])
+  }, [debits, credits, yearFilter, annualSummary])
 
   const maxMonthlyValue = useMemo(() => {
     return Math.max(
