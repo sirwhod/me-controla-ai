@@ -15,10 +15,14 @@ import {
   UserCheck,
   Settings,
   ChevronRight,
+  LogOut,
 } from "lucide-react"
 import { cn } from "@/app/lib/utils"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { useDateFilter } from "@/app/contexts/date-filter-context"
+import { signOut, useSession } from "next-auth/react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
+import { Button } from "@/app/components/ui/button"
 import {
   Sheet,
   SheetContent,
@@ -32,7 +36,19 @@ export function MobileNav() {
   const pathname = usePathname()
   const { workspaceActive } = useWorkspace()
   const { queryString } = useDateFilter()
+  const { data: session } = useSession()
   const [sheetOpen, setSheetOpen] = React.useState(false)
+
+  const user = session?.user
+  const userInitials = user?.name
+    ? user.name
+        .split(" ")
+        .filter(Boolean)
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase()
+    : "U"
 
   const wsId = workspaceActive?.id || ""
   const prefix = wsId ? `/${wsId}` : ""
@@ -268,6 +284,49 @@ export function MobileNav() {
                 </div>
               ))}
             </div>
+
+            {/* 4. Seção de Perfil do Usuário e Logoff */}
+            {user && (
+              <div className="pt-3 border-t border-border/60 mt-1 space-y-2">
+                <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground pl-1">
+                  Conta & Sessão
+                </span>
+
+                <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-muted/40">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Avatar className="h-9 w-9 rounded-full border border-border/60 shrink-0">
+                      <AvatarImage src={user.image ?? ""} alt={user.name ?? ""} />
+                      <AvatarFallback className="rounded-full bg-primary/10 text-primary font-bold text-xs">
+                        {userInitials}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <div className="flex flex-col min-w-0 text-left">
+                      <span className="text-sm font-bold leading-tight text-foreground truncate">
+                        {user.name || "Usuário"}
+                      </span>
+                      <span className="text-xs text-muted-foreground truncate">
+                        {user.email}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      setSheetOpen(false)
+                      await signOut({ redirectTo: "/sign-in" })
+                    }}
+                    className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 gap-1.5 text-xs font-semibold shrink-0 ml-2 cursor-pointer"
+                    aria-label="Sair da conta"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sair</span>
+                  </Button>
+                </div>
+              </div>
+            )}
           </SheetContent>
         </Sheet>
       </div>

@@ -5,7 +5,8 @@ import { PersonResponsible } from "@/app/types/financial"
 import { formatCurrency } from "@/app/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Badge } from "@/app/components/ui/badge"
-import { CheckCircle2, MoreHorizontal, Mail, DollarSign } from "lucide-react"
+import { CheckCircle2, MoreHorizontal, Mail, DollarSign, Pencil } from "lucide-react"
+import Link from "next/link"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
 import { Button } from "@/app/components/ui/button"
-import { EditResponsible } from "@/app/components/edit-responsible"
 import { DeleteResponsible } from "@/app/components/delete-responsible"
 import { ResponsiblePixModal } from "@/app/components/responsible-pix-modal"
 
@@ -107,7 +107,15 @@ export function ResponsibleListItem({ resp, month, year }: ResponsibleListItemPr
               Copiar ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <EditResponsible responsible={resp} asDropdownItem />
+            <DropdownMenuItem asChild>
+              <Link
+                href={`/${resp.workspaceId}/manage/responsibles/${resp.id}/edit`}
+                className="cursor-pointer flex items-center text-xs"
+              >
+                <Pencil className="mr-2 h-3.5 w-3.5" />
+                Editar
+              </Link>
+            </DropdownMenuItem>
             {resp.id && (
               <DeleteResponsible
                 responsibleId={resp.id}

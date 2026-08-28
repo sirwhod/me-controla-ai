@@ -7,6 +7,11 @@ export async function getCards(workspaceId: string): Promise<CreditCard[]> {
   return res.data
 }
 
+export async function getCard(workspaceId: string, cardId: string): Promise<CreditCard> {
+  const res = await api.get<CreditCard>(`/workspaces/${workspaceId}/cards/${cardId}`)
+  return res.data
+}
+
 export async function createCard(
   workspaceId: string,
   data: CreateCreditCard

@@ -1,13 +1,12 @@
 "use client"
 
 import { DeleteBank } from "@/app/components/delete-bank"
-import { EditBank } from "@/app/components/edit-bank"
 import { DataTableColumnHeader } from "@/app/components/table/column-header"
 import { Button } from "@/app/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu"
 import { Bank } from "@/app/types/financial"
 import { ColumnDef } from "@tanstack/react-table"
-import { CreditCard, Landmark, MoreHorizontal, QrCode } from "lucide-react"
+import { CreditCard, Landmark, MoreHorizontal, QrCode, Pencil } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -134,7 +133,15 @@ export const columns: ColumnDef<Bank>[] = [
                 Copiar ID do banco
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <EditBank bank={bank} asDropdownItem />
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`/${bank.workspaceId}/manage/banks/${bank.id}/edit`}
+                  className="cursor-pointer flex items-center"
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar
+                </Link>
+              </DropdownMenuItem>
               <DeleteBank bankId={bank.id} bankName={bank.name} />
             </DropdownMenuContent>
           </DropdownMenu>

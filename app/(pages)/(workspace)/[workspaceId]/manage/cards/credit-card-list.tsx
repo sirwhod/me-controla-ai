@@ -1,9 +1,10 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { CreditCard } from "@/app/types/financial"
 import { formatCurrency } from "@/app/lib/utils"
-import { CreditCard as CardIcon, Landmark, MoreHorizontal, Calendar, DollarSign } from "lucide-react"
+import { CreditCard as CardIcon, Landmark, MoreHorizontal, Calendar, DollarSign, Pencil } from "lucide-react"
 import { Badge } from "@/app/components/ui/badge"
 import {
   DropdownMenu,
@@ -14,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
 import { Button } from "@/app/components/ui/button"
-import { EditCard } from "@/app/components/edit-card"
 import { DeleteCard } from "@/app/components/delete-card"
 
 interface CreditCardListProps {
@@ -93,7 +93,15 @@ export function CreditCardListItem({ card }: CreditCardListItemProps) {
               Copiar ID do cartão
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <EditCard card={card} asDropdownItem />
+            <DropdownMenuItem asChild>
+              <Link
+                href={`/${card.workspaceId}/manage/cards/${card.id}/edit`}
+                className="cursor-pointer flex items-center text-xs"
+              >
+                <Pencil className="mr-2 h-3.5 w-3.5" />
+                Editar
+              </Link>
+            </DropdownMenuItem>
             <DeleteCard cardId={card.id} cardName={card.name} asDropdownItem />
           </DropdownMenuContent>
         </DropdownMenu>

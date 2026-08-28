@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { Category } from "@/app/types/financial"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
 import { Badge } from "@/app/components/ui/badge"
@@ -13,8 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
 import { Button } from "@/app/components/ui/button"
-import { MoreHorizontal } from "lucide-react"
-import { EditCategory } from "@/app/components/edit-category"
+import { MoreHorizontal, Pencil } from "lucide-react"
 import { DeleteCategory } from "@/app/components/delete-category"
 
 interface CategoryListProps {
@@ -105,7 +105,15 @@ export function CategoryListItem({ category }: CategoryListItemProps) {
             Copiar ID da categoria
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <EditCategory category={category} asDropdownItem />
+          <DropdownMenuItem asChild>
+            <Link
+              href={`/${category.workspaceId}/manage/categories/${category.id}/edit`}
+              className="cursor-pointer flex items-center text-xs"
+            >
+              <Pencil className="mr-2 h-3.5 w-3.5" />
+              Editar
+            </Link>
+          </DropdownMenuItem>
           <DeleteCategory categoryId={category.id} categoryName={category.name} />
         </DropdownMenuContent>
       </DropdownMenu>

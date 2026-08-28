@@ -12,9 +12,9 @@ import {
 } from "@/app/components/ui/dropdown-menu"
 import { PersonResponsible } from "@/app/types/financial"
 import { ColumnDef } from "@tanstack/react-table"
-import { CheckCircle2, MoreHorizontal } from "lucide-react"
+import { CheckCircle2, MoreHorizontal, Pencil } from "lucide-react"
+import Link from "next/link"
 import { ResponsiblePixModal } from "@/app/components/responsible-pix-modal"
-import { EditResponsible } from "@/app/components/edit-responsible"
 import { DeleteResponsible } from "@/app/components/delete-responsible"
 import { formatCurrency } from "@/app/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
@@ -109,7 +109,15 @@ export function getColumns(month?: string, year?: string): ColumnDef<PersonRespo
                   Copiar ID
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <EditResponsible responsible={resp} asDropdownItem />
+                <DropdownMenuItem asChild>
+                  <Link
+                    href={`/${resp.workspaceId}/manage/responsibles/${resp.id}/edit`}
+                    className="cursor-pointer flex items-center"
+                  >
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Editar
+                  </Link>
+                </DropdownMenuItem>
                 <DeleteResponsible responsibleId={resp.id} responsibleName={resp.name} asDropdownItem />
               </DropdownMenuContent>
             </DropdownMenu>

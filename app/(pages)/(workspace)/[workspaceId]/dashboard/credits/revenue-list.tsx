@@ -13,7 +13,9 @@ import {
   PiggyBank,
   Tag,
   User,
+  Pencil,
 } from "lucide-react"
+import Link from "next/link"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +25,6 @@ import {
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
 import { Button } from "@/app/components/ui/button"
-import { EditCredit } from "@/app/components/edit-credit"
 import { DeleteCredit } from "@/app/components/delete-credit"
 
 interface RevenueListProps {
@@ -99,7 +100,15 @@ export function RevenueListItem({ credit }: RevenueListItemProps) {
               Copiar ID da receita
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <EditCredit credit={credit} asDropdownItem />
+            <DropdownMenuItem asChild>
+              <Link
+                href={`/${credit.workspaceId}/dashboard/credits/${credit.id}/edit`}
+                className="cursor-pointer flex items-center text-xs"
+              >
+                <Pencil className="mr-2 h-3.5 w-3.5" />
+                Editar
+              </Link>
+            </DropdownMenuItem>
             <DeleteCredit creditId={credit.id} creditDescription={credit.description} />
           </DropdownMenuContent>
         </DropdownMenu>

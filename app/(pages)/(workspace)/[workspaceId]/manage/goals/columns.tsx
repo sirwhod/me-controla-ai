@@ -3,12 +3,12 @@
 import { DataTableColumnHeader } from "@/app/components/table/column-header"
 import { Goal } from "@/app/types/financial"
 import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal, Target } from "lucide-react"
+import { MoreHorizontal, Target, Pencil } from "lucide-react"
 import { format } from "date-fns"
+import Link from "next/link"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu"
 import { Button } from "@/app/components/ui/button"
 import { DeleteGoal } from "@/app/components/delete-goal"
-import { EditGoal } from "@/app/components/edit-goal"
 import { GoalContributionDialog } from "@/app/components/goal-contribution-dialog"
 
 export const columns: ColumnDef<Goal>[] = [
@@ -115,7 +115,15 @@ export const columns: ColumnDef<Goal>[] = [
                 Copiar ID da meta
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <EditGoal goal={goal} asDropdownItem />
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`/${goal.workspaceId}/manage/goals/${goal.id}/edit`}
+                  className="cursor-pointer flex items-center"
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar
+                </Link>
+              </DropdownMenuItem>
               <DeleteGoal goalId={goal.id} />
             </DropdownMenuContent>
           </DropdownMenu>

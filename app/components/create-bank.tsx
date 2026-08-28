@@ -1,331 +1,37 @@
-import { PlusCircle, UploadCloud } from "lucide-react"
-import { Button } from "@/app/components/ui/button"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/app/components/ui/dialog"
-import { Input } from "@/app/components/ui/input"
-import { useForm } from "react-hook-form"
-import { Bank, CreateBank as CreateBankProps, createBankSchema } from "../types/financial" 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { toast } from "sonner"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form"
-import { useMutation, useQuery } from "@tanstack/react-query"
-import { createBank } from "../http/banks/create-bank"
-import { useWorkspace } from "../hooks/use-workspace"
-import { getBanks } from "../http/banks/get-banks"
-import { useState } from "react" 
-import { ImageUploadField } from "./image-upload-field"
-import { Separator } from "./ui/separator"
-import { cn } from "@/app/lib/utils"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+"use client"
 
-type CreateBankFormData = CreateBankProps
+import React from "react"
+import Link from "next/link"
+import { Plus } from "lucide-react"
+import { Button } from "@/app/components/ui/button"
+import { useWorkspace } from "../hooks/use-workspace"
+import { cn } from "../lib/utils"
 
 interface CreateBankComponentProps {
   className?: string
   fullWidth?: boolean
+  label?: string
 }
 
-export function CreateBank({ className, fullWidth }: CreateBankComponentProps = {}) {
-  const [modalIsOpen, setModalIsOpen] = useState<boolean>(false)
-  const [isUploading, setIsUploading] = useState<boolean>(false)
-
-  const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
-
-  const form = useForm<CreateBankFormData>({
-    resolver: zodResolver(createBankSchema),
-    defaultValues: {
-      name: "",
-      code: "",
-      pixKey: "",
-      pixKeyType: "cpf",
-      iconUrl: "",
-    },
-  })
-
-  const { mutateAsync: createBankFn } = useMutation({
-    mutationFn: createBank
-  })
-
-  const { refetch } = useQuery<Bank[], Error>({
-    queryKey: ['banks', workspaceActive?.id],
-    queryFn: () => getBanks(workspaceActive!.id),
-    staleTime: 1000 * 60 * 5,
-    enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
-  })
-
-  async function handleCreateBankSubmit(data: CreateBankProps) {
-    if (!workspaceActive || isWorkspaceLoading || workspaceError) {
-      toast.error("Workspace não está pronto. Tente novamente.")
-      return
-    }
-
-    setIsUploading(true)
-
-    const formData = new FormData()
-    formData.append("name", data.name)
-    formData.append("code", data.code ?? "")
-    formData.append("pixKey", data.pixKey ?? "")
-    formData.append("pixKeyType", data.pixKeyType ?? "")
-    
-    if (data.invoiceClosingDay !== undefined && data.invoiceClosingDay !== null && !isNaN(Number(data.invoiceClosingDay))) {
-      formData.append("invoiceClosingDay", String(data.invoiceClosingDay));
-    } else {
-      formData.append("invoiceClosingDay", "0");
-    }
-
-    if (data.invoiceDueDate !== undefined && data.invoiceDueDate !== null && !isNaN(Number(data.invoiceDueDate))) {
-      formData.append("invoiceDueDate", String(data.invoiceDueDate));
-    } else {
-      formData.append("invoiceDueDate", "0");
-    }
-
-    if (data.imageFile && data.imageFile.length > 0) {
-      const fileToUpload = data.imageFile[0];
-      formData.append("imageFile", fileToUpload, fileToUpload.name);
-    }
-
-    try {
-      const response = await createBankFn({
-        workspaceId: workspaceActive.id,
-        payload: formData
-      })
-
-      if (response) {
-        refetch()
-        toast.success(response.message)
-        setModalIsOpen(false)
-        form.reset()
-      }
-
-    } catch (error: unknown) {
-      toast.error(`
-          Erro ao criar novo banco.
-          Erro: ${error}
-        `)
-    } finally {
-      setIsUploading(false)
-    }
-  }
-
-  const handleModalOpenChange = (open: boolean) => {
-    setModalIsOpen(open)
-    if (!open) {
-      form.reset()
-    }
-  }
+export function CreateBank({
+  className,
+  fullWidth,
+  label = "Novo Banco",
+}: CreateBankComponentProps = {}) {
+  const { workspaceActive } = useWorkspace()
 
   return (
-    <Dialog open={modalIsOpen} onOpenChange={handleModalOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          onClick={() => setModalIsOpen(true)}
-          variant="default"
-          className={cn("gap-2 font-semibold", fullWidth && "w-full", className)}
-        >
-          <PlusCircle className="w-4 h-4 mr-2" />
-          Novo Banco
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-        <DialogHeader>
-          <DialogTitle>Novo Banco</DialogTitle>
-          <DialogDescription>
-            Adicione um novo banco para prosseguir com o uso da plataforma.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleCreateBankSubmit)} className="space-y-6">
-
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center sm:items-start">
-                <FormField
-                  control={form.control}
-                  name="imageFile"
-                  render={({ field, fieldState }) => (
-                    <FormItem>
-                      {/* <FormLabel>Logo do Banco</FormLabel> */} 
-                      <FormControl>
-                        <ImageUploadField
-                          name={field.name}
-                          setValue={form.setValue}
-                          formValue={field.value} // Passa o valor atual do FileList
-                          error={fieldState.error}
-                          // label="Logo do Banco" // Passa o label para o componente customizado
-                          className="h-36 w-36"
-                        />
-                      </FormControl>
-                      <FormMessage /> {/* Exibirá erros do Zod para imageFile */}
-                    </FormItem>
-                  )}
-                />
-                {/* Seus campos existentes */}
-                <div className="flex flex-col gap-7 w-full">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel>Banco</FormLabel>
-                        <FormControl>
-                          <Input className="w-full" placeholder="Itaú" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="code"
-                    render={({ field }) => (
-                      <FormItem
-                        className="w-2/3 md:w-1/3"
-                      >
-                        <FormLabel>Código</FormLabel>
-                        <FormControl>
-                          <Input placeholder="000" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-            </div>
-
-            <Separator />
-            
-            {/* Chave PIX do Banco */}
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-0.5">
-                <strong className="text-sm font-semibold">Chave PIX da Conta (opcional)</strong>
-                <p className="text-xs text-muted-foreground">Cadastre a chave PIX desta conta para recebimentos rápidos e cobranças.</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                <FormField
-                  control={form.control}
-                  name="pixKeyType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Tipo de Chave</FormLabel>
-                      <Select
-                        value={field.value || "cpf"}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="h-9 text-xs">
-                            <SelectValue placeholder="Tipo" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="cpf">CPF</SelectItem>
-                          <SelectItem value="cnpj">CNPJ</SelectItem>
-                          <SelectItem value="email">E-mail</SelectItem>
-                          <SelectItem value="phone">Telefone</SelectItem>
-                          <SelectItem value="random">Aleatória</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="pixKey"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel className="text-xs">Chave PIX</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ex: seu@email.com ou 000.000.000-00"
-                          className="h-9 text-xs"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            <Separator />
-            {/* Seus campos de dados do crédito ... */}
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-0.5">
-                <strong className="text-lg font-semibold">Dados do crédito</strong>
-                <p className="text-sm text-muted-foreground">Informe os dias de Fechamento e Pagamento da fatura.</p>
-              </div>
-              <div className="flex flex-row gap-2 w-full">
-                <FormField
-                  control={form.control}
-                  name="invoiceClosingDay"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Fechamento da fatura</FormLabel>
-                      <FormControl>
-                        <Input 
-                            type="number" 
-                            placeholder="20" 
-                            {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="invoiceDueDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Pagamento da Fatura</FormLabel>
-                      <FormControl>
-                        <Input 
-                            type="number" 
-                            placeholder="12" 
-                            {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="justify-between">
-              {/* Ajuste no DialogClose e Button */}
-              <DialogClose asChild>
-                <Button type="button" variant="secondary">
-                  Cancelar
-                </Button>
-              </DialogClose>
-              <Button type="submit" disabled={isUploading || form.formState.isSubmitting}>
-                {isUploading ? (
-                  <>
-                    <UploadCloud className="animate-pulse h-4 w-4 mr-2" />
-                    Enviando Logo...
-                  </>
-                ) : (
-                  <>
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Criar Banco
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+    <Link
+      href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/manage/banks/new`}
+      className={cn(fullWidth && "w-full inline-block")}
+    >
+      <Button
+        variant="default"
+        className={cn("gap-2 font-semibold", fullWidth && "w-full", className)}
+      >
+        <Plus className="w-4 h-4 mr-1.5" />
+        {label}
+      </Button>
+    </Link>
   )
 }

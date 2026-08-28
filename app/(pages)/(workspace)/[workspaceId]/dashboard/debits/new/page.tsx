@@ -15,6 +15,7 @@ import {
 import { Separator } from "@/app/components/ui/separator"
 import { SidebarTrigger } from "@/app/components/ui/sidebar"
 import { Skeleton } from "@/app/components/ui/skeleton"
+import { Logo } from "@/app/components/logo"
 import WorkspaceSelector from "@/app/components/workspace-selector"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { NewDebitForm } from "./new-debit-form"
@@ -27,7 +28,14 @@ export default function NewDebitPage() {
       {/* Top Header com Breadcrumbs e Trigger do Sidebar */}
       <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/70 px-3 md:px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 bg-background/95 backdrop-blur-xs sticky top-0 z-20">
         <div className="flex items-center gap-2 w-full">
-          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
+          <Link
+            href={workspaceActive?.id ? `/${workspaceActive.id}/dashboard` : "/dashboard"}
+            className="flex md:hidden items-center shrink-0"
+            aria-label="MeControla.AI"
+          >
+            <Logo className="h-6 w-6 text-primary" />
+          </Link>
+          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground hidden md:flex" />
           <Separator orientation="vertical" className="mr-1 md:mr-2 h-4" />
           <Breadcrumb>
             <BreadcrumbList className="text-xs sm:text-sm">

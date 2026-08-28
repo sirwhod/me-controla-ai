@@ -1,10 +1,11 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { Goal } from "@/app/types/financial"
 import { formatCurrency } from "@/app/lib/utils"
 import { format } from "date-fns"
-import { Calendar, CheckCircle2, MoreHorizontal, Target } from "lucide-react"
+import { Calendar, CheckCircle2, MoreHorizontal, Target, Pencil } from "lucide-react"
 import { Badge } from "@/app/components/ui/badge"
 import {
   DropdownMenu,
@@ -16,7 +17,6 @@ import {
 } from "@/app/components/ui/dropdown-menu"
 import { Button } from "@/app/components/ui/button"
 import { GoalContributionDialog } from "@/app/components/goal-contribution-dialog"
-import { EditGoal } from "@/app/components/edit-goal"
 import { DeleteGoal } from "@/app/components/delete-goal"
 
 interface GoalListProps {
@@ -107,7 +107,15 @@ export function GoalListItem({ goal }: GoalListItemProps) {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <GoalContributionDialog goal={goal} asDropdownItem />
-            <EditGoal goal={goal} asDropdownItem />
+            <DropdownMenuItem asChild>
+              <Link
+                href={`/${goal.workspaceId}/manage/goals/${goal.id}/edit`}
+                className="cursor-pointer flex items-center text-xs"
+              >
+                <Pencil className="mr-2 h-3.5 w-3.5" />
+                Editar
+              </Link>
+            </DropdownMenuItem>
             <DeleteGoal goalId={goal.id} goalName={goal.name} />
           </DropdownMenuContent>
         </DropdownMenu>

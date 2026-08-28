@@ -2,7 +2,8 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { CreditCard } from "@/app/types/financial"
-import { CreditCard as CardIcon, MoreHorizontal, Landmark } from "lucide-react"
+import { CreditCard as CardIcon, MoreHorizontal, Landmark, Pencil } from "lucide-react"
+import Link from "next/link"
 import { DataTableColumnHeader } from "@/app/components/table/column-header"
 import { Button } from "@/app/components/ui/button"
 import {
@@ -13,7 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
-import { EditCard } from "@/app/components/edit-card"
 import { DeleteCard } from "@/app/components/delete-card"
 import { formatCurrency } from "@/app/lib/utils"
 
@@ -97,7 +97,15 @@ export const columns: ColumnDef<CreditCard>[] = [
                 Copiar ID do cartão
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <EditCard card={card} asDropdownItem />
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`/${card.workspaceId}/manage/cards/${card.id}/edit`}
+                  className="cursor-pointer flex items-center"
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar
+                </Link>
+              </DropdownMenuItem>
               <DeleteCard cardId={card.id} cardName={card.name} asDropdownItem />
             </DropdownMenuContent>
           </DropdownMenu>

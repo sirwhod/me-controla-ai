@@ -9,13 +9,14 @@ import {
 } from "@/app/components/ui/breadcrumb"
 import { Separator } from "@/app/components/ui/separator"
 import { SidebarTrigger } from "@/app/components/ui/sidebar"
+import { Skeleton } from "@/app/components/ui/skeleton"
+import { Logo } from "@/app/components/logo"
 import WorkspaceSelector from "@/app/components/workspace-selector"
 import { columns } from "./columns"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { useQuery } from "@tanstack/react-query"
 import { getCategories } from "@/app/http/categories/get-categories"
 import { Category } from "@/app/types/financial"
-import { Skeleton } from "@/app/components/ui/skeleton"
 import Link from "next/link"
 import { DataTable } from "./data-table"
 import { LoadingState } from "@/app/components/states/loading-state"
@@ -45,7 +46,14 @@ export default function Page() {
     <>
       <header className="flex h-14 md:h-16 shrink-0 items-center gap-2 border-b border-border/40 bg-background/95 backdrop-blur-md px-3 md:px-4">
         <div className="flex items-center gap-2 w-full">
-          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
+          <Link
+            href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/dashboard`}
+            className="flex md:hidden items-center shrink-0"
+            aria-label="MeControla.AI"
+          >
+            <Logo className="h-6 w-6 text-primary" />
+          </Link>
+          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground hidden md:flex" />
           <Separator orientation="vertical" className="mr-1 md:mr-2 h-4" />
           <Breadcrumb>
             <BreadcrumbList className="text-xs sm:text-sm">

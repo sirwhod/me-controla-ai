@@ -9,6 +9,7 @@ import {
 } from "@/app/components/ui/breadcrumb"
 import { Separator } from "@/app/components/ui/separator"
 import { SidebarTrigger } from "@/app/components/ui/sidebar"
+import { Logo } from "@/app/components/logo"
 import WorkspaceSelector from "@/app/components/workspace-selector"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -78,7 +79,14 @@ export default function MembersPage() {
     <>
       <header className="flex h-14 md:h-16 shrink-0 items-center gap-2 border-b border-border/40 bg-background/95 backdrop-blur-md px-3 md:px-4">
         <div className="flex items-center gap-2 w-full">
-          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
+          <Link
+            href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/dashboard`}
+            className="flex md:hidden items-center shrink-0"
+            aria-label="MeControla.AI"
+          >
+            <Logo className="h-6 w-6 text-primary" />
+          </Link>
+          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground hidden md:flex" />
           <Separator orientation="vertical" className="mr-1 md:mr-2 h-4" />
           <Breadcrumb>
             <BreadcrumbList className="text-xs sm:text-sm">

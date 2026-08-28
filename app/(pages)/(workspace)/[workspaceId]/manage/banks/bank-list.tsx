@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { Bank } from "@/app/types/financial"
-import { CreditCard, Landmark, MoreHorizontal, QrCode, Copy } from "lucide-react"
+import { CreditCard, Landmark, MoreHorizontal, QrCode, Copy, Pencil } from "lucide-react"
 import Image from "next/image"
 import { toast } from "sonner"
 import { Badge } from "@/app/components/ui/badge"
@@ -15,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
 import { Button } from "@/app/components/ui/button"
-import { EditBank } from "@/app/components/edit-bank"
 import { DeleteBank } from "@/app/components/delete-bank"
 
 interface BankListProps {
@@ -116,7 +116,15 @@ export function BankListItem({ bank }: BankListItemProps) {
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <EditBank bank={bank} asDropdownItem />
+            <DropdownMenuItem asChild>
+              <Link
+                href={`/${bank.workspaceId}/manage/banks/${bank.id}/edit`}
+                className="cursor-pointer flex items-center text-xs"
+              >
+                <Pencil className="mr-2 h-3.5 w-3.5" />
+                Editar
+              </Link>
+            </DropdownMenuItem>
             <DeleteBank bankId={bank.id} bankName={bank.name} />
           </DropdownMenuContent>
         </DropdownMenu>

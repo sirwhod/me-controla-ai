@@ -3,15 +3,15 @@
 import { DataTableColumnHeader } from "@/app/components/table/column-header"
 import { Credit } from "@/app/types/financial"
 import { ColumnDef } from "@tanstack/react-table"
-import { Banknote, CreditCard, Landmark, MoreHorizontal, User } from "lucide-react"
+import { Banknote, CreditCard, Landmark, MoreHorizontal, User, Pencil } from "lucide-react"
 import { format } from "date-fns"
 import Image from "next/image"
+import Link from "next/link"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu"
 import { Button } from "@/app/components/ui/button"
 import { DeleteCredit } from "@/app/components/delete-credit"
-import { EditCredit } from "@/app/components/edit-credit"
 
 export const columns: ColumnDef<Credit>[] = [
   {
@@ -170,11 +170,16 @@ export const columns: ColumnDef<Credit>[] = [
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Ações</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(credit.id)}>
-                Copiar ID da receita
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <EditCredit credit={credit} asDropdownItem />
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`/${credit.workspaceId}/dashboard/credits/${credit.id}/edit`}
+                  className="cursor-pointer flex items-center"
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar
+                </Link>
+              </DropdownMenuItem>
               <DeleteCredit creditId={credit.id} creditDescription={credit.description} />
             </DropdownMenuContent>
           </DropdownMenu>
