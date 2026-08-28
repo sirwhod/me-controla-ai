@@ -198,7 +198,6 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/web
 export const createBankSchema = z.object({
   name: z.string().trim().min(1, { message: 'O nome do banco é obrigatório.' }).max(100, { message: 'Nome do banco não pode exceder 100 caracteres.' }),
   code: z.string().trim().max(20, { message: 'Código não pode exceder 20 caracteres.' }).optional(),
-  iconUrl: safeUrlSchema,
   pixKey: z.string().trim().optional().or(z.literal('')),
   pixKeyType: z.enum(['cpf', 'cnpj', 'email', 'phone', 'random']).optional().nullable(),
   imageFile: z
@@ -222,7 +221,6 @@ export type CreateBank = z.infer<typeof createBankSchema>
 export const updateBankSchema = z.object({
   name: z.string().trim().min(1, { message: 'O nome do banco não pode ser vazio.' }).max(100, { message: 'Nome do banco não pode exceder 100 caracteres.' }).optional(),
   code: z.string().trim().max(20, { message: 'Código não pode exceder 20 caracteres.' }).optional().nullable(),
-  iconUrl: safeUrlSchema,
   pixKey: z.string().trim().optional().or(z.literal('')).nullable(),
   pixKeyType: z.enum(['cpf', 'cnpj', 'email', 'phone', 'random']).optional().nullable(),
   invoiceClosingDay: z.string().regex(/^([1-9]|[12][0-9]|3[01])$/, { message: 'O dia de fechamento deve ser entre 1 e 31.' }).optional().or(z.literal('')).nullable(),
@@ -327,7 +325,6 @@ export const createGoalSchema = z.object({
   startDate: z.string().datetime({ message: 'Data de início inválida.' }),
   endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')),
   description: z.string().trim().max(500, { message: 'Descrição não pode exceder 500 caracteres.' }).optional().or(z.literal('')),
-  userId: z.string().optional().nullable(),
 })
 
 export type CreateGoal = z.infer<typeof createGoalSchema>
@@ -339,7 +336,6 @@ export const updateGoalSchema = z.object({
   startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
   endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
   description: z.string().trim().max(500, { message: 'Descrição não pode exceder 500 caracteres.' }).optional().or(z.literal('')).nullable(),
-  userId: z.string().optional().nullable(),
 })
 
 export type UpdateGoal = z.infer<typeof updateGoalSchema>

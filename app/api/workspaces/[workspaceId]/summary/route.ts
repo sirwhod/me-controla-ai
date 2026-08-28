@@ -22,16 +22,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ work
     return NextResponse.json({ message: 'Período inválido' }, { status: 400 })
   }
   const base = db.collection('workspaces').doc(workspaceId)
-  const [debits, credits, existing] = await Promise.all([
+  const ref = base.collection('summaries').doc(`${year}-${String(MONTHS.indexOf(month) + 1).padStart(2, '0')}`)
+  const existing = await ref.get()
+  const refresh = search.get('refresh') === 'true'
+  if (existing.exists && !refresh) {
+    logHttpRequest({ requestId, endpoint: '/api/workspaces/:workspaceId/summary', method: 'GET', status: 200, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId })
+    return NextResponse.json({ ...existing.data(), status: 'ready' }, { headers: { 'x-request-id': requestId, 'x-summary-cache': 'hit' } })
+  }
+  const [debits, credits] = await Promise.all([
     base.collection('debits').where('month', '==', month).where('year', '==', year).get(),
     base.collection('credits').where('month', '==', month).where('year', '==', year).get(),
-    base.collection('summaries').doc(`${year}-${String(MONTHS.indexOf(month) + 1).padStart(2, '0')}`).get(),
   ])
   logFirestoreQuery({ requestId, endpoint: '/api/workspaces/:workspaceId/summary', collection: 'debits+credits+summaries', operation: 'monthly.get', documents: debits.size + credits.size + (existing.exists ? 1 : 0), durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId, origin: 'summary.monthly' })
   const totalExpenses = debits.docs.reduce((sum, doc) => sum + Number(doc.data().value || 0), 0)
   const totalIncome = credits.docs.reduce((sum, doc) => sum + Number(doc.data().value || 0), 0)
   const summary = { workspaceId, month, year, totalExpenses, totalIncome, balance: totalIncome - totalExpenses, debitCount: debits.size, creditCount: credits.size, source: 'debits-credits', generatedAt: new Date() }
-  const ref = base.collection('summaries').doc(`${year}-${String(MONTHS.indexOf(month) + 1).padStart(2, '0')}`)
   await ref.set(summary, { merge: true })
   logHttpRequest({ requestId, endpoint: '/api/workspaces/:workspaceId/summary', method: 'GET', status: 200, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId })
   return NextResponse.json({ ...summary, generatedAt: summary.generatedAt.toISOString(), status: 'ready' }, { headers: { 'x-request-id': requestId } })

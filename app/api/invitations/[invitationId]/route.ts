@@ -23,16 +23,23 @@ export async function DELETE(_req: NextRequest, props: RouteParams) {
     }
 
     const data = doc.data()
-    // Apenas quem enviou o convite ou o proprietário da caixinha pode cancelar
+    // Invitation administration is owner-only.
     const wsDoc = await db.collection('workspaces').doc(data?.workspaceId).get()
     const isOwner = wsDoc.exists && wsDoc.data()?.ownerId === session.user.id
-    const isInviter = data?.inviterId === session.user.id
 
-    if (!isOwner && !isInviter) {
+    if (!isOwner) {
       return NextResponse.json({ message: 'Sem permissão para cancelar este convite' }, { status: 403 })
     }
 
-    await inviteRef.delete()
+    if (data?.status !== 'pending') {
+      return NextResponse.json({ message: 'Somente convites pendentes podem ser cancelados' }, { status: 409 })
+    }
+
+    await inviteRef.update({
+      status: 'cancelled',
+      cancelledAt: new Date(),
+      updatedAt: new Date(),
+    })
 
     return NextResponse.json({ message: 'Convite cancelado com sucesso!' }, { status: 200 })
   } catch (error: unknown) {

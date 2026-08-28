@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
-import { FieldValue } from 'firebase-admin/firestore'
+import { InvitationError, processInvitationAction } from '@/app/lib/invitations'
 
 export async function GET() {
   try {
@@ -54,54 +54,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Ação ou ID inválido' }, { status: 400 })
     }
 
-    const inviteRef = db.collection('invitations').doc(invitationId)
-    const inviteDoc = await inviteRef.get()
-
-    if (!inviteDoc.exists) {
-      return NextResponse.json({ message: 'Convite não encontrado' }, { status: 404 })
-    }
-
-    const inviteData = inviteDoc.data()!
-    if (inviteData.inviteeEmail.toLowerCase() !== session.user.email.toLowerCase()) {
-      return NextResponse.json({ message: 'Este convite não pertence a este usuário' }, { status: 403 })
-    }
+    const result = await processInvitationAction({
+      invitationId,
+      action,
+      userId: session.user.id,
+      userEmail: session.user.email,
+    })
 
     if (action === 'accept') {
-      const workspaceRef = db.collection('workspaces').doc(inviteData.workspaceId)
-      const userRef = db.collection('users').doc(session.user.id)
-
-      const batch = db.batch()
-      batch.update(inviteRef, {
-        status: 'accepted',
-        acceptedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      batch.update(workspaceRef, {
-        members: FieldValue.arrayUnion(session.user.id),
-        type: 'shared',
-        updatedAt: new Date(),
-      })
-      batch.update(userRef, {
-        workspaceIds: FieldValue.arrayUnion(inviteData.workspaceId),
-        updatedAt: new Date(),
-      })
-
-      await batch.commit()
 
       return NextResponse.json({
-        message: `Você agora faz parte da Caixinha "${inviteData.workspaceName}"!`,
-        workspaceId: inviteData.workspaceId,
+        message: `Você agora faz parte da Caixinha "${result.workspaceName}"!`,
+        workspaceId: result.workspaceId,
       }, { status: 200 })
     } else {
-      await inviteRef.update({
-        status: 'rejected',
-        rejectedAt: new Date(),
-        updatedAt: new Date(),
-      })
-
       return NextResponse.json({ message: 'Convite recusado com sucesso.' }, { status: 200 })
     }
   } catch (error: unknown) {
+    if (error instanceof InvitationError) {
+      return NextResponse.json({ message: error.message }, { status: error.status })
+    }
     console.error('Erro ao processar convite:', error)
     const message = error instanceof Error ? error.message : 'Erro interno ao processar convite'
     return NextResponse.json({ message }, { status: 500 })

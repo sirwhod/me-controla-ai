@@ -2,6 +2,7 @@ import { db } from "@/app/lib/firebase"
 
 interface CheckIsWorkspaceMemberProps {
   workspaceId: string
+  /** @deprecated Session workspace IDs are UI hints, never authorization input. */
   workspaceIds?: string[]
   userId?: string
 }
@@ -11,26 +12,18 @@ export async function checkIsWorkspaceMember({
   workspaceIds,
   userId,
 }: CheckIsWorkspaceMemberProps): Promise<boolean> {
-  if (!workspaceId) return false
+  void workspaceIds
+  if (!workspaceId || !userId) return false
 
-  // Verificação rápida baseada na lista de workspaces da sessão
-  if (Array.isArray(workspaceIds) && workspaceIds.includes(workspaceId)) {
-    return true
+  // Firestore is the source of truth so membership removal revokes old JWTs.
+  try {
+    const workspaceDoc = await db.collection('workspaces').doc(workspaceId).get()
+    if (!workspaceDoc.exists) return false
+
+    const data = workspaceDoc.data()
+    const members: string[] = Array.isArray(data?.members) ? data.members : []
+    return members.includes(userId) || data?.ownerId === userId
+  } catch {
+    return false
   }
-
-  // Verificação de segurança adicional consultando o documento do workspace no Firestore
-  if (userId) {
-    try {
-      const workspaceDoc = await db.collection('workspaces').doc(workspaceId).get()
-      if (workspaceDoc.exists) {
-        const data = workspaceDoc.data()
-        const members: string[] = data?.members || []
-        return members.includes(userId) || data?.ownerId === userId
-      }
-    } catch {
-      return false
-    }
-  }
-
-  return false
 }

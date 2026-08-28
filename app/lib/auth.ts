@@ -6,6 +6,7 @@ import { FirestoreAdapter } from "@auth/firebase-adapter"
 import { Timestamp } from "firebase-admin/firestore"
 import { TRIAL_DAYS } from "./config"
 import { verifyPassword } from "./password"
+import { consumeRateLimit } from './rate-limit'
 
 declare module "next-auth" {
   interface Session {
@@ -52,6 +53,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const email = (credentials.email as string).toLowerCase().trim()
         const password = credentials.password as string
+
+        const rateLimit = await consumeRateLimit('credentials-login', email, 10, 15 * 60 * 1000)
+        if (!rateLimit.allowed) return null
 
         const userQuery = await db.collection("users").where("email", "==", email).limit(1).get()
         if (userQuery.empty) {
@@ -128,12 +132,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.workspaceIds = user.workspaceIds || []
       }
 
-      if (trigger === "update" && session?.user?.workspaceIds) {
-        token.workspaceIds = session.user.workspaceIds
-      }
+      // Never accept authorization-related claims from client-side session.update().
+      void trigger
+      void session
 
       const userId = (token.id as string) || (token.sub as string);
-      if (userId && (!token.workspaceIds || (token.workspaceIds as string[]).length === 0)) {
+      if (userId) {
         try {
           const userDoc = await db.collection("users").doc(userId).get();
           if (userDoc.exists) {

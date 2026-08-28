@@ -21,37 +21,20 @@ export async function GET(req: Request) {
     }
 
     const workspaceMap = new Map<string, Record<string, unknown>>()
-    const sessionWorkspaceIds = Array.isArray(session.user.workspaceIds)
-      ? Array.from(new Set(session.user.workspaceIds.filter(Boolean)))
-      : []
+    // Always query current membership; JWT claims cannot authorize access.
+    const [memberSnap, ownerSnap] = await Promise.all([
+      db.collection('workspaces').where('members', 'array-contains', userId).get(),
+      db.collection('workspaces').where('ownerId', '==', userId).get(),
+    ])
 
-    if (sessionWorkspaceIds.length > 0) {
-      // IDs vêm do JWT assinado e evitam duas consultas que podem retornar o mesmo workspace.
-      const workspaceDocs = await db.getAll(
-        ...sessionWorkspaceIds.map((workspaceId) => db.collection('workspaces').doc(workspaceId))
-      )
-      workspaceDocs.forEach((doc) => {
-        if (doc.exists) {
-          workspaceMap.set(doc.id, { id: doc.id, ...doc.data() })
-        }
-      })
-      logFirestoreQuery({ requestId, endpoint: '/api/workspaces', collection: 'workspaces', operation: 'getAll', documents: workspaceDocs.filter((doc) => doc.exists).length, durationMs: performance.now() - startedAt, userId, origin: 'workspaces.list' })
-    } else {
-      // Fallback para sessões legadas sem workspaceIds.
-      const [memberSnap, ownerSnap] = await Promise.all([
-        db.collection('workspaces').where('members', 'array-contains', userId).get(),
-        db.collection('workspaces').where('ownerId', '==', userId).get(),
-      ])
+    memberSnap.docs.forEach((doc) => {
+      workspaceMap.set(doc.id, { id: doc.id, ...doc.data() })
+    })
 
-      memberSnap.docs.forEach((doc) => {
-        workspaceMap.set(doc.id, { id: doc.id, ...doc.data() })
-      })
-
-      ownerSnap.docs.forEach((doc) => {
-        workspaceMap.set(doc.id, { id: doc.id, ...doc.data() })
-      })
-      logFirestoreQuery({ requestId, endpoint: '/api/workspaces', collection: 'workspaces', operation: 'query.get', documents: memberSnap.size + ownerSnap.size, durationMs: performance.now() - startedAt, userId, origin: 'workspaces.list.legacy' })
-    }
+    ownerSnap.docs.forEach((doc) => {
+      workspaceMap.set(doc.id, { id: doc.id, ...doc.data() })
+    })
+    logFirestoreQuery({ requestId, endpoint: '/api/workspaces', collection: 'workspaces', operation: 'query.get', documents: memberSnap.size + ownerSnap.size, durationMs: performance.now() - startedAt, userId, origin: 'workspaces.list.current' })
 
     // Se o usuário ainda não tiver nenhuma caixinha, cria uma pessoal automaticamente (auto-healing)
     if (workspaceMap.size === 0) {

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
-import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { z } from 'zod'
+import { consumeRateLimit } from '@/app/lib/rate-limit'
 
 const inviteMemberSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -21,14 +21,19 @@ export async function POST(req: NextRequest, props: RouteParams) {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
     }
 
-    const isMember = await checkIsWorkspaceMember({
-      workspaceId,
-      workspaceIds: session.user.workspaceIds,
-      userId: session.user.id,
-    })
-
-    if (!isMember) {
-      return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
+    const wsDoc = await db.collection('workspaces').doc(workspaceId).get()
+    if (!wsDoc.exists) {
+      return NextResponse.json({ message: 'Caixinha não encontrada' }, { status: 404 })
+    }
+    if (wsDoc.data()?.ownerId !== session.user.id) {
+      return NextResponse.json({ message: 'Apenas o proprietário pode convidar membros' }, { status: 403 })
+    }
+    const rateLimit = await consumeRateLimit('invite', `${session.user.id}:${workspaceId}`, 20, 60 * 60 * 1000)
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { message: 'Limite de convites excedido' },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
+      )
     }
 
     const body = await req.json()
@@ -41,11 +46,6 @@ export async function POST(req: NextRequest, props: RouteParams) {
 
     if (inviteeEmail === session.user.email.toLowerCase()) {
       return NextResponse.json({ message: 'Você já é o proprietário/membro desta caixinha' }, { status: 400 })
-    }
-
-    const wsDoc = await db.collection('workspaces').doc(workspaceId).get()
-    if (!wsDoc.exists) {
-      return NextResponse.json({ message: 'Caixinha não encontrada' }, { status: 404 })
     }
 
     const wsData = wsDoc.data()
@@ -81,6 +81,7 @@ export async function POST(req: NextRequest, props: RouteParams) {
       inviterEmail: session.user.email,
       inviteeEmail,
       status: 'pending',
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       createdAt: new Date(),
       updatedAt: new Date(),
     })

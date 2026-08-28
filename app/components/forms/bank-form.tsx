@@ -55,7 +55,6 @@ export function BankForm({ mode, bank }: BankFormProps) {
       code: bank?.code || "",
       pixKey: bank?.pixKey || "",
       pixKeyType: (bank?.pixKeyType as "cpf" | "cnpj" | "email" | "phone" | "random") || "cpf",
-      iconUrl: bank?.iconUrl || "",
       invoiceClosingDay: bank?.invoiceClosingDay || "",
       invoiceDueDate: bank?.invoiceDueDate || "",
     },
@@ -103,9 +102,8 @@ export function BankForm({ mode, bank }: BankFormProps) {
       if (data.code) formData.append("code", data.code)
       if (data.pixKey) formData.append("pixKey", data.pixKey)
       if (data.pixKeyType) formData.append("pixKeyType", data.pixKeyType)
-      if (data.iconUrl) formData.append("iconUrl", data.iconUrl)
       if (data.imageFile && data.imageFile.length > 0) {
-        formData.append("image", data.imageFile[0])
+        formData.append("imageFile", data.imageFile[0])
       }
       if (data.invoiceClosingDay) formData.append("invoiceClosingDay", data.invoiceClosingDay)
       if (data.invoiceDueDate) formData.append("invoiceDueDate", data.invoiceDueDate)

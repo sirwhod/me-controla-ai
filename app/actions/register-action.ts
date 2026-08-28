@@ -4,6 +4,7 @@ import { db } from "@/app/lib/firebase"
 import { hashPassword } from "@/app/lib/password"
 import { Timestamp } from "firebase-admin/firestore"
 import { z } from "zod"
+import { consumeRateLimit } from '@/app/lib/rate-limit'
 
 const registerSchema = z.object({
   name: z.string().trim().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }).max(100, { message: "O nome não pode exceder 100 caracteres." }),
@@ -31,6 +32,10 @@ export async function registerAction(data: RegisterInput): Promise<RegisterResul
     }
 
     const { name, email, password } = validation.data
+    const rateLimit = await consumeRateLimit('register', email, 5, 15 * 60 * 1000)
+    if (!rateLimit.allowed) {
+      return { success: false, message: 'Muitas tentativas. Aguarde antes de tentar novamente.', error: 'Limite excedido' }
+    }
 
     // Verificar se já existe usuário cadastrado com este e-mail
     const existingUsers = await db.collection("users").where("email", "==", email).limit(1).get()

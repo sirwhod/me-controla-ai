@@ -4,6 +4,7 @@ import { db } from '@/app/lib/firebase'
 import { updateDebitSchema } from '@/app/types/financial';
 import { serializeFirestoreDate } from '@/app/lib/date-utils';
 import { NextRequest, NextResponse } from 'next/server'
+import { validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
 
 interface CreditsRouteParams {
   workspaceId: string;
@@ -94,6 +95,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
     }
 
     const updateData = validationResult.data
+
+    await validateWorkspaceReferences(workspaceId, [
+      { collection: 'banks', id: updateData.bankId, field: 'bankId' },
+      { collection: 'cards', id: updateData.creditCardId, field: 'creditCardId' },
+      { collection: 'categories', id: updateData.categoryId, field: 'categoryId' },
+      { collection: 'responsibles', id: updateData.responsibleId, field: 'responsibleId' },
+    ])
 
     if (Object.keys(updateData).length === 0) {
         return NextResponse.json({ message: 'Nenhum dado fornecido para atualização' }, { status: 400 })

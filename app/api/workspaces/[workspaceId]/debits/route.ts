@@ -7,6 +7,7 @@ import { DocumentReference } from 'firebase-admin/firestore'
 import { FieldPath } from 'firebase-admin/firestore'
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestId, logFirestoreQuery, logHttpRequest } from '@/app/lib/observability'
+import { InvalidWorkspaceReferenceError, validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
 
 interface DebitsRouteParams {
   workspaceId: string
@@ -160,39 +161,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
     const dateObj = parseSafeDate(date || startDate, now)
     const endDateObj = endDate && typeof endDate === 'string' && endDate.trim() !== '' ? parseSafeDate(endDate, now) : null
 
-    let bankDocData: Record<string, unknown> | null = null
-    if (bankId) {
-      const bankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId)
-      const bankDoc = await bankRef.get()
-      if (bankDoc.exists) {
-        bankDocData = bankDoc.data() || null
-      }
-    }
+    const references = await validateWorkspaceReferences(workspaceId, [
+      { collection: 'banks', id: bankId, field: 'bankId' },
+      { collection: 'cards', id: creditCardId, field: 'creditCardId' },
+      { collection: 'categories', id: categoryId, field: 'categoryId' },
+      { collection: 'responsibles', id: responsibleId, field: 'responsibleId' },
+    ])
+    const bankDocData = references.get('bankId') || null
+    const cardDocData = references.get('creditCardId') || null
+    const categoryDocData = references.get('categoryId') || null
+    const responsibleName = references.get('responsibleId')?.name || null
 
-    let cardDocData: Record<string, unknown> | null = null
-    if (creditCardId) {
-      const cardRef = db.collection('workspaces').doc(workspaceId).collection('cards').doc(creditCardId)
-      const cardDoc = await cardRef.get()
-      if (cardDoc.exists) {
-        cardDocData = cardDoc.data() || null
-      }
-    }
-
-    let categoryDocData: Record<string, unknown> | null = null
-    if (categoryId) {
-      const categoryRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc(categoryId)
-      const categoryDoc = await categoryRef.get()
-      if (categoryDoc.exists) {
-        categoryDocData = categoryDoc.data() || null
-      }
-    }
-
-    let responsibleName: string | null = null
-    if (responsibleId) {
-      const responsibleDoc = await db.collection('workspaces').doc(workspaceId).collection('responsibles').doc(responsibleId).get()
-      if (responsibleDoc.exists) {
-        responsibleName = responsibleDoc.data()?.name || null
-      }
+    if (cardDocData && bankId && cardDocData.bankId !== bankId) {
+      return NextResponse.json({ message: 'O cartão não pertence ao banco selecionado' }, { status: 400 })
     }
 
     // Regra de Fechamento de Fatura de Cartão de Crédito
@@ -394,6 +375,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         return NextResponse.json({ message: 'Tipo de débito não reconhecido.' }, { status: 400 })
     }
   } catch (error: unknown) {
+    if (error instanceof InvalidWorkspaceReferenceError) {
+      return NextResponse.json({ message: error.message, field: error.field }, { status: 400 })
+    }
     console.error('Erro ao criar débito:', error)
     const message = error instanceof Error ? error.message : 'Erro interno do servidor ao criar débito'
     return NextResponse.json({ message }, { status: 500 })

@@ -3,6 +3,7 @@ import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
+import { FieldValue } from 'firebase-admin/firestore'
 
 interface RouteParams {
   params: Promise<{ workspaceId: string }>
@@ -55,14 +56,15 @@ export async function GET(_req: NextRequest, props: RouteParams) {
         }
       })
 
-    // Buscar convites pendentes deste workspace
-    const invitesSnapshot = await db
-      .collection('invitations')
-      .where('workspaceId', '==', workspaceId)
-      .where('status', '==', 'pending')
-      .get()
+    // Invitation details are administrative and owner-only.
+    const invitesSnapshot = session.user.id === ownerId
+      ? await db.collection('invitations')
+          .where('workspaceId', '==', workspaceId)
+          .where('status', '==', 'pending')
+          .get()
+      : null
 
-    const pendingInvites = invitesSnapshot.docs.map((doc) => {
+    const pendingInvites = (invitesSnapshot?.docs || []).map((doc) => {
       const iData = doc.data()
       return {
         id: doc.id,
@@ -120,24 +122,31 @@ export async function DELETE(req: NextRequest, props: RouteParams) {
       return NextResponse.json({ message: 'Não é possível remover o proprietário da caixinha' }, { status: 400 })
     }
 
-    // Remover membro do workspace
-    const currentMembers: string[] = wsData.members || []
-    const updatedMembers = currentMembers.filter((m) => m !== memberId)
-    await db.collection('workspaces').doc(workspaceId).update({
-      members: updatedMembers,
-      updatedAt: new Date(),
-    })
+    const workspaceRef = db.collection('workspaces').doc(workspaceId)
+    const userRef = db.collection('users').doc(memberId)
+    await db.runTransaction(async (transaction) => {
+      const [freshWorkspace, userDoc] = await Promise.all([
+        transaction.get(workspaceRef),
+        transaction.get(userRef),
+      ])
+      if (!freshWorkspace.exists || freshWorkspace.data()?.ownerId !== session.user.id) {
+        throw new Error('Autorização do proprietário mudou durante a operação')
+      }
+      if (memberId === freshWorkspace.data()?.ownerId) {
+        throw new Error('Não é possível remover o proprietário da caixinha')
+      }
 
-    // Remover workspaceId do documento do usuário
-    const userDoc = await db.collection('users').doc(memberId).get()
-    if (userDoc.exists) {
-      const uData = userDoc.data()
-      const currentWsIds: string[] = uData?.workspaceIds || []
-      await db.collection('users').doc(memberId).update({
-        workspaceIds: currentWsIds.filter((w) => w !== workspaceId),
+      transaction.update(workspaceRef, {
+        members: FieldValue.arrayRemove(memberId),
         updatedAt: new Date(),
       })
-    }
+      if (userDoc.exists) {
+        transaction.update(userRef, {
+          workspaceIds: FieldValue.arrayRemove(workspaceId),
+          updatedAt: new Date(),
+        })
+      }
+    })
 
     return NextResponse.json({ message: 'Membro removido com sucesso!' }, { status: 200 })
   } catch (error: unknown) {

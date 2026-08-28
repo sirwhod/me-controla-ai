@@ -13,8 +13,7 @@ export async function updateGoal(
     description,
     startDate,
     endDate,
-    targetAmount,
-    userId
+    targetAmount
   }: UpdateGoal
 ): Promise<UpdateGoalResponse> {
   if (!workspaceId) {
@@ -36,8 +35,7 @@ export async function updateGoal(
       description,
       startDate,
       endDate,
-      targetAmount,
-      userId
+      targetAmount
     }
   )
 

@@ -9,7 +9,10 @@
     "lint": "next lint",
     "lint:check": "eslint . --ext .js,.jsx,.ts,.tsx --config eslint.config.mjs",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix --config eslint.config.mjs",
-    "test:suite": "tsx --env-file=.env.local scripts/test-suite.ts"
+    "test:suite": "tsx --env-file=.env.local scripts/test-suite.ts",
+    "security:migrate-storage:dry-run": "tsx scripts/migrate-legacy-storage-urls.ts",
+    "security:migrate-storage:apply": "tsx scripts/migrate-legacy-storage-urls.ts --apply",
+    "security:test:emulator": "tsx scripts/security-emulator-suite.ts"
   },
   "dependencies": {
     "@auth/firebase-adapter": "^2.9.0",

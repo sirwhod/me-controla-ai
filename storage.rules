@@ -1,10 +1,9 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Permite leitura pública de logos de bancos públicos, bloqueando escritas diretas não autenticadas
+    // All workspace files are served by authenticated backend routes.
     match /banks/{workspaceId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if false; // Escrituras gerenciadas exclusivamente pelo backend seguro (Next.js API routes)
+      allow read, write: if false;
     }
 
     match /{allPaths=**} {

@@ -6,6 +6,7 @@ import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { NextRequest, NextResponse } from 'next/server'
 import { FieldPath } from 'firebase-admin/firestore'
 import { getRequestId, logFirestoreQuery, logHttpRequest } from '@/app/lib/observability'
+import { InvalidWorkspaceReferenceError, validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
 
 interface CreditsRouteParams {
   workspaceId: string;
@@ -91,6 +92,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
     return NextResponse.json(credits, { status: 200, headers: { 'x-request-id': requestId, ...(nextCursor ? { 'x-next-cursor': nextCursor } : {}) } })
 
   } catch (error) {
+    if (error instanceof InvalidWorkspaceReferenceError) {
+      return NextResponse.json({ message: error.message, field: error.field }, { status: 400 })
+    }
     const searchParams = await params
     console.error(`Erro ao listar créditos para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao listar créditos' }, { status: 500 })
@@ -151,35 +155,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
     const year = dateObj.getFullYear()
     const now = new Date()
 
-    let bankName = ""
-    let bankImageUrl = ""
-    if (bankId) {
-      const bankRef = db.collection('workspaces').doc(workspaceId).collection('banks').doc(bankId)
-      const bankDoc = await bankRef.get()
-      if (bankDoc.exists) {
-        bankName = bankDoc.data()?.name || ""
-        bankImageUrl = bankDoc.data()?.iconUrl || ""
-      }
-    }
-
-    let categoryName = ""
-    let categoryUrl = ""
-    if (categoryId) {
-      const categoryRef = db.collection('workspaces').doc(workspaceId).collection('categories').doc(categoryId)
-      const categoryDoc = await categoryRef.get()
-      if (categoryDoc.exists) {
-        categoryName = categoryDoc.data()?.name || ""
-        categoryUrl = categoryDoc.data()?.icon || ""
-      }
-    }
-
-    let responsibleName = ""
-    if (responsibleId) {
-      const respDoc = await db.collection('workspaces').doc(workspaceId).collection('responsibles').doc(responsibleId).get()
-      if (respDoc.exists) {
-        responsibleName = respDoc.data()?.name || ""
-      }
-    }
+    const references = await validateWorkspaceReferences(workspaceId, [
+      { collection: 'banks', id: bankId, field: 'bankId' },
+      { collection: 'categories', id: categoryId, field: 'categoryId' },
+      { collection: 'responsibles', id: responsibleId, field: 'responsibleId' },
+    ])
+    const bankName = references.get('bankId')?.name || ''
+    const bankImageUrl = references.get('bankId')?.iconUrl || ''
+    const categoryName = references.get('categoryId')?.name || ''
+    const categoryUrl = references.get('categoryId')?.icon || ''
+    const responsibleName = references.get('responsibleId')?.name || ''
 
     const baseCreditData = {
       description: description.trim(),
@@ -244,6 +229,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
     return NextResponse.json({ message: 'Receita criada com sucesso!', creditId: newCreditRef.id }, { status: 201 })
 
   } catch (error) {
+    if (error instanceof InvalidWorkspaceReferenceError) {
+      return NextResponse.json({ message: error.message, field: error.field }, { status: 400 })
+    }
     const searchParams = await params
     console.error(`Erro ao criar crédito para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao criar crédito' }, { status: 500 })

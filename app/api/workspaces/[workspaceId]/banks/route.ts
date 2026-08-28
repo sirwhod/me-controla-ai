@@ -47,16 +47,17 @@ export async function GET(req: NextRequest, { params }: {params: Promise<BankRou
     )
     const cardsByBank = new Map(cardCounts)
 
-    const banks = banksSnapshot.docs.map(doc => {
+    const banks = await Promise.all(banksSnapshot.docs.map(async doc => {
       const data = doc.data()
       return {
         id: doc.id,
         ...data,
+        iconUrl: data.iconPath ? await getDownloadURLFromPath(data.iconPath) : null,
         cardsCount: cardsByBank.get(doc.id) || 0,
         createdAt: serializeFirestoreDate(data.createdAt),
         updatedAt: serializeFirestoreDate(data.updatedAt),
       }
-    })
+    }))
 
     return NextResponse.json(banks, { status: 200 })
 
@@ -111,6 +112,7 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
 
     const { name, code, pixKey, pixKeyType, invoiceClosingDay, invoiceDueDate } = validationResult.data
     let uploadedIconUrl: string | undefined = undefined
+    let uploadedIconPath: string | null = null
 
     if (imageFile) {
       if (imageFile.size > 5 * 1024 * 1024) { // 5MB
@@ -129,8 +131,12 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
 
       // Fazer upload para o Firebase Storage usando o SDK Admin com nome seguro e aleatório
       const fileBuffer = Buffer.from(await imageFile.arrayBuffer());
+      if (!hasAcceptedImageSignature(fileBuffer, imageFile.type)) {
+        return NextResponse.json({ message: 'O conteúdo do arquivo não corresponde a uma imagem permitida.' }, { status: 400 })
+      }
       const safeFileName = `${crypto.randomUUID()}.${ext}`;
       const iconPath = `bank_icons/${workspaceId}/${safeFileName}`;
+      uploadedIconPath = iconPath
       
       const storageFile = storage.file(iconPath);
       await storageFile.save(fileBuffer, {
@@ -148,7 +154,9 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
     const newBankData = {
       name: name.trim(),
       code: code?.trim() || null,
-      iconUrl: uploadedIconUrl ?? null, // URL da imagem do Storage
+      // Persist the revocable object path, never a long-lived signed URL.
+      iconUrl: null,
+      iconPath: uploadedIconPath,
       pixKey: pixKey?.trim() || null,
       pixKeyType: pixKeyType || null,
       workspaceId: workspaceId,
@@ -166,4 +174,17 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
     console.error(`Erro ao criar banco para workspace ${searchParams.workspaceId}:`, error)
     return NextResponse.json({ message: 'Erro interno do servidor ao criar banco' }, { status: 500 })
   }
+}
+
+function hasAcceptedImageSignature(buffer: Buffer, contentType: string): boolean {
+  if (contentType === 'image/jpeg' || contentType === 'image/jpg') {
+    return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff
+  }
+  if (contentType === 'image/png') {
+    return buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+  }
+  if (contentType === 'image/webp') {
+    return buffer.length >= 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP'
+  }
+  return false
 }

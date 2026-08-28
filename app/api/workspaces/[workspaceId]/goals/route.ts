@@ -91,7 +91,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Goals
       startDate,
       endDate,
       description,
-      userId: targetUserId,
     } = validationResult.data
 
     const newGoalRef = db.collection('workspaces').doc(workspaceId).collection('goals').doc()
@@ -104,7 +103,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Goals
       endDate: endDate ? new Date(endDate) : null,
       description: description?.trim() || null,
       workspaceId: workspaceId,
-      userId: targetUserId || session.user.id,
+      userId: session.user.id,
       createdAt: new Date(),
       updatedAt: new Date(),
     }

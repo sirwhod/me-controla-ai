@@ -11,9 +11,9 @@ export default function QueryProvider({ children }: { children: React.ReactNode 
       queries: {
         staleTime: 1000 * 60 * 5,
         gcTime: 1000 * 60 * 30,
-        refetchOnMount: true,
+        refetchOnMount: false,
         refetchOnWindowFocus: false,
-        refetchOnReconnect: true,
+        refetchOnReconnect: false,
         retry: (failureCount, error) => {
           const status = axios.isAxiosError(error) ? error.response?.status : undefined
           if (status && [400, 401, 403, 404].includes(status)) return false

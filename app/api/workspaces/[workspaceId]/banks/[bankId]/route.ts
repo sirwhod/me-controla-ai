@@ -1,6 +1,6 @@
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member';
 import { auth } from '@/app/lib/auth'
-import { db } from '@/app/lib/firebase'
+import { db, getDownloadURLFromPath } from '@/app/lib/firebase'
 import { updateBankSchema } from '@/app/types/financial';
 import { serializeFirestoreDate } from '@/app/lib/date-utils';
 import { NextRequest, NextResponse } from 'next/server'
@@ -43,6 +43,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<BankRo
     const formattedBank = {
       id: bankDoc.id,
       ...bankData,
+      iconUrl: bankData?.iconPath ? await getDownloadURLFromPath(bankData.iconPath) : null,
       createdAt: serializeFirestoreDate(bankData?.createdAt),
       updatedAt: serializeFirestoreDate(bankData?.updatedAt),
     }

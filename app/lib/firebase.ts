@@ -1,7 +1,7 @@
 if (typeof window !== "undefined") {
   throw new Error("This module cannot be imported from a Client Component.");
 }
-import { cert, getApps, initializeApp } from "firebase-admin/app"
+import { applicationDefault, cert, getApps, initializeApp } from "firebase-admin/app"
 import { getFirestore } from "firebase-admin/firestore"
 import { getStorage } from "firebase-admin/storage"
 
@@ -25,17 +25,22 @@ function getPrivateKey(): string | undefined {
   return rawKey.replace(/\\n/g, "\n")
 }
 
-export const firebaseCert = cert({
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  privateKey: getPrivateKey(),
-})
+const isFirestoreEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST)
+const firebaseProjectId = process.env.FIREBASE_PROJECT_ID || (isFirestoreEmulator ? 'demo-me-controla-ai' : undefined)
+
+export const firebaseCert = isFirestoreEmulator
+  ? applicationDefault()
+  : cert({
+      projectId: firebaseProjectId,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: getPrivateKey(),
+    })
 
 // Instancia do app
 
 if (!getApps().length) {
   initializeApp({
-    credential: firebaseCert,
+    ...(isFirestoreEmulator ? { projectId: firebaseProjectId } : { credential: firebaseCert }),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   })
 }
@@ -51,7 +56,7 @@ export async function getDownloadURLFromPath(path?: string) {
 
   const [url] = await file.getSignedUrl({
     action: "read",
-    expires: "03-01-2500", // Não deixa expirar
+    expires: Date.now() + 5 * 60 * 1000,
   })
   
   return url
