@@ -18,6 +18,7 @@ import { getDebits } from "@/app/http/debits/get-debits"
 import { getCredits } from "@/app/http/credits/get-credits"
 import { getMonthlySummary } from "@/app/http/summary/get-monthly-summary"
 import { getAnnualSummary } from "@/app/http/summary/get-annual-summary"
+import { getAnalyticsSummary } from "@/app/http/summary/get-analytics-summary"
 import { getGoals } from "@/app/http/goals/get-goals"
 import { Debit, Credit, Goal } from "@/app/types/financial"
 import { useMemo } from "react"
@@ -96,6 +97,12 @@ export default function Page() {
     enabled: Boolean(workspaceActive?.id && yearFilter !== "todos"),
     staleTime: 60_000,
   })
+  const { data: analyticsSummary } = useQuery({
+    queryKey: ["analytics-summary", workspaceActive?.id, monthFilter, yearFilter],
+    queryFn: () => getAnalyticsSummary(workspaceActive!.id, { month: monthFilter, year: yearFilter }),
+    enabled: Boolean(workspaceActive?.id && (monthFilter === "todos" || yearFilter === "todos")),
+    staleTime: 60_000,
+  })
 
   const { data: goals, isLoading: isGoalsLoading } = useQuery<Goal[], Error>({
     queryKey: ["goals", workspaceActive?.id],
@@ -127,13 +134,15 @@ export default function Page() {
   // Métricas calculadas
   const totalDebits = useMemo(() => {
     if (monthlySummary) return monthlySummary.totalExpenses
+    if (analyticsSummary) return analyticsSummary.totalExpenses
     return filteredDebits.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0)
-  }, [filteredDebits, monthlySummary])
+  }, [filteredDebits, monthlySummary, analyticsSummary])
 
   const totalCredits = useMemo(() => {
     if (monthlySummary) return monthlySummary.totalIncome
+    if (analyticsSummary) return analyticsSummary.totalIncome
     return filteredCredits.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0)
-  }, [filteredCredits, monthlySummary])
+  }, [filteredCredits, monthlySummary, analyticsSummary])
 
   const balance = useMemo(() => {
     return totalCredits - totalDebits
