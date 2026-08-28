@@ -3,6 +3,8 @@ import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { z } from 'zod'
 import { consumeRateLimit } from '@/app/lib/rate-limit'
+import { createHash } from 'node:crypto'
+import { normalizeEmail } from '@/app/lib/email-identity'
 
 const inviteMemberSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest, props: RouteParams) {
       return NextResponse.json({ message: 'E-mail inválido' }, { status: 400 })
     }
 
-    const inviteeEmail = parsed.data.email.toLowerCase().trim()
+    const inviteeEmail = normalizeEmail(parsed.data.email)
 
     if (inviteeEmail === session.user.email.toLowerCase()) {
       return NextResponse.json({ message: 'Você já é o proprietário/membro desta caixinha' }, { status: 400 })
@@ -59,40 +61,52 @@ export async function POST(req: NextRequest, props: RouteParams) {
       }
     }
 
-    // Verificar se já existe convite pendente
-    const existingInvite = await db
-      .collection('invitations')
-      .where('workspaceId', '==', workspaceId)
-      .where('inviteeEmail', '==', inviteeEmail)
-      .where('status', '==', 'pending')
-      .get()
-
-    if (!existingInvite.empty) {
-      return NextResponse.json({ message: 'Já existe um convite pendente para este e-mail' }, { status: 400 })
-    }
-
-    // Criar convite
-    const inviteRef = db.collection('invitations').doc()
-    await inviteRef.set({
-      workspaceId,
-      workspaceName: wsData?.name || 'Caixinha Compartilhada',
-      inviterId: session.user.id,
-      inviterName: session.user.name || 'Um usuário',
-      inviterEmail: session.user.email,
-      inviteeEmail,
-      status: 'pending',
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    const inviteId = createHash('sha256').update(`${workspaceId}:${inviteeEmail}`).digest('hex')
+    const inviteRef = db.collection('invitations').doc(inviteId)
+    await db.runTransaction(async (transaction) => {
+      const [currentWorkspace, currentInvite] = await Promise.all([
+        transaction.get(db.collection('workspaces').doc(workspaceId)),
+        transaction.get(inviteRef),
+      ])
+      if (!currentWorkspace.exists || currentWorkspace.data()?.ownerId !== session.user.id) {
+        throw new InvitationCreationError('Apenas o proprietário pode convidar membros', 403)
+      }
+      const currentData = currentInvite.data()
+      const currentExpiry = currentData?.expiresAt?.toDate?.() ??
+        (currentData?.expiresAt ? new Date(currentData.expiresAt) : null)
+      if (currentData?.status === 'pending' && currentExpiry && currentExpiry.getTime() > Date.now()) {
+        throw new InvitationCreationError('Já existe um convite pendente para este e-mail', 409)
+      }
+      transaction.set(inviteRef, {
+        workspaceId,
+        workspaceName: currentWorkspace.data()?.name || 'Caixinha Compartilhada',
+        inviterId: session.user.id,
+        inviterName: session.user.name || 'Um usuário',
+        inviterEmail: session.user.email,
+        inviteeEmail,
+        status: 'pending',
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
     })
 
     return NextResponse.json({
       message: `Convite enviado com sucesso para ${inviteeEmail}!`,
-      invitationId: inviteRef.id,
+      invitationId: inviteId,
     }, { status: 201 })
   } catch (error: unknown) {
+    if (error instanceof InvitationCreationError) {
+      return NextResponse.json({ message: error.message }, { status: error.status })
+    }
     console.error('Erro ao enviar convite:', error)
     const message = error instanceof Error ? error.message : 'Erro interno ao enviar convite'
     return NextResponse.json({ message }, { status: 500 })
+  }
+}
+
+class InvitationCreationError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message)
   }
 }

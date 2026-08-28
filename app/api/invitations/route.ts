@@ -3,6 +3,7 @@ import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { InvitationError, processInvitationAction } from '@/app/lib/invitations'
+import { normalizeEmail } from '@/app/lib/email-identity'
 
 export async function GET() {
   try {
@@ -11,7 +12,11 @@ export async function GET() {
       return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
     }
 
-    const userEmail = session.user.email.toLowerCase().trim()
+    const userDoc = await db.collection('users').doc(session.user.id).get()
+    if (!userDoc.exists || !(userDoc.data()?.emailVerifiedAt ?? userDoc.data()?.emailVerified)) {
+      return NextResponse.json({ message: 'Verifique seu e-mail antes de acessar convites' }, { status: 403 })
+    }
+    const userEmail = normalizeEmail(String(userDoc.data()?.email || ''))
 
     const invitesSnap = await db
       .collection('invitations')
@@ -58,7 +63,6 @@ export async function POST(req: NextRequest) {
       invitationId,
       action,
       userId: session.user.id,
-      userEmail: session.user.email,
     })
 
     if (action === 'accept') {

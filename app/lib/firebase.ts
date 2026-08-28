@@ -41,7 +41,8 @@ export const firebaseCert = isFirestoreEmulator
 if (!getApps().length) {
   initializeApp({
     ...(isFirestoreEmulator ? { projectId: firebaseProjectId } : { credential: firebaseCert }),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET ||
+      (isFirestoreEmulator && firebaseProjectId ? `${firebaseProjectId}.appspot.com` : undefined),
   })
 }
 

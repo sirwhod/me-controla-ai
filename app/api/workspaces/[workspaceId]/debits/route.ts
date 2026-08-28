@@ -39,7 +39,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
     const month = searchParams.get('month')
     const year = searchParams.get('year')
     const requestedLimit = Number(searchParams.get('limit'))
-    const pageLimit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(Math.floor(requestedLimit), 100) : null
+    const pageLimit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(Math.floor(requestedLimit), 100) : 50
     const cursor = searchParams.get('cursor')
 
     let debitsQuery: FirebaseFirestore.Query = db
@@ -138,7 +138,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       paymentMethod,
       categoryId,
       responsibleId,
-      proofUrl,
       status = 'pending',
       frequency,
       startDate,
@@ -211,7 +210,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       categoryId: categoryId || null,
       responsibleId: responsibleId || null,
       responsibleName: responsibleName || null,
-      proofUrl: proofUrl?.trim() || null,
+      proofUrl: null,
       workspaceId,
       userId: session.user.id,
       createdAt: now,

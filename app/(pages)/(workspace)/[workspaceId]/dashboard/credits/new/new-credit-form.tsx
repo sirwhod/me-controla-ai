@@ -64,7 +64,6 @@ export function NewCreditForm() {
       categoryId: "",
       responsibleId: "",
       paymentMethod: "Pix",
-      proofUrl: "",
       status: "received",
     },
   })

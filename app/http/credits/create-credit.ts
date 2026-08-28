@@ -23,7 +23,6 @@ export async function createCredit({
   categoryId,
   responsibleId,
   paymentMethod,
-  proofUrl,
   status,
 }: CreateCreditProps): Promise<CreateCreditResponse> {
   if (!workspaceId) {
@@ -47,7 +46,6 @@ export async function createCredit({
       categoryId,
       responsibleId,
       paymentMethod,
-      proofUrl,
       status,
     }
   )

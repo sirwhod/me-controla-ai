@@ -39,7 +39,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
     const month = requestSearchParams.get('month')
     const year = requestSearchParams.get('year')
     const requestedLimit = Number(requestSearchParams.get('limit'))
-    const pageLimit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(Math.floor(requestedLimit), 100) : null
+    const pageLimit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(Math.floor(requestedLimit), 100) : 50
     const cursor = requestSearchParams.get('cursor')
 
     let creditsQuery: FirebaseFirestore.Query = db
@@ -144,7 +144,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       paymentMethod,
       categoryId,
       responsibleId,
-      proofUrl,
       status,
     } = validationResult.data
 
@@ -183,7 +182,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       categoryUrl: categoryUrl || null,
       responsibleId: responsibleId || null,
       responsibleName: responsibleName || null,
-      proofUrl: proofUrl?.trim() || null,
+      proofUrl: null,
       status: status || 'received',
       workspaceId: workspaceId,
       userId: session.user.id,

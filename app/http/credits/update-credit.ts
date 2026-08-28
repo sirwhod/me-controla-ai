@@ -16,7 +16,6 @@ export async function updateCredit(
     categoryId,
     responsibleId,
     paymentMethod,
-    proofUrl,
     status
   }: UpdateCredit
 ): Promise<UpdateCreditResponse> {
@@ -42,7 +41,6 @@ export async function updateCredit(
       categoryId,
       responsibleId,
       paymentMethod,
-      proofUrl,
       status
     }
   )

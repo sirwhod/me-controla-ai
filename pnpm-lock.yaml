@@ -12,8 +12,8 @@ importers:
   .:
     dependencies:
       '@auth/firebase-adapter':
-        specifier: ^2.9.0
-        version: 2.9.0(firebase-admin@13.3.0(supports-color@7.2.0))
+        specifier: ^2.11.3
+        version: 2.11.3(firebase-admin@13.3.0(supports-color@7.2.0))
       '@hookform/resolvers':
         specifier: ^5.0.1
         version: 5.0.1(react-hook-form@7.56.3(react@19.1.0))
@@ -102,8 +102,8 @@ importers:
         specifier: 15.5.24
         version: 15.5.24(@opentelemetry/api@1.9.0)(@types/node@20.17.46)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       next-auth:
-        specifier: 5.0.0-beta.27
-        version: 5.0.0-beta.27(next@15.5.24(@opentelemetry/api@1.9.0)(@types/node@20.17.46)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
+        specifier: 5.0.0-beta.32
+        version: 5.0.0-beta.32(next@15.5.24(@opentelemetry/api@1.9.0)(@types/node@20.17.46)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -214,12 +214,12 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@auth/core@0.39.0':
-    resolution: {integrity: sha512-jusviw/sUSfAh6S/wjY5tRmJOq0Itd3ImF+c/b4HB9DfmfChtcfVJTNJeqCeExeCG8oh4PBKRsMQJsn2W6NhFQ==}
+  '@auth/core@0.41.3':
+    resolution: {integrity: sha512-sJ3JMHHkXMD3aOjopv7mOBTO1Ocw4b0fAEXJBz6k7YHLpYQI6C40jCUPc5fNvUKxXRXNE1/sRISA15UrwWJBTw==}
     peerDependencies:
       '@simplewebauthn/browser': ^9.0.1
       '@simplewebauthn/server': ^9.0.2
-      nodemailer: ^6.8.0
+      nodemailer: ^7.0.7 || ^8.0.5
     peerDependenciesMeta:
       '@simplewebauthn/browser':
         optional: true
@@ -228,10 +228,10 @@ packages:
       nodemailer:
         optional: true
 
-  '@auth/firebase-adapter@2.9.0':
-    resolution: {integrity: sha512-01UggryYtCmVMh4Zo1D8voygNcJ8DeNf6N1hDkC1B50I44hSotanRceLsnLva8Bu8DHjhnhpdIeDS59mUvqwLg==}
+  '@auth/firebase-adapter@2.11.3':
+    resolution: {integrity: sha512-QmjO3vlDPZ1QCQt5lRtacRp0SlV52LT0VD5/49UIY3DpFuO3uwIQ8fQ/hA31SbKdfgzah0OSMqUQhM8LpbBLjg==}
     peerDependencies:
-      firebase-admin: ^12.0.0
+      firebase-admin: ^12.0.0 || ^13.0.0
 
   '@date-fns/tz@1.4.1':
     resolution: {integrity: sha512-P5LUNhtbj6YfI3iJjw5EL9eUAG6OitD0W3fWQcpQjDRc/QIsL0tRNuO1PcDvPccWL1fSTXXdE1ds+l95DV/OFA==}
@@ -3010,14 +3010,14 @@ packages:
     resolution: {integrity: sha512-8Ofs/AUQh8MaEcrlq5xOX0CQ9ypTF5dl78mjlMNfOK08fzpgTHQRQPBxcPlEtIw0yRpws+Zo/3r+5WRby7u3Gg==}
     engines: {node: '>= 0.6'}
 
-  next-auth@5.0.0-beta.27:
-    resolution: {integrity: sha512-/QtP9C0C99YpEuBEJqMaDXH3ISWMgObQalwVZEoC7sskaIPhv5fQl6fXS/rXJQKqLY6MNJ42rqjqmRdoXZH2EQ==}
+  next-auth@5.0.0-beta.32:
+    resolution: {integrity: sha512-CGlChIEWZ6LltNVxrE5yiySMID+Idpmry47JYA5lLwgD8Sx02a8M65VL0TWVz9nbnOioS/tCW/rP/0+mE7Qp4Q==}
     peerDependencies:
       '@simplewebauthn/browser': ^9.0.1
       '@simplewebauthn/server': ^9.0.2
-      next: ^14.0.0-0 || ^15.0.0-0
-      nodemailer: ^6.6.5
-      react: ^18.2.0 || ^19.0.0-0
+      next: ^14.0.0-0 || ^15.0.0 || ^16.0.0
+      nodemailer: ^7.0.7 || ^8.0.5
+      react: ^18.2.0 || ^19.0.0
     peerDependenciesMeta:
       '@simplewebauthn/browser':
         optional: true
@@ -3766,7 +3766,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@auth/core@0.39.0':
+  '@auth/core@0.41.3':
     dependencies:
       '@panva/hkdf': 1.2.1
       jose: 6.0.11
@@ -3774,9 +3774,9 @@ snapshots:
       preact: 10.24.3
       preact-render-to-string: 6.5.11(preact@10.24.3)
 
-  '@auth/firebase-adapter@2.9.0(firebase-admin@13.3.0(supports-color@7.2.0))':
+  '@auth/firebase-adapter@2.11.3(firebase-admin@13.3.0(supports-color@7.2.0))':
     dependencies:
-      '@auth/core': 0.39.0
+      '@auth/core': 0.41.3
       firebase-admin: 13.3.0(supports-color@7.2.0)
     transitivePeerDependencies:
       - '@simplewebauthn/browser'
@@ -6833,9 +6833,9 @@ snapshots:
 
   negotiator@1.0.0: {}
 
-  next-auth@5.0.0-beta.27(next@15.5.24(@opentelemetry/api@1.9.0)(@types/node@20.17.46)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0):
+  next-auth@5.0.0-beta.32(next@15.5.24(@opentelemetry/api@1.9.0)(@types/node@20.17.46)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0):
     dependencies:
-      '@auth/core': 0.39.0
+      '@auth/core': 0.41.3
       next: 15.5.24(@opentelemetry/api@1.9.0)(@types/node@20.17.46)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react: 19.1.0
 

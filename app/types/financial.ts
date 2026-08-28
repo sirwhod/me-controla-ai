@@ -46,15 +46,6 @@ export interface Debit {
   lastGeneratedMonthYear?: string; // Para Modelos Fixo/Assinatura: Último período gerado (string "Mês Ano")
 }
 
-const safeUrlSchema = z.string().url('URL inválida.').refine((url) => {
-  try {
-    const parsed = new URL(url)
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
-  } catch {
-    return false
-  }
-}, { message: 'URL deve utilizar protocolo HTTP ou HTTPS seguro.' }).optional().or(z.literal('')).nullable()
-
 export const createDebitSchema = z.object({
   description: z.string().trim().min(1, { message: 'A descrição do débito é obrigatória.' }).max(255, { message: 'Descrição não pode exceder 255 caracteres.' }),
   value: z.number().positive({ message: 'O valor do débito deve ser positivo.' }).max(1_000_000_000, { message: 'Valor excede o limite máximo.' }),
@@ -69,7 +60,6 @@ export const createDebitSchema = z.object({
   }),
   categoryId: z.string().optional().nullable(),
   responsibleId: z.string().optional().nullable(),
-  proofUrl: safeUrlSchema,
   status: z.enum(['pending', 'paid', 'overdue']).optional(),
   frequency: z.enum(['monthly']).optional().or(z.literal('')).nullable(),
   startDate: z.string().optional().or(z.literal('')).nullable(),
@@ -91,7 +81,6 @@ export const updateDebitSchema = z.object({
   }).nullable().optional(),
   categoryId: z.string().optional().nullable(),
   responsibleId: z.string().optional().nullable(),
-  proofUrl: safeUrlSchema,
   status: z.string().max(50).optional(),
   frequency: z.enum(['monthly']).optional(),
   startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
@@ -150,7 +139,6 @@ export const createCreditSchema = z.object({
   }),
   categoryId: z.string().optional().nullable(),
   responsibleId: z.string().optional().nullable(),
-  proofUrl: safeUrlSchema,
   status: z.string().max(50).optional(),
 })
 
@@ -170,7 +158,6 @@ export const updateCreditSchema = z.object({
   }).nullable().optional(),
   categoryId: z.string().optional().nullable(),
   responsibleId: z.string().optional().nullable(),
-  proofUrl: safeUrlSchema,
   status: z.string().max(50).optional(),
 })
 

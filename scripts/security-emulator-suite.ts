@@ -41,15 +41,30 @@ async function expectInvitationError(name: string, operation: Promise<unknown>, 
 
 try {
   await Promise.all([
-    db.collection('users').doc(ownerId).set({ email: `${ownerId}@example.test`, workspaceIds: [workspaceId] }),
-    db.collection('users').doc(memberId).set({ email: `${memberId}@example.test`, workspaceIds: [workspaceId] }),
-    db.collection('users').doc(outsideId).set({ email: `${outsideId}@example.test`, workspaceIds: [] }),
+    db.collection('users').doc(ownerId).set({ email: `${ownerId}@example.test`, emailVerified: new Date(), workspaceIds: [workspaceId] }),
+    db.collection('users').doc(memberId).set({ email: `${memberId}@example.test`, emailVerified: new Date(), workspaceIds: [workspaceId] }),
+    db.collection('users').doc(outsideId).set({ email: `${outsideId}@example.test`, emailVerified: new Date(), workspaceIds: [] }),
     workspaceRef.set({ ownerId, members: [ownerId, memberId], type: 'shared' }),
   ])
 
   assert('owner acessa workspace', await checkIsWorkspaceMember({ workspaceId, userId: ownerId }))
   assert('membro ativo acessa workspace', await checkIsWorkspaceMember({ workspaceId, userId: memberId }))
   assert('outro workspace é negado', !(await checkIsWorkspaceMember({ workspaceId, userId: outsideId })))
+
+  const unverifiedId = `${runId}-unverified`
+  const unverifiedInvite = db.collection('invitations').doc(`${runId}-unverified`)
+  await Promise.all([
+    db.collection('users').doc(unverifiedId).set({ email: 'unverified@example.test', emailVerified: null, workspaceIds: [] }),
+    unverifiedInvite.set({
+      workspaceId, workspaceName: 'Test', inviteeEmail: 'unverified@example.test', status: 'pending',
+      expiresAt: new Date(Date.now() + 60_000),
+    }),
+  ])
+  await expectInvitationError(
+    'conta com e-mail não verificado não aceita convite',
+    processInvitationAction({ invitationId: unverifiedInvite.id, action: 'accept', userId: unverifiedId }),
+    403,
+  )
 
   await workspaceRef.update({ members: [ownerId] })
   assert(
@@ -64,7 +79,7 @@ try {
   })
   await expectInvitationError(
     'convite de outro e-mail é negado',
-    processInvitationAction({ invitationId: wrongEmailInvite.id, action: 'accept', userId: memberId, userEmail: 'other@example.test' }),
+    processInvitationAction({ invitationId: wrongEmailInvite.id, action: 'accept', userId: memberId }),
     403,
   )
 
@@ -75,7 +90,7 @@ try {
   })
   await expectInvitationError(
     'convite expirado é negado',
-    processInvitationAction({ invitationId: expiredInvite.id, action: 'accept', userId: memberId, userEmail: `${memberId}@example.test` }),
+    processInvitationAction({ invitationId: expiredInvite.id, action: 'accept', userId: memberId }),
     410,
   )
 
@@ -85,15 +100,15 @@ try {
     expiresAt: new Date(Date.now() + 60_000),
   })
   const concurrent = await Promise.allSettled([
-    processInvitationAction({ invitationId: concurrentInvite.id, action: 'accept', userId: memberId, userEmail: `${memberId}@example.test` }),
-    processInvitationAction({ invitationId: concurrentInvite.id, action: 'accept', userId: memberId, userEmail: `${memberId}@example.test` }),
+    processInvitationAction({ invitationId: concurrentInvite.id, action: 'accept', userId: memberId }),
+    processInvitationAction({ invitationId: concurrentInvite.id, action: 'accept', userId: memberId }),
   ])
   assert('aceite concorrente tem exatamente um sucesso', concurrent.filter((item) => item.status === 'fulfilled').length === 1)
 
   await workspaceRef.update({ members: [ownerId] })
   await expectInvitationError(
     'replay de convite aceito não readiciona membro removido',
-    processInvitationAction({ invitationId: concurrentInvite.id, action: 'accept', userId: memberId, userEmail: `${memberId}@example.test` }),
+    processInvitationAction({ invitationId: concurrentInvite.id, action: 'accept', userId: memberId }),
     409,
   )
   assert('replay mantém membro revogado', !(await checkIsWorkspaceMember({ workspaceId, userId: memberId })))
@@ -144,6 +159,8 @@ try {
     db.collection('invitations').doc(`${runId}-wrong-email`).delete(),
     db.collection('invitations').doc(`${runId}-expired`).delete(),
     db.collection('invitations').doc(`${runId}-concurrent`).delete(),
+    db.collection('invitations').doc(`${runId}-unverified`).delete(),
+    db.collection('users').doc(`${runId}-unverified`).delete(),
   ])
 }
 

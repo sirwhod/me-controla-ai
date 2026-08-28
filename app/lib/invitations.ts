@@ -2,6 +2,7 @@ import 'server-only'
 
 import { FieldValue } from 'firebase-admin/firestore'
 import { db } from './firebase'
+import { normalizeEmail } from './email-identity'
 
 export type InvitationAction = 'accept' | 'reject'
 
@@ -9,17 +10,22 @@ export async function processInvitationAction(input: {
   invitationId: string
   action: InvitationAction
   userId: string
-  userEmail: string
 }) {
   const inviteRef = db.collection('invitations').doc(input.invitationId)
-  const normalizedEmail = input.userEmail.toLowerCase().trim()
-
   return db.runTransaction(async (transaction) => {
     const inviteDoc = await transaction.get(inviteRef)
     if (!inviteDoc.exists) throw new InvitationError('Convite não encontrado', 404)
 
     const inviteData = inviteDoc.data()!
-    if (String(inviteData.inviteeEmail || '').toLowerCase().trim() !== normalizedEmail) {
+    const userRef = db.collection('users').doc(input.userId)
+    const userDoc = await transaction.get(userRef)
+    if (!userDoc.exists) throw new InvitationError('Usuário não encontrado', 404)
+    const userData = userDoc.data()!
+    const verifiedAt = userData.emailVerifiedAt ?? userData.emailVerified
+    if (!verifiedAt) {
+      throw new InvitationError('Verifique seu e-mail antes de processar convites', 403)
+    }
+    if (normalizeEmail(String(inviteData.inviteeEmail || '')) !== normalizeEmail(String(userData.email || ''))) {
       throw new InvitationError('Este convite não pertence a este usuário', 403)
     }
     if (inviteData.status !== 'pending') {
@@ -38,12 +44,8 @@ export async function processInvitationAction(input: {
     }
 
     const workspaceRef = db.collection('workspaces').doc(inviteData.workspaceId)
-    const userRef = db.collection('users').doc(input.userId)
-    const [workspaceDoc, userDoc] = await Promise.all([
-      transaction.get(workspaceRef),
-      transaction.get(userRef),
-    ])
-    if (!workspaceDoc.exists || !userDoc.exists) {
+    const workspaceDoc = await transaction.get(workspaceRef)
+    if (!workspaceDoc.exists) {
       throw new InvitationError('Workspace ou usuário não encontrado', 404)
     }
 

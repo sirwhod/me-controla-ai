@@ -3,6 +3,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { getRequestId, logFirestoreQuery, logHttpRequest } from '@/app/lib/observability'
+import { consumeRateLimit } from '@/app/lib/rate-limit'
 
 const MONTHS = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
 
@@ -25,6 +26,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ work
   const ref = base.collection('summaries').doc(`${year}-${String(MONTHS.indexOf(month) + 1).padStart(2, '0')}`)
   const existing = await ref.get()
   const refresh = search.get('refresh') === 'true'
+  if (refresh) {
+    const workspace = await base.get()
+    if (!workspace.exists || workspace.data()?.ownerId !== session.user.id) {
+      return NextResponse.json({ message: 'Apenas o proprietário pode atualizar o resumo manualmente' }, { status: 403 })
+    }
+    const rateLimit = await consumeRateLimit('summary-refresh', `${session.user.id}:${workspaceId}`, 6, 60 * 60 * 1000)
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { message: 'Limite de atualizações do resumo excedido' },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
+      )
+    }
+  }
   if (existing.exists && !refresh) {
     logHttpRequest({ requestId, endpoint: '/api/workspaces/:workspaceId/summary', method: 'GET', status: 200, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId })
     return NextResponse.json({ ...existing.data(), status: 'ready' }, { headers: { 'x-request-id': requestId, 'x-summary-cache': 'hit' } })

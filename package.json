@@ -15,7 +15,7 @@
     "security:test:emulator": "tsx scripts/security-emulator-suite.ts"
   },
   "dependencies": {
-    "@auth/firebase-adapter": "^2.9.0",
+    "@auth/firebase-adapter": "^2.11.3",
     "@hookform/resolvers": "^5.0.1",
     "@radix-ui/react-avatar": "^1.1.9",
     "@radix-ui/react-collapsible": "^1.1.10",
@@ -45,7 +45,7 @@
     "framer-motion": "^12.11.0",
     "lucide-react": "^0.508.0",
     "next": "15.5.24",
-    "next-auth": "5.0.0-beta.27",
+    "next-auth": "5.0.0-beta.32",
     "next-themes": "^0.4.6",
     "popover": "^2.4.1",
     "react": "^19.0.0",

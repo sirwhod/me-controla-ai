@@ -1,6 +1,10 @@
 import { createHmac, randomUUID } from 'node:crypto'
 
-const hashSecret = process.env.OBSERVABILITY_HASH_SECRET || 'development-only-observability-secret'
+const configuredHashSecret = process.env.OBSERVABILITY_HASH_SECRET
+if (process.env.NODE_ENV === 'production' && !configuredHashSecret) {
+  throw new Error('OBSERVABILITY_HASH_SECRET é obrigatório em produção')
+}
+const hashSecret = configuredHashSecret || 'development-only-observability-secret'
 
 export function getRequestId(request?: Request): string {
   return request?.headers.get('x-request-id') || randomUUID()

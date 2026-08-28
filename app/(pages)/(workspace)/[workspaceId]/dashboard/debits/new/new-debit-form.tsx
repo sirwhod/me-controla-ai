@@ -69,7 +69,6 @@ export function NewDebitForm() {
       categoryId: "",
       responsibleId: "",
       paymentMethod: "Pix",
-      proofUrl: "",
     },
   })
 

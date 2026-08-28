@@ -5,6 +5,7 @@ import { hashPassword } from "@/app/lib/password"
 import { Timestamp } from "firebase-admin/firestore"
 import { z } from "zod"
 import { consumeRateLimit } from '@/app/lib/rate-limit'
+import { emailIdentityId, normalizeEmail } from '@/app/lib/email-identity'
 
 const registerSchema = z.object({
   name: z.string().trim().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }).max(100, { message: "O nome não pode exceder 100 caracteres." }),
@@ -31,7 +32,8 @@ export async function registerAction(data: RegisterInput): Promise<RegisterResul
       }
     }
 
-    const { name, email, password } = validation.data
+    const { name, password } = validation.data
+    const email = normalizeEmail(validation.data.email)
     const rateLimit = await consumeRateLimit('register', email, 5, 15 * 60 * 1000)
     if (!rateLimit.allowed) {
       return { success: false, message: 'Muitas tentativas. Aguarde antes de tentar novamente.', error: 'Limite excedido' }
@@ -50,6 +52,7 @@ export async function registerAction(data: RegisterInput): Promise<RegisterResul
     const hashedPassword = await hashPassword(password)
     const newUserRef = db.collection("users").doc()
     const newWorkspaceRef = db.collection("workspaces").doc()
+    const identityRef = db.collection('_emailIdentities').doc(emailIdentityId(email))
 
     const personalWorkspaceData = {
       name: `Caixinha de ${name}`,
@@ -64,6 +67,7 @@ export async function registerAction(data: RegisterInput): Promise<RegisterResul
       name,
       email,
       password: hashedPassword,
+      emailVerified: null,
       workspaceIds: [newWorkspaceRef.id],
       createdAt: Timestamp.now().toMillis(),
       isTrial: true,
@@ -71,18 +75,27 @@ export async function registerAction(data: RegisterInput): Promise<RegisterResul
       updatedAt: new Date(),
     }
 
-    // Criação atômica via batch
-    const batch = db.batch()
-    batch.set(newWorkspaceRef, personalWorkspaceData)
-    batch.set(newUserRef, newUserData)
+    await db.runTransaction(async (transaction) => {
+      const identity = await transaction.get(identityRef)
+      if (identity.exists) throw new Error('EMAIL_ALREADY_EXISTS')
 
-    await batch.commit()
+      transaction.create(identityRef, {
+        normalizedEmail: email,
+        userId: newUserRef.id,
+        createdAt: new Date(),
+      })
+      transaction.create(newWorkspaceRef, personalWorkspaceData)
+      transaction.create(newUserRef, newUserData)
+    })
 
     return {
       success: true,
       message: "Conta criada com sucesso! Faça login para continuar.",
     }
   } catch (error) {
+    if (error instanceof Error && error.message === 'EMAIL_ALREADY_EXISTS') {
+      return { success: false, message: 'Já existe uma conta cadastrada com este e-mail. Tente fazer login.', error: 'E-mail duplicado' }
+    }
     console.error("Erro no cadastro de usuário:", error)
     return {
       success: false,

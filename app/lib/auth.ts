@@ -7,6 +7,7 @@ import { Timestamp } from "firebase-admin/firestore"
 import { TRIAL_DAYS } from "./config"
 import { verifyPassword } from "./password"
 import { consumeRateLimit } from './rate-limit'
+import { normalizeEmail } from './email-identity'
 
 declare module "next-auth" {
   interface Session {
@@ -51,7 +52,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null
         }
 
-        const email = (credentials.email as string).toLowerCase().trim()
+        const email = normalizeEmail(credentials.email as string)
         const password = credentials.password as string
 
         const rateLimit = await consumeRateLimit('credentials-login', email, 10, 15 * 60 * 1000)
@@ -108,6 +109,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         batch.update(userRef, {
           createdAt: Timestamp.now().toMillis(),
+          emailVerified: (user as typeof user & { emailVerified?: Date | null }).emailVerified || null,
           workspaceIds: [newWorkspaceRef.id],
           isTrial: true,
           isSubscribed: false,

@@ -24,7 +24,6 @@ export async function createDebit(
     endDate,
     frequency,
     paymentMethod,
-    proofUrl,
     startDate,
     totalInstallments,
     status,
@@ -53,7 +52,6 @@ export async function createDebit(
       endDate,
       frequency,
       paymentMethod,
-      proofUrl,
       startDate,
       totalInstallments,
       status
