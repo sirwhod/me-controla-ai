@@ -16,34 +16,32 @@ import { getBanks } from "@/app/http/banks/get-banks"
 import { createBank } from "@/app/http/banks/create-bank"
 import { getCategories } from "@/app/http/categories/get-categories"
 import { createCategory } from "@/app/http/categories/create-category"
-import { getCards } from "@/app/http/cards"
 import { getResponsibles, createResponsible } from "@/app/http/responsibles"
-import { createDebit } from "@/app/http/debits/create-debit"
+import { createCredit } from "@/app/http/credits/create-credit"
 import {
   Bank,
   Category,
-  CreditCard as CreditCardType,
-  CreateDebit as CreateDebitProps,
-  createDebitSchema,
+  CreateCredit as CreateCreditProps,
+  createCreditSchema,
   PersonResponsible,
-  TypeDebit,
+  TypeCredit,
 } from "@/app/types/financial"
 import { IconName } from "lucide-react/dynamic"
 
-import { ExpenseStepper, StepItem } from "./expense-stepper"
-import { StepType } from "./step-type"
-import { StepDetails } from "./step-details"
-import { StepPayment } from "./step-payment"
-import { StepReview } from "./step-review"
+import { CreditStepper, StepItem } from "./credit-stepper"
+import { StepCreditType } from "./step-credit-type"
+import { StepCreditDetails } from "./step-credit-details"
+import { StepCreditPayment } from "./step-credit-payment"
+import { StepCreditReview } from "./step-credit-review"
 
 const STEPS: StepItem[] = [
   { number: 1, title: "Tipo" },
   { number: 2, title: "Detalhes" },
-  { number: 3, title: "Pagamento" },
+  { number: 3, title: "Destino" },
   { number: 4, title: "Revisão" },
 ]
 
-export function NewDebitForm() {
+export function NewCreditForm() {
   const router = useRouter()
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
   const { monthIndex, year } = useDateFilter()
@@ -51,8 +49,8 @@ export function NewDebitForm() {
 
   const [currentStep, setCurrentStep] = useState<number>(1)
 
-  const form = useForm<CreateDebitProps>({
-    resolver: zodResolver(createDebitSchema),
+  const form = useForm<CreateCreditProps>({
+    resolver: zodResolver(createCreditSchema),
     mode: "onChange",
     defaultValues: {
       type: "Comum",
@@ -61,18 +59,16 @@ export function NewDebitForm() {
       date: new Date().toISOString(),
       startDate: new Date().toISOString(),
       frequency: "monthly",
-      totalInstallments: undefined,
-      currentInstallment: undefined,
       bankId: "",
-      creditCardId: "",
       categoryId: "",
       responsibleId: "",
       paymentMethod: "Pix",
       proofUrl: "",
+      status: "received",
     },
   })
 
-  // Inicializa data com base no mês/ano ativo
+  // Inicializa data com base no mês/ano ativo seguro no fuso
   useEffect(() => {
     const now = new Date()
     const isCurrentMonthAndYear = now.getMonth() === monthIndex && now.getFullYear() === year
@@ -97,13 +93,6 @@ export function NewDebitForm() {
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
 
-  const { data: cards = [], isLoading: isCardsLoading } = useQuery<CreditCardType[], Error>({
-    queryKey: ["cards", workspaceActive?.id],
-    queryFn: () => getCards(workspaceActive!.id),
-    staleTime: 1000 * 60 * 5,
-    enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
-  })
-
   const { data: responsibles = [], isLoading: isResponsiblesLoading } = useQuery<PersonResponsible[], Error>({
     queryKey: ["responsibles", workspaceActive?.id],
     queryFn: () => getResponsibles(workspaceActive!.id),
@@ -118,7 +107,7 @@ export function NewDebitForm() {
       const res = await createCategory({
         workspaceId: workspaceActive.id,
         name,
-        type: "expense",
+        type: "all",
         icon: "tag" as IconName,
       })
       await queryClient.invalidateQueries({ queryKey: ["categories", workspaceActive.id] })
@@ -161,8 +150,8 @@ export function NewDebitForm() {
     }
   }
 
-  const { mutateAsync: createDebitFn, isPending: isSubmitting } = useMutation({
-    mutationFn: createDebit,
+  const { mutateAsync: createCreditFn, isPending: isSubmitting } = useMutation({
+    mutationFn: createCredit,
   })
 
   // Validação por etapa para avançar
@@ -170,7 +159,7 @@ export function NewDebitForm() {
     if (currentStep === 1) {
       const type = form.getValues("type")
       if (!type) {
-        toast.error("Selecione um tipo de despesa para continuar.")
+        toast.error("Selecione um tipo de receita para continuar.")
         return
       }
       setCurrentStep(2)
@@ -179,11 +168,11 @@ export function NewDebitForm() {
 
     if (currentStep === 2) {
       const type = form.getValues("type")
-      const isParcelado = type === "Parcelamento"
+      const isFixo = type === "Fixo"
 
-      const fieldsToValidate: Array<keyof CreateDebitProps> = ["description", "value"]
-      if (isParcelado) {
-        fieldsToValidate.push("totalInstallments", "currentInstallment", "startDate")
+      const fieldsToValidate: Array<keyof CreateCreditProps> = ["description", "value"]
+      if (isFixo) {
+        fieldsToValidate.push("startDate")
       } else {
         fieldsToValidate.push("date")
       }
@@ -201,47 +190,15 @@ export function NewDebitForm() {
         return
       }
 
-      if (isParcelado) {
-        const total = form.getValues("totalInstallments")
-        const cur = form.getValues("currentInstallment")
-        if (!total || isNaN(total) || total < 2) {
-          form.setError("totalInstallments", { message: "Informe um total de no mínimo 2 parcelas." })
-          toast.error("Informe um total de pelo menos 2 parcelas.")
-          return
-        }
-        if (!cur || isNaN(cur) || cur < 1) {
-          form.setError("currentInstallment", { message: "Informe a parcela deste mês (mínimo 1)." })
-          toast.error("Informe a parcela deste mês.")
-          return
-        }
-        if (cur > total) {
-          form.setError("currentInstallment", { message: `A parcela atual não pode ser maior que o total (${total}).` })
-          toast.error(`A parcela atual deve ser entre 1 e ${total}.`)
-          return
-        }
-      }
-
       setCurrentStep(3)
       return
     }
 
     if (currentStep === 3) {
-      const type = form.getValues("type")
-      const isParcelado = type === "Parcelamento"
       const paymentMethod = form.getValues("paymentMethod")
-
       if (!paymentMethod) {
-        toast.error("Selecione a forma de pagamento.")
+        toast.error("Selecione a forma de entrada.")
         return
-      }
-
-      if (isParcelado || paymentMethod === "Crédito") {
-        const cardId = form.getValues("creditCardId")
-        if (!cardId) {
-          form.setError("creditCardId", { message: "Selecione o cartão de crédito." })
-          toast.error("Selecione um cartão de crédito para a despesa.")
-          return
-        }
       }
 
       setCurrentStep(4)
@@ -253,7 +210,7 @@ export function NewDebitForm() {
     if (currentStep > 1) {
       setCurrentStep((prev) => prev - 1)
     } else {
-      router.push(`/${workspaceActive?.id}/dashboard/debits`)
+      router.push(`/${workspaceActive?.id}/dashboard/credits`)
     }
   }
 
@@ -268,47 +225,43 @@ export function NewDebitForm() {
   }
 
   // Submissão Final
-  const onSubmit = async (data: CreateDebitProps) => {
+  const onSubmit = async (data: CreateCreditProps) => {
     if (!workspaceActive || isWorkspaceLoading || workspaceError) {
       toast.error("Caixinha não está pronta. Tente novamente.")
       return
     }
 
     try {
-      const isParcelamento = data.type === "Parcelamento"
-      const payload: CreateDebitProps = {
+      const isFixo = data.type === "Fixo"
+      const payload: CreateCreditProps = {
         ...data,
-        paymentMethod: isParcelamento ? "Crédito" : data.paymentMethod || "Pix",
-        frequency: data.frequency || "monthly",
-        startDate: data.startDate || data.date || new Date().toISOString(),
+        type: data.type || "Comum",
+        paymentMethod: data.paymentMethod || "Pix",
+        frequency: isFixo ? (data.frequency || "monthly") : undefined,
+        startDate: isFixo ? (data.startDate || data.date || new Date().toISOString()) : undefined,
         date: data.date || data.startDate || new Date().toISOString(),
-        // Limpar campos residuais se não for parcelamento
-        totalInstallments: isParcelamento ? data.totalInstallments : undefined,
-        currentInstallment: isParcelamento ? data.currentInstallment : undefined,
-        // Limpar cartão se não for crédito
-        creditCardId: isParcelamento || data.paymentMethod === "Crédito" ? data.creditCardId : null,
       }
 
-      const response = await createDebitFn({
+      const response = await createCreditFn({
         workspaceId: workspaceActive.id,
         ...payload,
       })
 
       if (response) {
-        await queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive.id] })
-        toast.success(response.message || "Despesa criada com sucesso!")
-        router.push(`/${workspaceActive.id}/dashboard/debits`)
+        await queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive.id] })
+        toast.success(response.message || "Receita criada com sucesso!")
+        router.push(`/${workspaceActive.id}/dashboard/credits`)
       }
     } catch (error: unknown) {
-      const errMessage = error instanceof Error ? error.message : "Ocorreu um erro ao criar a despesa."
-      toast.error(`Erro ao salvar despesa: ${errMessage}`)
+      const errMessage = error instanceof Error ? error.message : "Ocorreu um erro ao criar a receita."
+      toast.error(`Erro ao salvar receita: ${errMessage}`)
     }
   }
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
       {/* Stepper Superior */}
-      <ExpenseStepper
+      <CreditStepper
         currentStep={currentStep}
         steps={STEPS}
         onStepClick={(step) => {
@@ -323,30 +276,24 @@ export function NewDebitForm() {
         <form onSubmit={handleFormSubmit} className="space-y-6">
           <div className="rounded-2xl border border-border/70 bg-card/40 p-4 sm:p-7 backdrop-blur-xs shadow-xs">
             {currentStep === 1 && (
-              <StepType
+              <StepCreditType
                 selectedType={form.watch("type")}
-                onSelectType={(type: TypeDebit) => {
+                onSelectType={(type: TypeCredit) => {
                   form.setValue("type", type)
-                  if (type === "Parcelamento") {
-                    form.setValue("paymentMethod", "Crédito")
-                    form.setValue("bankId", "")
-                  }
                 }}
               />
             )}
 
-            {currentStep === 2 && <StepDetails form={form} />}
+            {currentStep === 2 && <StepCreditDetails form={form} />}
 
             {currentStep === 3 && (
-              <StepPayment
+              <StepCreditPayment
                 form={form}
                 categories={categories}
                 banks={banks}
-                cards={cards}
                 responsibles={responsibles}
                 isCategoriesLoading={isCategoriesLoading}
                 isBanksLoading={isBanksLoading}
-                isCardsLoading={isCardsLoading}
                 isResponsiblesLoading={isResponsiblesLoading}
                 onQuickCreateCategory={handleQuickCreateCategory}
                 onQuickCreateBank={handleQuickCreateBank}
@@ -355,11 +302,10 @@ export function NewDebitForm() {
             )}
 
             {currentStep === 4 && (
-              <StepReview
+              <StepCreditReview
                 form={form}
                 categories={categories}
                 banks={banks}
-                cards={cards}
                 responsibles={responsibles}
               />
             )}
@@ -401,7 +347,7 @@ export function NewDebitForm() {
                 ) : (
                   <>
                     <CheckCircle2 className="h-4 w-4" />
-                    Criar Despesa
+                    Criar Receita
                   </>
                 )}
               </Button>

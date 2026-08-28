@@ -105,6 +105,8 @@ export const updateDebitSchema = z.object({
 export type UpdateDebit = z.infer<typeof updateDebitSchema>
 
 // --- Interface para Crédito (Credit) ---
+export type TypeCredit = 'Comum' | 'Fixo'
+
 export interface Credit {
   id: string; // O ID do documento do Firestore
   workspaceId: string;
@@ -114,6 +116,7 @@ export interface Credit {
   date: Date | null; // Convertido de Timestamp para Date na API
   month: string; // Ex: "junho"
   year: number; // Ex: 2025
+  type?: TypeCredit;
   bankId: string | null; // ID do banco associado (pode ser null)
   bankName?: string | null;
   bankImageUrl?: string | null;
@@ -125,6 +128,10 @@ export interface Credit {
   responsibleId?: string | null;
   responsibleName?: string | null;
   status?: string | null; // Opcional (sem lógica de status)
+  isTemplate?: boolean;
+  frequency?: 'monthly';
+  startDate?: Date | null;
+  endDate?: Date | null;
   createdAt: Date | null; // Convertido de Timestamp para Date
   updatedAt: Date | null; // Convertido de Timestamp para Date
 }
@@ -132,7 +139,11 @@ export interface Credit {
 export const createCreditSchema = z.object({
   description: z.string().trim().min(1, { message: 'A descrição do crédito é obrigatória.' }).max(255, { message: 'Descrição não pode exceder 255 caracteres.' }),
   value: z.number().positive({ message: 'O valor do crédito deve ser positivo.' }).max(1_000_000_000, { message: 'Valor excede o limite máximo.' }),
-  date: z.string().datetime({ message: 'Data da transação inválida.' }),
+  date: z.string().datetime({ message: 'Data da transação inválida.' }).optional(),
+  type: z.enum(['Comum', 'Fixo']).optional(),
+  startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
+  endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
+  frequency: z.enum(['monthly']).optional(),
   bankId: z.string().optional().nullable(),
   paymentMethod: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
     errorMap: () => ({ message: 'Método de pagamento inválido.' }),
@@ -149,6 +160,10 @@ export const updateCreditSchema = z.object({
   description: z.string().trim().min(1, { message: 'A descrição não pode ser vazia.' }).max(255, { message: 'Descrição não pode exceder 255 caracteres.' }).optional(),
   value: z.number().positive({ message: 'O valor deve ser positivo.' }).max(1_000_000_000, { message: 'Valor excede o limite máximo.' }).optional(),
   date: z.string().datetime({ message: 'Data inválida.' }).optional(),
+  type: z.enum(['Comum', 'Fixo']).optional(),
+  startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),
+  endDate: z.string().datetime({ message: 'Data de término inválida.' }).optional().or(z.literal('')).nullable(),
+  frequency: z.enum(['monthly']).optional(),
   bankId: z.string().optional().nullable(),
   paymentMethod: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
     errorMap: () => ({ message: 'Método de pagamento inválido.' }),

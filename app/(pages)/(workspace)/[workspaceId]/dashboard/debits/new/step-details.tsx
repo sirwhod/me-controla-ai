@@ -73,13 +73,17 @@ export function StepDetails({ form }: StepDetailsProps) {
                   <Calendar
                     mode="single"
                     selected={field.value ? new Date(field.value) : new Date()}
+                    defaultMonth={field.value ? new Date(field.value) : undefined}
                     onSelect={(date) => {
-                      const iso = date ? date.toISOString() : ""
-                      field.onChange(iso)
-                      if (isParcelado || isFixoOuAssinatura) {
-                        form.setValue("date", iso)
-                      } else {
-                        form.setValue("startDate", iso)
+                      if (date) {
+                        const safeDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0)
+                        const iso = safeDate.toISOString()
+                        field.onChange(iso)
+                        if (isParcelado || isFixoOuAssinatura) {
+                          form.setValue("date", iso)
+                        } else {
+                          form.setValue("startDate", iso)
+                        }
                       }
                     }}
                     captionLayout="dropdown"

@@ -88,6 +88,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       description,
       value,
       date,
+      type,
+      startDate,
+      endDate,
+      frequency,
       bankId,
       paymentMethod,
       categoryId,
@@ -96,10 +100,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       status,
     } = validationResult.data
 
-    const dateObj = new Date(date)
-
+    const effectiveType = type || 'Comum'
+    const dateObj = new Date(date || startDate || new Date().toISOString())
+    const startDateObj = startDate ? new Date(startDate) : dateObj
+    const endDateObj = endDate ? new Date(endDate) : null
     const month = dateObj.toLocaleString('pt-BR', { month: 'long' }) 
     const year = dateObj.getFullYear()
+    const now = new Date()
 
     let bankName = ""
     let bankImageUrl = ""
@@ -131,34 +138,67 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       }
     }
 
-    const newCreditRef = db.collection('workspaces').doc(workspaceId).collection('credits').doc()
-
-    const newCreditData = {
+    const baseCreditData = {
       description: description.trim(),
       value: value,
       date: dateObj,
       month: month,
       year: year,
+      type: effectiveType,
       bankId: bankId || null,
       bankName: bankName || null,
       bankImageUrl: bankImageUrl || null,
-      paymentMethod: paymentMethod || null,
+      paymentMethod: paymentMethod || 'Pix',
       categoryId: categoryId || null,
       categoryName: categoryName || null,
       categoryUrl: categoryUrl || null,
       responsibleId: responsibleId || null,
       responsibleName: responsibleName || null,
       proofUrl: proofUrl?.trim() || null,
-      status: status || 'pending',
+      status: status || 'received',
       workspaceId: workspaceId,
       userId: session.user.id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     }
 
-    await newCreditRef.set(newCreditData)
+    if (effectiveType === 'Fixo') {
+      const creditsToCreate = []
+      const currentYear = startDateObj.getFullYear()
+      const baseDay = startDateObj.getDate() || 1
+      const current = new Date(startDateObj.getFullYear(), startDateObj.getMonth(), baseDay, 12, 0, 0)
 
-    return NextResponse.json({ message: 'Crédito criado com sucesso!', creditId: newCreditRef.id }, { status: 201 })
+      while (current.getFullYear() === currentYear && current <= new Date(currentYear, 11, 31, 23, 59, 59)) {
+        const creditForMonth = {
+          ...baseCreditData,
+          date: new Date(current),
+          month: current.toLocaleString('pt-BR', { month: 'long' }),
+          year: current.getFullYear(),
+          isTemplate: true,
+          frequency: frequency || 'monthly',
+          startDate: startDateObj,
+          endDate: endDateObj,
+          createdAt: now,
+          updatedAt: now,
+        }
+        creditsToCreate.push(creditForMonth)
+        current.setMonth(current.getMonth() + 1)
+      }
+
+      const batch = db.batch()
+      creditsToCreate.forEach((credit) => {
+        const ref = db.collection('workspaces').doc(workspaceId).collection('credits').doc()
+        batch.set(ref, credit)
+      })
+      await batch.commit()
+
+      return NextResponse.json({ message: 'Receitas fixas criadas com sucesso!', count: creditsToCreate.length }, { status: 201 })
+    }
+
+    const newCreditRef = db.collection('workspaces').doc(workspaceId).collection('credits').doc()
+    await newCreditRef.set(baseCreditData)
+
+    return NextResponse.json({ message: 'Receita criada com sucesso!', creditId: newCreditRef.id }, { status: 201 })
 
   } catch (error) {
     const searchParams = await params
