@@ -87,8 +87,11 @@ export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) 
   const { mutateAsync: updateCreditMutation, isPending } = useMutation({
     mutationFn: (data: UpdateCreditProps) =>
       updateCredit(workspaceActive!.id, credit.id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive?.id] })
+    onSuccess: (_response, variables) => {
+      queryClient.setQueriesData<Credit[]>(
+        { queryKey: ["credits", workspaceActive?.id] },
+        (cached) => cached?.map((item) => item.id === credit.id ? ({ ...item, ...variables } as unknown as Credit) : item)
+      )
       toast.success("Receita atualizada com sucesso!")
       setOpen(false)
     },
