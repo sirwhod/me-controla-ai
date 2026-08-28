@@ -4,6 +4,7 @@ import { db } from '@/app/lib/firebase'
 import { updateCreditSchema } from '@/app/types/financial';
 import { serializeFirestoreDate } from '@/app/lib/date-utils';
 import { NextRequest, NextResponse } from 'next/server'
+import { applyMonthlyAnalyticsDelta } from '@/app/lib/firestore-analytics'
 import { validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
 
 interface CreditsRouteParams {
@@ -197,6 +198,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Cre
     }
 
     await creditRef.delete()
+    const removed = creditDoc.data()
+    await applyMonthlyAnalyticsDelta({ workspaceId, month: String(removed?.month || ''), year: Number(removed?.year), income: -Number(removed?.value || 0), creditCount: -1 })
 
     return NextResponse.json({ message: 'Crédito excluído com sucesso!' }, { status: 200 })
 

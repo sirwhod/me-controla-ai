@@ -4,6 +4,7 @@ import { db } from '@/app/lib/firebase'
 import { updateDebitSchema } from '@/app/types/financial';
 import { serializeFirestoreDate } from '@/app/lib/date-utils';
 import { NextRequest, NextResponse } from 'next/server'
+import { applyMonthlyAnalyticsDelta } from '@/app/lib/firestore-analytics'
 import { validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
 
 interface CreditsRouteParams {
@@ -219,6 +220,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Cre
     }
 
     await debitRef.delete()
+    const removed = debitDoc.data()
+    await applyMonthlyAnalyticsDelta({ workspaceId, month: String(removed?.month || ''), year: Number(removed?.year), expenses: -Number(removed?.value || 0), debitCount: -1 })
 
     return NextResponse.json({ message: 'Débito excluído com sucesso!' }, { status: 200 })
 
