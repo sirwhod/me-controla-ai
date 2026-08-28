@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/app/components/ui/table"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Input } from "@/app/components/ui/input"
 import { DataTablePagination } from "@/app/components/table/pagination"
 import { CreateResponsible } from "@/app/components/create-responsible"
@@ -45,12 +45,14 @@ export function DataTable<
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [balanceStatusFilter, setBalanceStatusFilter] = useState<"all" | "pending" | "settled">("all")
 
-  // Filtro adicional de status de saldo
-  const filteredData = data.filter((item) => {
-    if (balanceStatusFilter === "pending") return (item.pendingBalance || 0) > 0
-    if (balanceStatusFilter === "settled") return (item.pendingBalance || 0) <= 0
-    return true
-  })
+  // Filtro adicional de status de saldo memoizado
+  const filteredData = useMemo(() => {
+    return (data || []).filter((item) => {
+      if (balanceStatusFilter === "pending") return (item.pendingBalance || 0) > 0
+      if (balanceStatusFilter === "settled") return (item.pendingBalance || 0) <= 0
+      return true
+    })
+  }, [data, balanceStatusFilter])
 
   const table = useReactTable({
     data: filteredData,

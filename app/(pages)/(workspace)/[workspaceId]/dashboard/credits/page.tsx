@@ -13,7 +13,8 @@ import { Skeleton } from "@/app/components/ui/skeleton"
 import WorkspaceSelector from "@/app/components/workspace-selector"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { getCredits } from "@/app/http/credits/get-credits"
-import { Bank, Category, Credit } from "@/app/types/financial"
+import { getResponsibles } from "@/app/http/responsibles"
+import { Bank, Category, Credit, PersonResponsible } from "@/app/types/financial"
 import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { DataTable } from "./data-table"
@@ -34,11 +35,16 @@ import Image from "next/image"
 import { MONTHS, useDateFilter } from "@/app/contexts/date-filter-context"
 import { MonthYearNavigator } from "@/app/components/month-year-navigator"
 import { getCategories } from "@/app/http/categories/get-categories"
-import { Banknote, CreditCard, HandCoins, Landmark, Tags, X } from "lucide-react"
+import { Banknote, CreditCard, HandCoins, Landmark, Tags, X, User, Layers } from "lucide-react"
 import { SummaryKpiBar } from "@/app/components/summary-kpi-bar"
 import { BottomSheetFilters } from "@/app/components/ui/bottom-sheet-filters"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
+
+const CREDIT_TYPES = [
+  { value: "Comum", label: "Receita Comum" },
+  { value: "Fixo", label: "Receita Fixa" },
+]
 
 export default function Page() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
@@ -71,10 +77,19 @@ export default function Page() {
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
 
+  const { data: responsibles } = useQuery<PersonResponsible[], Error>({
+    queryKey: ["responsibles", workspaceActive?.id],
+    queryFn: () => getResponsibles(workspaceActive!.id),
+    staleTime: 1000 * 60 * 5,
+    enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
+  })
+
   // Filtros locais
   const [categoryFilter, setCategoryFilter] = useState<string>("")
   const [bankFilter, setBankFilter] = useState<string>("")
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("")
+  const [responsibleFilter, setResponsibleFilter] = useState<string>("")
+  const [typeFilter, setTypeFilter] = useState<string>("")
 
   const incomeCategories = useMemo(() => {
     return categories?.filter((cat) => cat.type === "income" || cat.type === "all") || categories
@@ -87,12 +102,35 @@ export default function Page() {
       const matchCategory = categoryFilter ? credit.categoryId === categoryFilter : true
       const matchBank = bankFilter ? credit.bankId === bankFilter : true
       const matchPayment = paymentMethodFilter ? credit.paymentMethod === paymentMethodFilter : true
+      const matchResponsible = !responsibleFilter
+        ? true
+        : responsibleFilter === "none"
+        ? !credit.responsibleId
+        : credit.responsibleId === responsibleFilter
+      const matchType = typeFilter ? credit.type === typeFilter : true
       const matchMonth = monthFilter ? credit.month?.toLowerCase() === monthFilter.toLowerCase() : true
       const matchYear = yearFilter ? String(credit.year) === yearFilter : true
 
-      return matchCategory && matchBank && matchPayment && matchMonth && matchYear
+      return (
+        matchCategory &&
+        matchBank &&
+        matchPayment &&
+        matchResponsible &&
+        matchType &&
+        matchMonth &&
+        matchYear
+      )
     })
-  }, [credits, categoryFilter, bankFilter, paymentMethodFilter, monthFilter, yearFilter])
+  }, [
+    credits,
+    categoryFilter,
+    bankFilter,
+    paymentMethodFilter,
+    responsibleFilter,
+    typeFilter,
+    monthFilter,
+    yearFilter,
+  ])
 
   // Cálculos consolidados para os cards KPI
   const monthIndex = useMemo(() => {
@@ -116,12 +154,16 @@ export default function Page() {
     return daysInMonth > 0 ? totalCredits / daysInMonth : 0
   }, [totalCredits, daysInMonth])
 
-  const hasActiveFilters = Boolean(categoryFilter || bankFilter || paymentMethodFilter)
+  const hasActiveFilters = Boolean(
+    categoryFilter || bankFilter || paymentMethodFilter || responsibleFilter || typeFilter
+  )
 
   const clearFilters = () => {
     setCategoryFilter("")
     setBankFilter("")
     setPaymentMethodFilter("")
+    setResponsibleFilter("")
+    setTypeFilter("")
   }
 
   const isLoading = isWorkspaceLoading || !workspaceActive || isCreditsLoading
@@ -191,12 +233,18 @@ export default function Page() {
             <BottomSheetFilters
               categories={incomeCategories}
               banks={banks}
+              responsibles={responsibles}
+              types={CREDIT_TYPES}
               categoryFilter={categoryFilter}
               onCategoryChange={setCategoryFilter}
               bankFilter={bankFilter}
               onBankChange={setBankFilter}
               paymentMethodFilter={paymentMethodFilter}
               onPaymentMethodChange={setPaymentMethodFilter}
+              responsibleFilter={responsibleFilter}
+              onResponsibleChange={setResponsibleFilter}
+              typeFilter={typeFilter}
+              onTypeChange={setTypeFilter}
               onClearFilters={clearFilters}
               totalCount={filteredCredits.length}
             />
@@ -236,15 +284,53 @@ export default function Page() {
           {/* Filtros em linha no Desktop */}
           <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl border border-border/60 bg-card/50">
             <div className="flex flex-wrap items-center gap-2">
-              {/* Categoria */}
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-44 h-9 text-xs font-medium">
+              {/* Responsável */}
+              <Select value={responsibleFilter} onValueChange={setResponsibleFilter}>
+                <SelectTrigger className="w-40 h-9 text-xs font-medium">
                   <div className="flex items-center gap-1.5 truncate">
-                    <Tags className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <SelectValue placeholder="Todas categorias" />
+                    <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <SelectValue placeholder="Responsável" />
                   </div>
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">Todos responsáveis</SelectItem>
+                  <SelectItem value="none">Sem responsável</SelectItem>
+                  {responsibles?.map((resp) => (
+                    <SelectItem key={resp.id} value={resp.id}>
+                      {resp.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Tipo */}
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-36 h-9 text-xs font-medium">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Layers className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <SelectValue placeholder="Tipo" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
+                  {CREDIT_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Categoria */}
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-40 h-9 text-xs font-medium">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Tags className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <SelectValue placeholder="Categorias" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas categorias</SelectItem>
                   {incomeCategories?.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       <DynamicIcon
@@ -259,13 +345,14 @@ export default function Page() {
 
               {/* Banco */}
               <Select value={bankFilter} onValueChange={setBankFilter}>
-                <SelectTrigger className="w-44 h-9 text-xs font-medium">
+                <SelectTrigger className="w-40 h-9 text-xs font-medium">
                   <div className="flex items-center gap-1.5 truncate">
                     <Landmark className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <SelectValue placeholder="Todos bancos" />
+                    <SelectValue placeholder="Bancos" />
                   </div>
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">Todos bancos</SelectItem>
                   {banks?.map((bank) => (
                     <SelectItem key={bank.id} value={bank.id}>
                       {bank.iconUrl ? (
@@ -287,13 +374,14 @@ export default function Page() {
 
               {/* Forma de Pagamento */}
               <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
-                <SelectTrigger className="w-40 h-9 text-xs font-medium">
+                <SelectTrigger className="w-36 h-9 text-xs font-medium">
                   <div className="flex items-center gap-1.5 truncate">
                     <CreditCard className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <SelectValue placeholder="Todas formas" />
+                    <SelectValue placeholder="Pagamento" />
                   </div>
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">Todas formas</SelectItem>
                   <SelectItem value="Pix">
                     <svg
                       fill="currentColor"

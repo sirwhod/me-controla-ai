@@ -20,6 +20,7 @@ import { Skeleton } from "@/app/components/ui/skeleton"
 import Link from "next/link"
 import { useMemo } from "react"
 import { Calendar, Users } from "lucide-react"
+import { useParams } from "next/navigation"
 import { useDateFilter } from "@/app/contexts/date-filter-context"
 import { MonthYearNavigator } from "@/app/components/month-year-navigator"
 import { LoadingState } from "@/app/components/states/loading-state"
@@ -27,9 +28,11 @@ import { ErrorState } from "@/app/components/states/error-state"
 import { CreateResponsible } from "@/app/components/create-responsible"
 
 export default function ResponsiblesPage() {
+  const params = useParams()
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
   const { month: monthFilter, year: yearFilterNumber } = useDateFilter()
   const yearFilter = String(yearFilterNumber)
+  const effectiveWorkspaceId = workspaceActive?.id || (params?.workspaceId as string)
 
   const {
     data: responsibles,
@@ -37,10 +40,10 @@ export default function ResponsiblesPage() {
     error: responsiblesError,
     refetch,
   } = useQuery<(PersonResponsible & { pendingBalance: number })[], Error>({
-    queryKey: ["responsibles", workspaceActive?.id, monthFilter, yearFilter],
-    queryFn: () => getResponsibles(workspaceActive!.id, { month: monthFilter, year: yearFilter }),
+    queryKey: ["responsibles", effectiveWorkspaceId, monthFilter, yearFilter],
+    queryFn: () => getResponsibles(effectiveWorkspaceId, { month: monthFilter, year: yearFilter }),
     staleTime: 1000 * 60 * 2,
-    enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
+    enabled: !!effectiveWorkspaceId,
   })
 
   const tableColumns = useMemo(
@@ -48,7 +51,7 @@ export default function ResponsiblesPage() {
     [monthFilter, yearFilter]
   )
 
-  const isLoading = isWorkspaceLoading || !workspaceActive || isResponsiblesLoading
+  const isLoading = (isWorkspaceLoading && !workspaceActive) || (isResponsiblesLoading && !responsibles)
   const error = workspaceError || responsiblesError
 
   return (

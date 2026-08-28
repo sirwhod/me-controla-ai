@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Filter, X, Check, Tags, Landmark, CreditCard, Banknote } from "lucide-react"
+import { Filter, X, Check, Tags, Landmark, CreditCard, Banknote, User, Layers } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
 import { Badge } from "@/app/components/ui/badge"
 import {
@@ -20,20 +20,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select"
-import { Bank, Category } from "@/app/types/financial"
+import { Bank, Category, PersonResponsible } from "@/app/types/financial"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
 import Image from "next/image"
 import { cn } from "@/app/lib/utils"
 
+interface TypeOption {
+  value: string
+  label: string
+}
+
 interface BottomSheetFiltersProps {
   categories?: Category[]
   banks?: Bank[]
+  responsibles?: PersonResponsible[]
+  types?: TypeOption[]
   categoryFilter: string
   onCategoryChange: (value: string) => void
   bankFilter: string
   onBankChange: (value: string) => void
   paymentMethodFilter: string
   onPaymentMethodChange: (value: string) => void
+  responsibleFilter?: string
+  onResponsibleChange?: (value: string) => void
+  typeFilter?: string
+  onTypeChange?: (value: string) => void
   onClearFilters: () => void
   totalCount?: number
   className?: string
@@ -42,12 +53,18 @@ interface BottomSheetFiltersProps {
 export function BottomSheetFilters({
   categories,
   banks,
+  responsibles,
+  types,
   categoryFilter,
   onCategoryChange,
   bankFilter,
   onBankChange,
   paymentMethodFilter,
   onPaymentMethodChange,
+  responsibleFilter = "",
+  onResponsibleChange,
+  typeFilter = "",
+  onTypeChange,
   onClearFilters,
   totalCount,
   className,
@@ -58,6 +75,8 @@ export function BottomSheetFilters({
   const [tempCategory, setTempCategory] = React.useState(categoryFilter)
   const [tempBank, setTempBank] = React.useState(bankFilter)
   const [tempPaymentMethod, setTempPaymentMethod] = React.useState(paymentMethodFilter)
+  const [tempResponsible, setTempResponsible] = React.useState(responsibleFilter)
+  const [tempType, setTempType] = React.useState(typeFilter)
 
   // Sincronizar quando o sheet abrir
   React.useEffect(() => {
@@ -65,15 +84,25 @@ export function BottomSheetFilters({
       setTempCategory(categoryFilter)
       setTempBank(bankFilter)
       setTempPaymentMethod(paymentMethodFilter)
+      setTempResponsible(responsibleFilter)
+      setTempType(typeFilter)
     }
-  }, [open, categoryFilter, bankFilter, paymentMethodFilter])
+  }, [open, categoryFilter, bankFilter, paymentMethodFilter, responsibleFilter, typeFilter])
 
-  const activeCount = [categoryFilter, bankFilter, paymentMethodFilter].filter(Boolean).length
+  const activeCount = [
+    categoryFilter,
+    bankFilter,
+    paymentMethodFilter,
+    responsibleFilter,
+    typeFilter,
+  ].filter(Boolean).length
 
   const handleApply = () => {
     onCategoryChange(tempCategory)
     onBankChange(tempBank)
     onPaymentMethodChange(tempPaymentMethod)
+    if (onResponsibleChange) onResponsibleChange(tempResponsible)
+    if (onTypeChange) onTypeChange(tempType)
     setOpen(false)
   }
 
@@ -81,6 +110,8 @@ export function BottomSheetFilters({
     setTempCategory("")
     setTempBank("")
     setTempPaymentMethod("")
+    setTempResponsible("")
+    setTempType("")
     onClearFilters()
     setOpen(false)
   }
@@ -125,12 +156,66 @@ export function BottomSheetFilters({
             )}
           </div>
           <SheetDescription className="text-xs">
-            Refine a listagem por categoria, conta ou método de pagamento.
+            Refine a listagem por responsável, tipo, categoria, conta ou forma de pagamento.
           </SheetDescription>
         </SheetHeader>
 
         <div className="space-y-4 py-4">
-          {/* 1. Filtro de Categoria */}
+          {/* 1. Filtro de Responsável */}
+          {responsibles && onResponsibleChange && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5 text-primary" />
+                Responsável
+              </label>
+              <Select
+                value={tempResponsible || "all"}
+                onValueChange={(val) => setTempResponsible(val === "all" ? "" : val)}
+              >
+                <SelectTrigger className="w-full h-10 text-xs bg-background/80">
+                  <SelectValue placeholder="Todos os responsáveis" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os responsáveis</SelectItem>
+                  <SelectItem value="none">Sem responsável vinculado</SelectItem>
+                  {responsibles.map((resp) => (
+                    <SelectItem key={resp.id} value={resp.id}>
+                      <User className="w-3.5 h-3.5 mr-2 inline-block text-muted-foreground" />
+                      {resp.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* 2. Filtro de Tipo */}
+          {types && onTypeChange && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5 text-primary" />
+                Tipo de Lançamento
+              </label>
+              <Select
+                value={tempType || "all"}
+                onValueChange={(val) => setTempType(val === "all" ? "" : val)}
+              >
+                <SelectTrigger className="w-full h-10 text-xs bg-background/80">
+                  <SelectValue placeholder="Todos os tipos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
+                  {types.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* 3. Filtro de Categoria */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
               <Tags className="h-3.5 w-3.5 text-primary" />
@@ -158,7 +243,7 @@ export function BottomSheetFilters({
             </Select>
           </div>
 
-          {/* 2. Filtro de Banco / Conta */}
+          {/* 4. Filtro de Banco / Conta */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
               <Landmark className="h-3.5 w-3.5 text-primary" />
@@ -193,21 +278,21 @@ export function BottomSheetFilters({
             </Select>
           </div>
 
-          {/* 3. Filtro de Forma de Pagamento */}
+          {/* 5. Filtro de Forma de Pagamento */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
               <CreditCard className="h-3.5 w-3.5 text-primary" />
-              Forma de Pagamento
+              Forma de Pagamento / Entrada
             </label>
             <Select
               value={tempPaymentMethod || "all"}
               onValueChange={(val) => setTempPaymentMethod(val === "all" ? "" : val)}
             >
               <SelectTrigger className="w-full h-10 text-xs bg-background/80">
-                <SelectValue placeholder="Todas as formas de pagamento" />
+                <SelectValue placeholder="Todas as formas" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas as formas de pagamento</SelectItem>
+                <SelectItem value="all">Todas as formas</SelectItem>
                 <SelectItem value="Pix">
                   <span className="mr-2">⚡</span> Pix
                 </SelectItem>
