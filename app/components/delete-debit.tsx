@@ -38,7 +38,8 @@ export function DeleteDebit({ debitId, asDropdownItem = false }: DeleteDebitProp
         { queryKey: ["debits", workspaceActive?.id] },
         (cached) => cached?.filter((debit) => debit.id !== debitId)
       )
-      queryClient.invalidateQueries({ queryKey: ["monthly-summary", workspaceActive?.id] })
+      queryClient.invalidateQueries({ queryKey: ["analytics-summary", workspaceActive?.id] })
+      queryClient.invalidateQueries({ queryKey: ["annual-summary", workspaceActive?.id] })
       toast.success("Despesa excluída com sucesso!")
       setOpen(false)
     },

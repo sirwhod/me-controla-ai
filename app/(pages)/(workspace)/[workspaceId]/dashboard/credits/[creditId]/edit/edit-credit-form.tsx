@@ -105,6 +105,8 @@ export function EditCreditForm({ credit }: EditCreditFormProps) {
       queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive?.id] })
       queryClient.invalidateQueries({ queryKey: ["credit", workspaceActive?.id, credit.id] })
       queryClient.invalidateQueries({ queryKey: ["responsibles", workspaceActive?.id] })
+      queryClient.invalidateQueries({ queryKey: ["analytics-summary", workspaceActive?.id] })
+      queryClient.invalidateQueries({ queryKey: ["annual-summary", workspaceActive?.id] })
       toast.success("Receita atualizada com sucesso!")
       router.push(`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/dashboard/credits`)
     },

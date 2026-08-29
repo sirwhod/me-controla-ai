@@ -16,7 +16,6 @@ import { useWorkspace } from "@/app/hooks/use-workspace"
 import { useQuery } from "@tanstack/react-query"
 import { getDebits } from "@/app/http/debits/get-debits"
 import { getCredits } from "@/app/http/credits/get-credits"
-import { getMonthlySummary } from "@/app/http/summary/get-monthly-summary"
 import { getAnnualSummary } from "@/app/http/summary/get-annual-summary"
 import { getAnalyticsSummary } from "@/app/http/summary/get-analytics-summary"
 import { getGoals } from "@/app/http/goals/get-goals"
@@ -85,12 +84,6 @@ export default function Page() {
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
-  const { data: monthlySummary } = useQuery({
-    queryKey: ["monthly-summary", workspaceActive?.id, monthFilter, yearFilter],
-    queryFn: () => getMonthlySummary(workspaceActive!.id, monthFilter, Number(yearFilter)),
-    enabled: Boolean(workspaceActive?.id && monthFilter !== "todos" && yearFilter !== "todos"),
-    staleTime: 60_000,
-  })
   const { data: annualSummary } = useQuery({
     queryKey: ["annual-summary", workspaceActive?.id, yearFilter],
     queryFn: () => getAnnualSummary(workspaceActive!.id, Number(yearFilter || anoAtual)),
@@ -100,7 +93,7 @@ export default function Page() {
   const { data: analyticsSummary } = useQuery({
     queryKey: ["analytics-summary", workspaceActive?.id, monthFilter, yearFilter],
     queryFn: () => getAnalyticsSummary(workspaceActive!.id, { month: monthFilter, year: yearFilter }),
-    enabled: Boolean(workspaceActive?.id && (monthFilter === "todos" || yearFilter === "todos")),
+    enabled: Boolean(workspaceActive?.id),
     staleTime: 60_000,
   })
 
@@ -133,16 +126,14 @@ export default function Page() {
 
   // Métricas calculadas
   const totalDebits = useMemo(() => {
-    if (monthlySummary) return monthlySummary.totalExpenses
     if (analyticsSummary) return analyticsSummary.totalExpenses
     return filteredDebits.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0)
-  }, [filteredDebits, monthlySummary, analyticsSummary])
+  }, [filteredDebits, analyticsSummary])
 
   const totalCredits = useMemo(() => {
-    if (monthlySummary) return monthlySummary.totalIncome
     if (analyticsSummary) return analyticsSummary.totalIncome
     return filteredCredits.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0)
-  }, [filteredCredits, monthlySummary, analyticsSummary])
+  }, [filteredCredits, analyticsSummary])
 
   const balance = useMemo(() => {
     return totalCredits - totalDebits

@@ -311,6 +311,10 @@ export function NewDebitForm() {
         } else {
           await queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive.id] })
         }
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["analytics-summary", workspaceActive.id] }),
+          queryClient.invalidateQueries({ queryKey: ["annual-summary", workspaceActive.id] }),
+        ])
         toast.success(response.message || "Despesa criada com sucesso!")
         router.push(`/${workspaceActive.id}/dashboard/debits`)
       }

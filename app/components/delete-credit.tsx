@@ -31,7 +31,8 @@ export function DeleteCredit({ creditId, creditDescription = "esta receita" }: D
         { queryKey: ["credits", workspaceActive?.id] },
         (cached) => cached?.filter((credit) => credit.id !== creditId)
       )
-      queryClient.invalidateQueries({ queryKey: ["monthly-summary", workspaceActive?.id] })
+      queryClient.invalidateQueries({ queryKey: ["analytics-summary", workspaceActive?.id] })
+      queryClient.invalidateQueries({ queryKey: ["annual-summary", workspaceActive?.id] })
       toast.success(response.message || "Receita excluída com sucesso!")
       setOpen(false)
     },

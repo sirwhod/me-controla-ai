@@ -266,6 +266,10 @@ export function NewCreditForm() {
         } else {
           await queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive.id] })
         }
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["analytics-summary", workspaceActive.id] }),
+          queryClient.invalidateQueries({ queryKey: ["annual-summary", workspaceActive.id] }),
+        ])
         toast.success(response.message || "Receita criada com sucesso!")
         router.push(`/${workspaceActive.id}/dashboard/credits`)
       }

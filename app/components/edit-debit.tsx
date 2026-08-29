@@ -101,7 +101,8 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
         { queryKey: ["debits", workspaceActive?.id] },
         (cached) => cached?.map((item) => item.id === debit.id ? ({ ...item, ...variables } as unknown as Debit) : item)
       )
-      queryClient.invalidateQueries({ queryKey: ["monthly-summary", workspaceActive?.id] })
+      queryClient.invalidateQueries({ queryKey: ["analytics-summary", workspaceActive?.id] })
+      queryClient.invalidateQueries({ queryKey: ["annual-summary", workspaceActive?.id] })
       toast.success("Despesa atualizada com sucesso!")
       setOpen(false)
     },
