@@ -47,6 +47,7 @@ import { useDateFilter } from "@/app/contexts/date-filter-context"
 import { MonthYearNavigator } from "@/app/components/month-year-navigator"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { EmptyState } from "@/app/components/states/empty-state"
+import { ErrorState } from "@/app/components/states/error-state"
 
 const meses = [
   { value: "janeiro", label: "Janeiro", short: "Jan" },
@@ -84,13 +85,23 @@ export default function Page() {
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
-  const { data: annualSummary } = useQuery({
+  const {
+    data: annualSummary,
+    isLoading: isAnnualSummaryLoading,
+    error: annualSummaryError,
+    refetch: refetchAnnualSummary,
+  } = useQuery({
     queryKey: ["annual-summary", workspaceActive?.id, yearFilter],
     queryFn: () => getAnnualSummary(workspaceActive!.id, Number(yearFilter || anoAtual)),
     enabled: Boolean(workspaceActive?.id && yearFilter !== "todos"),
     staleTime: 60_000,
   })
-  const { data: analyticsSummary } = useQuery({
+  const {
+    data: analyticsSummary,
+    isLoading: isAnalyticsSummaryLoading,
+    error: analyticsSummaryError,
+    refetch: refetchAnalyticsSummary,
+  } = useQuery({
     queryKey: ["analytics-summary", workspaceActive?.id, monthFilter, yearFilter],
     queryFn: () => getAnalyticsSummary(workspaceActive!.id, { month: monthFilter, year: yearFilter }),
     enabled: Boolean(workspaceActive?.id),
@@ -138,6 +149,9 @@ export default function Page() {
   const balance = useMemo(() => {
     return totalCredits - totalDebits
   }, [totalCredits, totalDebits])
+
+  const creditCount = analyticsSummary?.creditCount ?? filteredCredits.length
+  const debitCount = analyticsSummary?.debitCount ?? filteredDebits.length
 
   const savingsRate = useMemo(() => {
     if (totalCredits <= 0) return 0
@@ -277,7 +291,12 @@ export default function Page() {
     }).format(val)
   }
 
-  const isLoading = isWorkspaceLoading || isDebitsLoading || isCreditsLoading || isGoalsLoading
+  const isLoading = isWorkspaceLoading || isDebitsLoading || isCreditsLoading || isGoalsLoading || isAnalyticsSummaryLoading
+  const hasSummaryError = Boolean(analyticsSummaryError || annualSummaryError)
+
+  const retrySummaries = () => {
+    void Promise.all([refetchAnalyticsSummary(), refetchAnnualSummary()])
+  }
 
   return (
     <>
@@ -314,6 +333,15 @@ export default function Page() {
 
       <div className="flex flex-1 flex-col gap-4 md:gap-5 p-3 md:p-6 pt-3 max-w-7xl w-full mx-auto pb-20 md:pb-6">
         <InvitationsBanner />
+
+        {hasSummaryError && (
+          <ErrorState
+            title="Resumo financeiro indisponível"
+            message="Alguns indicadores podem estar incompletos. Tente carregar os resumos novamente."
+            onRetry={retrySummaries}
+            className="p-4 sm:p-5"
+          />
+        )}
 
         {/* ========================================================================= */}
         {/* 1. HEADER & CONTROLES MOBILE (< 768px): Cascata limpa                     */}
@@ -422,7 +450,7 @@ export default function Page() {
                 {isLoading ? <Skeleton className="h-5 w-20" /> : `+ ${formatCurrency(totalCredits)}`}
               </div>
               <span className="text-[10px] text-muted-foreground mt-0.5 block">
-                {filteredCredits.length} entrada(s)
+                {creditCount} entrada(s)
               </span>
             </Card>
 
@@ -438,7 +466,7 @@ export default function Page() {
                 {isLoading ? <Skeleton className="h-5 w-20" /> : `- ${formatCurrency(totalDebits)}`}
               </div>
               <span className="text-[10px] text-muted-foreground mt-0.5 block">
-                {filteredDebits.length} despesa(s)
+                {debitCount} despesa(s)
               </span>
             </Card>
 
@@ -539,7 +567,7 @@ export default function Page() {
                     + {formatCurrency(totalCredits)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {filteredCredits.length} entrada(s)
+                    {creditCount} entrada(s)
                   </p>
                 </>
               )}
@@ -565,7 +593,7 @@ export default function Page() {
                     - {formatCurrency(totalDebits)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {filteredDebits.length} despesa(s)
+                    {debitCount} despesa(s)
                   </p>
                 </>
               )}
@@ -653,7 +681,7 @@ export default function Page() {
             </div>
           </CardHeader>
           <CardContent className="p-3.5 sm:p-5 pt-0 sm:pt-0">
-            {isLoading ? (
+            {isLoading || isAnnualSummaryLoading ? (
               <Skeleton className="h-28 w-full" />
             ) : (
               <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 sm:gap-2 items-end pt-3 pb-1 min-h-[120px]">
