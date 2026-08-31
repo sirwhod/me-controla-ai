@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { auth } from '@/app/lib/auth'
 import { isValidFinancialPeriod } from '@/app/lib/financial-period'
-import { getYearlyFinancialSummary } from '@/app/lib/firestore-financial-summary'
+import { getMonthlyFinancialSummary } from '@/app/lib/firestore-financial-summary'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ workspaceId: string }> }) {
   try {
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ work
     if (!isValidFinancialPeriod(month, year)) {
       return NextResponse.json({ message: 'Período inválido' }, { status: 400 })
     }
-    const totals = (await getYearlyFinancialSummary(workspaceId, year)).get(month)!
+    const totals = await getMonthlyFinancialSummary(workspaceId, year, month)
     return NextResponse.json({
       ...totals,
       balance: totals.totalIncome - totals.totalExpenses,
