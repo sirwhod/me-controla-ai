@@ -39,6 +39,7 @@ import { createCategory } from "@/app/http/categories/create-category"
 import { createBank } from "@/app/http/banks/create-bank"
 import { getResponsibles, createResponsible } from "@/app/http/responsibles"
 import { PersonResponsible } from "@/app/types/financial"
+import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
 
 interface EditCreditProps {
   credit: Credit
@@ -92,8 +93,7 @@ export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) 
         { queryKey: ["credits", workspaceActive?.id] },
         (cached) => cached?.map((item) => item.id === credit.id ? ({ ...item, ...variables } as unknown as Credit) : item)
       )
-      queryClient.invalidateQueries({ queryKey: ["analytics-summary", workspaceActive?.id] })
-      queryClient.invalidateQueries({ queryKey: ["annual-summary", workspaceActive?.id] })
+      void invalidateFinancialQueries(queryClient, workspaceActive?.id)
       toast.success("Receita atualizada com sucesso!")
       setOpen(false)
     },

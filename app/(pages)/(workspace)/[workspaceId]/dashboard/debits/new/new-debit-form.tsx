@@ -29,6 +29,7 @@ import {
   TypeDebit,
   Debit,
 } from "@/app/types/financial"
+import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
 import { IconName } from "lucide-react/dynamic"
 
 import { ExpenseStepper, StepItem } from "./expense-stepper"
@@ -311,10 +312,7 @@ export function NewDebitForm() {
         } else {
           await queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive.id] })
         }
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["analytics-summary", workspaceActive.id] }),
-          queryClient.invalidateQueries({ queryKey: ["annual-summary", workspaceActive.id] }),
-        ])
+        await invalidateFinancialQueries(queryClient, workspaceActive.id)
         toast.success(response.message || "Despesa criada com sucesso!")
         router.push(`/${workspaceActive.id}/dashboard/debits`)
       }

@@ -20,6 +20,7 @@ import { deleteDebit } from "@/app/http/debits/delete-debit"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { DropdownMenuItem } from "@/app/components/ui/dropdown-menu"
 import type { Debit } from "@/app/types/financial"
+import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
 
 interface DeleteDebitProps {
   debitId: string
@@ -38,8 +39,7 @@ export function DeleteDebit({ debitId, asDropdownItem = false }: DeleteDebitProp
         { queryKey: ["debits", workspaceActive?.id] },
         (cached) => cached?.filter((debit) => debit.id !== debitId)
       )
-      queryClient.invalidateQueries({ queryKey: ["analytics-summary", workspaceActive?.id] })
-      queryClient.invalidateQueries({ queryKey: ["annual-summary", workspaceActive?.id] })
+      void invalidateFinancialQueries(queryClient, workspaceActive?.id)
       toast.success("Despesa excluída com sucesso!")
       setOpen(false)
     },

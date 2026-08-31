@@ -23,6 +23,7 @@ import { createCredit } from "@/app/http/credits/create-credit"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { formatCurrency } from "@/app/lib/utils"
 import { Bank } from "@/app/types/financial"
+import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import Link from "next/link"
 
@@ -126,8 +127,7 @@ export function ResponsiblePixModal({
       queryClient.invalidateQueries({ queryKey: ["responsible-details", workspaceActive?.id] })
       queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive?.id] })
       queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive?.id] })
-      queryClient.invalidateQueries({ queryKey: ["analytics-summary", workspaceActive?.id] })
-      queryClient.invalidateQueries({ queryKey: ["annual-summary", workspaceActive?.id] })
+      void invalidateFinancialQueries(queryClient, workspaceActive?.id)
       toast.success(`Receita de ${formatCurrency(total)} gerada com sucesso! Saldo abatido.`)
       setOpen(false)
     },

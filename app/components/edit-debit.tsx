@@ -28,6 +28,7 @@ import {
 } from "@/app/components/ui/form"
 import { Input } from "@/app/components/ui/input"
 import { Debit, updateDebitSchema, UpdateDebit as UpdateDebitProps, Category, Bank, CreditCard as CreditCardType, PersonResponsible } from "@/app/types/financial"
+import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
 import { updateDebit } from "@/app/http/debits/update-debit"
 import { getCategories } from "@/app/http/categories/get-categories"
 import { getBanks } from "@/app/http/banks/get-banks"
@@ -101,8 +102,7 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
         { queryKey: ["debits", workspaceActive?.id] },
         (cached) => cached?.map((item) => item.id === debit.id ? ({ ...item, ...variables } as unknown as Debit) : item)
       )
-      queryClient.invalidateQueries({ queryKey: ["analytics-summary", workspaceActive?.id] })
-      queryClient.invalidateQueries({ queryKey: ["annual-summary", workspaceActive?.id] })
+      void invalidateFinancialQueries(queryClient, workspaceActive?.id)
       toast.success("Despesa atualizada com sucesso!")
       setOpen(false)
     },

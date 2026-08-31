@@ -46,6 +46,7 @@ import {
   Bank,
   PersonResponsible,
 } from "@/app/types/financial"
+import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
 import { cn } from "@/app/lib/utils"
 
 interface EditCreditFormProps {
@@ -105,8 +106,7 @@ export function EditCreditForm({ credit }: EditCreditFormProps) {
       queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive?.id] })
       queryClient.invalidateQueries({ queryKey: ["credit", workspaceActive?.id, credit.id] })
       queryClient.invalidateQueries({ queryKey: ["responsibles", workspaceActive?.id] })
-      queryClient.invalidateQueries({ queryKey: ["analytics-summary", workspaceActive?.id] })
-      queryClient.invalidateQueries({ queryKey: ["annual-summary", workspaceActive?.id] })
+      void invalidateFinancialQueries(queryClient, workspaceActive?.id)
       toast.success("Receita atualizada com sucesso!")
       router.push(`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/dashboard/credits`)
     },
