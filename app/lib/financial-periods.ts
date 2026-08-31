@@ -48,7 +48,23 @@ export function calculateEntryDeltas(kind: EntryKind, before?: FinancialEntrySta
 
 type AtomicWriter = { set(ref: DocumentReference, data: FirebaseFirestore.DocumentData, options: { merge: boolean }): unknown }
 export function writeFinancialPeriodDeltas(writer: AtomicWriter, workspaceId: string, deltas: ReturnType<typeof calculateEntryDeltas>) {
+  const merge = (target: PeriodDelta, source: PeriodDelta) => {
+    for (const field of Object.keys(source) as (keyof PeriodDelta)[]) target[field] += source[field]
+  }
+  const responsibleTotals = new Map<string, (typeof deltas)[number]>()
   for (const item of deltas) {
+    const key = `${item.id}:${item.responsibleId ?? ''}`
+    const current = responsibleTotals.get(key)
+    if (current) merge(current.delta, item.delta)
+    else responsibleTotals.set(key, { ...item, delta: { ...item.delta } })
+  }
+  const periodTotals = new Map<string, (typeof deltas)[number]>()
+  for (const item of responsibleTotals.values()) {
+    const current = periodTotals.get(item.id)
+    if (current) merge(current.delta, item.delta)
+    else periodTotals.set(item.id, { ...item, responsibleId: null, delta: { ...item.delta } })
+  }
+  for (const item of periodTotals.values()) {
     const period = db.collection('workspaces').doc(workspaceId).collection('financialPeriods').doc(item.id)
     writer.set(period, {
       workspaceId, year: item.year, month: item.month, schemaVersion: FINANCIAL_PERIOD_SCHEMA_VERSION,
@@ -57,7 +73,10 @@ export function writeFinancialPeriodDeltas(writer: AtomicWriter, workspaceId: st
       debitCount: FieldValue.increment(item.delta.debitCount), creditCount: FieldValue.increment(item.delta.creditCount),
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true })
+  }
+  for (const item of responsibleTotals.values()) {
     if (item.responsibleId) {
+      const period = db.collection('workspaces').doc(workspaceId).collection('financialPeriods').doc(item.id)
       writer.set(period.collection('responsibles').doc(item.responsibleId), {
         totalExpensesCents: FieldValue.increment(item.delta.expensesCents), totalIncomeCents: FieldValue.increment(item.delta.incomeCents),
         debitCount: FieldValue.increment(item.delta.debitCount), creditCount: FieldValue.increment(item.delta.creditCount),

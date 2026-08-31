@@ -253,8 +253,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         debitsToCreate.forEach((debit) => {
           const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
           batch.set(ref, debit)
-          writeFinancialPeriodDeltas(batch, workspaceId, calculateEntryDeltas('debit', null, debit))
         })
+        writeFinancialPeriodDeltas(batch, workspaceId, debitsToCreate.flatMap((debit) => calculateEntryDeltas('debit', null, debit)))
         await batch.commit()
 
         return NextResponse.json({ message: 'Débitos fixos criados com sucesso!', count: debitsToCreate.length }, { status: 201 })
@@ -291,8 +291,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         assinaturaDebitsToCreate.forEach((debit) => {
           const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
           assinaturaBatch.set(ref, debit)
-          writeFinancialPeriodDeltas(assinaturaBatch, workspaceId, calculateEntryDeltas('debit', null, debit))
         })
+        writeFinancialPeriodDeltas(assinaturaBatch, workspaceId, assinaturaDebitsToCreate.flatMap((debit) => calculateEntryDeltas('debit', null, debit)))
         await assinaturaBatch.commit()
 
         return NextResponse.json({ message: 'Assinatura criada com sucesso!', count: assinaturaDebitsToCreate.length }, { status: 201 })
@@ -357,8 +357,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         const parcelaBatch = db.batch()
         parcelasToCreate.forEach(({ ref, ...debitData }) => {
           parcelaBatch.set(ref, debitData)
-          writeFinancialPeriodDeltas(parcelaBatch, workspaceId, calculateEntryDeltas('debit', null, debitData))
         })
+        writeFinancialPeriodDeltas(parcelaBatch, workspaceId, parcelasToCreate.flatMap((debit) => calculateEntryDeltas('debit', null, debit)))
         await parcelaBatch.commit()
 
         return NextResponse.json({

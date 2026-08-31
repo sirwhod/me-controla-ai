@@ -209,8 +209,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       creditsToCreate.forEach((credit) => {
         const ref = db.collection('workspaces').doc(workspaceId).collection('credits').doc()
         batch.set(ref, credit)
-        writeFinancialPeriodDeltas(batch, workspaceId, calculateEntryDeltas('credit', null, credit))
       })
+      writeFinancialPeriodDeltas(batch, workspaceId, creditsToCreate.flatMap((credit) => calculateEntryDeltas('credit', null, credit)))
       await batch.commit()
 
       return NextResponse.json({ message: 'Receitas fixas criadas com sucesso!', count: creditsToCreate.length }, { status: 201 })
