@@ -22,7 +22,7 @@ import { useWorkspace } from "../hooks/use-workspace"
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { Label } from "./ui/label"
 
-import { useRouter } from "next/navigation"
+import { useContextualRouter as useRouter } from "@/app/hooks/use-contextual-router"
 
 const FormSchema = z.object({
   name: z.string().min(2, {

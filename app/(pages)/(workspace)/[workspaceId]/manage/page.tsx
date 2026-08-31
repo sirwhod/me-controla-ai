@@ -27,7 +27,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 
 export default function ManageHubPage() {
   const { workspaceActive, isLoading: isWorkspaceLoading } = useWorkspace()

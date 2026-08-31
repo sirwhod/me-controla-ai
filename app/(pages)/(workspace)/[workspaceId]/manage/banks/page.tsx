@@ -18,12 +18,13 @@ import { useQuery } from "@tanstack/react-query"
 import { getBanks } from "@/app/http/banks/get-banks"
 import { Bank } from "@/app/types/financial"
 import { Skeleton } from "@/app/components/ui/skeleton"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { Button } from "@/app/components/ui/button"
 import { CreditCard as CardIcon, Landmark } from "lucide-react"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
 import { CreateBank } from "@/app/components/create-bank"
+import { EmptyState } from "@/app/components/states/empty-state"
 
 export default function Page() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
@@ -155,6 +156,13 @@ export default function Page() {
               title="Não foi possível carregar os bancos"
               message={error.message}
               onRetry={() => refetch()}
+            />
+          ) : !banks?.length ? (
+            <EmptyState
+              icon={Landmark}
+              title="Nenhum banco cadastrado"
+              description="Cadastre uma instituição financeira para vincular receitas, despesas e cartões."
+              action={<CreateBank />}
             />
           ) : (
             <DataTable columns={columns} data={banks || []} />

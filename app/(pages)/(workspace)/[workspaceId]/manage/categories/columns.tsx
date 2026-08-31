@@ -8,7 +8,7 @@ import { Category } from "@/app/types/financial"
 import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal, Pencil } from "lucide-react"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 
 export const columns: ColumnDef<Category>[] = [
   {
@@ -66,7 +66,7 @@ export const columns: ColumnDef<Category>[] = [
                 Editar
               </Link>
             </DropdownMenuItem>
-            <DeleteCategory categoryId={category.id} />
+            <DeleteCategory categoryId={category.id} categoryName={category.name} />
           </DropdownMenuContent>
         </DropdownMenu>
       )

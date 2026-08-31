@@ -13,7 +13,7 @@ import {
 import { PersonResponsible } from "@/app/types/financial"
 import { ColumnDef } from "@tanstack/react-table"
 import { CheckCircle2, MoreHorizontal, Pencil } from "lucide-react"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { ResponsiblePixModal } from "@/app/components/responsible-pix-modal"
 import { DeleteResponsible } from "@/app/components/delete-responsible"
 import { formatCurrency } from "@/app/lib/utils"

@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { useRouter } from "next/navigation"
+import { useContextualRouter as useRouter } from "@/app/hooks/use-contextual-router"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -55,7 +55,7 @@ export function ResponsibleForm({ mode, responsible }: ResponsibleFormProps) {
     .map((n) => n[0])
     .slice(0, 2)
     .join("")
-    .toUpperCase() || "??"
+    .toUpperCase()
 
   const { mutateAsync: createMutation, isPending: isCreating } = useMutation({
     mutationFn: (data: CreatePersonResponsible) =>
@@ -104,10 +104,10 @@ export function ResponsibleForm({ mode, responsible }: ResponsibleFormProps) {
   return (
     <div className="bg-card border border-border/80 rounded-2xl p-4 sm:p-7 shadow-xs">
       <div className="mb-6 pb-4 border-b border-border/60">
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" />
           {isEdit ? "Editar Responsável" : "Novo Responsável"}
-        </h2>
+        </h1>
         <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
           {isEdit
             ? "Atualize o nome e e-mail vinculado a esta pessoa."
@@ -121,7 +121,7 @@ export function ResponsibleForm({ mode, responsible }: ResponsibleFormProps) {
             <AvatarImage src={responsible.userImage} alt={watchedName} />
           )}
           <AvatarFallback className="bg-primary/10 text-primary font-bold text-sm">
-            {initials}
+            {initials || <User aria-hidden="true" />}
           </AvatarFallback>
         </Avatar>
         <div className="flex flex-col">

@@ -18,11 +18,12 @@ import { useQuery } from "@tanstack/react-query"
 import { getGoals } from "@/app/http/goals/get-goals"
 import { Goal } from "@/app/types/financial"
 import { Skeleton } from "@/app/components/ui/skeleton"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { CreateGoal } from "@/app/components/create-goal"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
 import { Target } from "lucide-react"
+import { EmptyState } from "@/app/components/states/empty-state"
 
 export default function Page() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
@@ -130,6 +131,13 @@ export default function Page() {
               title="Não foi possível carregar as metas"
               message={error.message}
               onRetry={() => refetch()}
+            />
+          ) : !goals?.length ? (
+            <EmptyState
+              icon={Target}
+              title="Nenhuma meta financeira"
+              description="Crie uma meta para acompanhar aportes e a evolução de um objetivo."
+              action={<CreateGoal label="Nova Meta" />}
             />
           ) : (
             <DataTable columns={columns} data={goals || []} />

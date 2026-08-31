@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { Category } from "@/app/types/financial"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
 import { Badge } from "@/app/components/ui/badge"

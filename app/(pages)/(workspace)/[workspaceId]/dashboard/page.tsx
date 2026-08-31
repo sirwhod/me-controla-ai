@@ -38,7 +38,7 @@ import {
 } from "lucide-react"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
 import { format } from "date-fns"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { Button } from "@/app/components/ui/button"
 import { CreateDebit } from "@/app/components/create-debit"
 import { CreateCredit } from "@/app/components/create-credit"
@@ -334,7 +334,7 @@ export default function Page() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-4 md:gap-5 p-3 md:p-6 pt-3 max-w-7xl w-full mx-auto pb-20 md:pb-6">
+      <div className="flex min-w-0 flex-1 flex-col gap-4 lg:gap-5 p-3 lg:p-6 pt-3 max-w-7xl w-full mx-auto pb-20 lg:pb-6">
         <InvitationsBanner />
 
         {hasSummaryError && (
@@ -349,7 +349,7 @@ export default function Page() {
         {/* ========================================================================= */}
         {/* 1. HEADER & CONTROLES MOBILE (< 768px): Cascata limpa                     */}
         {/* ========================================================================= */}
-        <div className="flex flex-col gap-3 md:hidden w-full">
+        <div className="flex flex-col gap-3 lg:hidden w-full">
           <div className="flex flex-col">
             <h1 className="text-xl font-bold tracking-tight text-foreground">Visão Geral</h1>
             <p className="text-xs text-muted-foreground">
@@ -377,7 +377,7 @@ export default function Page() {
         {/* ========================================================================= */}
         {/* 2. HEADER & CONTROLES DESKTOP (>= 768px): Header amplo                    */}
         {/* ========================================================================= */}
-        <div className="hidden md:flex items-center justify-between gap-3">
+        <div className="hidden lg:flex items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Visão Geral</h1>
             <p className="text-xs sm:text-sm text-muted-foreground">
@@ -396,7 +396,7 @@ export default function Page() {
         {/* 3. RESUMO FINANCEIRO PRINCIPAL (PRIMEIRA DOBRA)                           */}
         {/* ========================================================================= */}
         {/* Mobile: Balanço em destaque + 4 cards compactos (2x2) */}
-        <div className="flex flex-col gap-2.5 md:hidden w-full">
+        <div className="flex flex-col gap-2.5 lg:hidden w-full">
           {/* Card Principal: Balanço do Período */}
           <Card className="shadow-xs border-border/70 bg-card/80 backdrop-blur-xs p-3.5">
             <div className="flex items-center justify-between">
@@ -506,7 +506,7 @@ export default function Page() {
         </div>
 
         {/* Desktop: 5 cards em grid equilibrado */}
-        <div className="hidden md:grid gap-3 grid-cols-5">
+        <div className="hidden min-w-0 lg:grid gap-3 grid-cols-5">
           {/* 1. Saldo / Balanço */}
           <Card className="shadow-xs border-border/70 bg-card/70">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

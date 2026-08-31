@@ -8,7 +8,7 @@ import { Bank } from "@/app/types/financial"
 import { ColumnDef } from "@tanstack/react-table"
 import { CreditCard, Landmark, MoreHorizontal, QrCode, Pencil } from "lucide-react"
 import Image from "next/image"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { toast } from "sonner"
 
 export const columns: ColumnDef<Bank>[] = [

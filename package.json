@@ -10,6 +10,7 @@
     "lint:check": "eslint . --ext .js,.jsx,.ts,.tsx --config eslint.config.mjs",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix --config eslint.config.mjs",
     "test:dashboard": "node --experimental-strip-types scripts/dashboard-regression-tests.ts",
+    "test:navigation": "node --experimental-strip-types scripts/contextual-navigation-tests.ts",
     "test:suite": "tsx --env-file=.env.local scripts/test-suite.ts",
     "security:migrate-storage:dry-run": "tsx scripts/migrate-legacy-storage-urls.ts",
     "security:migrate-storage:apply": "tsx scripts/migrate-legacy-storage-urls.ts --apply",

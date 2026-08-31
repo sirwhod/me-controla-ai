@@ -4,14 +4,11 @@ import * as React from "react"
 import {
   CircleDollarSign,
   LayoutDashboard,
-  LifeBuoy,
   ReceiptText,
-  Send,
   Settings2,
 } from "lucide-react"
 
 import { NavMain } from "@/app/components/nav-main"
-import { NavSecondary } from "@/app/components/nav-secondary"
 import { NavUser } from "@/app/components/nav-user"
 import {
   Sidebar,
@@ -27,23 +24,10 @@ import { useWorkspace } from "../hooks/use-workspace"
 import { useDateFilter } from "../contexts/date-filter-context"
 import { Logo } from "./logo"
 
-const navSecondaryData = [
-  {
-    title: "Suporte",
-    url: "#",
-    icon: LifeBuoy,
-  },
-  {
-    title: "Feedback",
-    url: "#",
-    icon: Send,
-  },
-]
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { workspaceActive } = useWorkspace()
+  const { workspaceActive, activeWorkspaceId, isLoading } = useWorkspace()
   const { queryString } = useDateFilter()
-  const wsId = workspaceActive?.id || ""
+  const wsId = activeWorkspaceId || workspaceActive?.id || ""
   const prefix = wsId ? `/${wsId}` : ""
 
   const navMain = React.useMemo(() => [
@@ -117,11 +101,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate text-base font-semibold tracking-tight">MeControla.AI</span>
                   <span className="mt-0.5 truncate text-xs text-muted-foreground">
-                    {
-                      workspaceActive?.type && workspaceActive.type === "personal" ?
-                      "Pessoal" :
-                      "Compartilhado"
-                    }
+                    {isLoading || !workspaceActive
+                      ? "Carregando caixinha..."
+                      : workspaceActive.type === "personal"
+                        ? "Pessoal"
+                        : "Compartilhado"}
                   </span>
                 </div>
               </div>
@@ -133,7 +117,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={navMain} />
         <SidebarSeparator className="my-1" />
         <NavMain items={settingsItems} showLabel={false} />
-        <NavSecondary items={navSecondaryData} className="mt-auto pb-1" />
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border/60 px-3 py-3">
         <NavUser />

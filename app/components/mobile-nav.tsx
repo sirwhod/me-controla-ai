@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { usePathname } from "next/navigation"
 import {
   CreditCard,
@@ -34,7 +34,7 @@ import {
 
 export function MobileNav() {
   const pathname = usePathname()
-  const { workspaceActive } = useWorkspace()
+  const { workspaceActive, activeWorkspaceId } = useWorkspace()
   const { queryString } = useDateFilter()
   const { data: session } = useSession()
   const [sheetOpen, setSheetOpen] = React.useState(false)
@@ -50,7 +50,7 @@ export function MobileNav() {
         .toUpperCase()
     : "U"
 
-  const wsId = workspaceActive?.id || ""
+  const wsId = activeWorkspaceId || workspaceActive?.id || ""
   const prefix = wsId ? `/${wsId}` : ""
 
   const isDebitsActive = pathname.includes("/dashboard/debits")

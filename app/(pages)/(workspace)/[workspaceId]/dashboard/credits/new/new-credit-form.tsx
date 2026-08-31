@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useContextualRouter as useRouter } from "@/app/hooks/use-contextual-router"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -55,7 +55,7 @@ export function NewCreditForm() {
     resolver: zodResolver(createCreditSchema),
     mode: "onChange",
     defaultValues: {
-      type: "Comum",
+      type: undefined,
       description: "",
       value: undefined,
       date: new Date().toISOString(),

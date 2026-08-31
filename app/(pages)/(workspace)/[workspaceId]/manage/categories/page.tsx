@@ -17,12 +17,13 @@ import { useWorkspace } from "@/app/hooks/use-workspace"
 import { useQuery } from "@tanstack/react-query"
 import { getCategories } from "@/app/http/categories/get-categories"
 import { Category } from "@/app/types/financial"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { DataTable } from "./data-table"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
 import { Tags } from "lucide-react"
 import { CreateCategory } from "@/app/components/create-category"
+import { EmptyState } from "@/app/components/states/empty-state"
 
 export default function Page() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
@@ -130,6 +131,13 @@ export default function Page() {
               title="Não foi possível carregar as categorias"
               message={error.message}
               onRetry={() => refetch()}
+            />
+          ) : !categories?.length ? (
+            <EmptyState
+              icon={Tags}
+              title="Nenhuma categoria cadastrada"
+              description="Crie categorias para organizar e filtrar suas receitas e despesas."
+              action={<CreateCategory label="Nova Categoria" />}
             />
           ) : (
             <DataTable columns={columns} data={categories || []} />

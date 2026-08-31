@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useContextualRouter as useRouter } from "@/app/hooks/use-contextual-router"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -138,10 +138,10 @@ export function GoalForm({ mode, goal }: GoalFormProps) {
   return (
     <div className="bg-card border border-border/80 rounded-2xl p-4 sm:p-7 shadow-xs">
       <div className="mb-6 pb-4 border-b border-border/60">
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
           <Target className="h-5 w-5 text-primary" />
           {isEdit ? "Editar Meta Financeira" : "Nova Meta Financeira"}
-        </h2>
+        </h1>
         <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
           {isEdit
             ? "Ajuste os valores, prazo e detalhes para alcançar este objetivo."

@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { CreditCard } from "@/app/types/financial"
 import { CreditCard as CardIcon, MoreHorizontal, Landmark, Pencil } from "lucide-react"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { DataTableColumnHeader } from "@/app/components/table/column-header"
 import { Button } from "@/app/components/ui/button"
 import {

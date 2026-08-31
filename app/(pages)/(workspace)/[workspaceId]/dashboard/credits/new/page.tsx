@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
 import {
@@ -77,6 +77,7 @@ export default function NewCreditPage() {
 
       {/* Conteúdo Principal do Fluxo Step-by-Step */}
       <main className="flex-1 p-3 md:p-6 pt-3 max-w-4xl w-full mx-auto pb-20 md:pb-8">
+        <h1 className="sr-only">Nova Receita</h1>
         <div className="mb-4">
           <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/dashboard/credits`}>
             <Button

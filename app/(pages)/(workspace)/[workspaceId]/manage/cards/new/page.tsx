@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { ArrowLeft } from "lucide-react"
 
 import { Button } from "@/app/components/ui/button"
@@ -77,7 +77,7 @@ export default function NewCardPage() {
       </header>
 
       {/* Conteúdo Principal */}
-      <main className="flex-1 p-3 md:p-6 pt-3 max-w-3xl w-full mx-auto pb-20 md:pb-8">
+      <main className="flex min-w-0 flex-1 flex-col overflow-x-clip p-3 md:p-6 pt-3 max-w-3xl w-full mx-auto pb-20 md:pb-8">
         <div className="mb-4">
           <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/manage/cards`}>
             <Button

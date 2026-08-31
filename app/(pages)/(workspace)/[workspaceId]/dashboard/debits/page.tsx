@@ -17,7 +17,7 @@ import { getDebits } from "@/app/http/debits/get-debits"
 import { getResponsibles } from "@/app/http/responsibles"
 import { Bank, Category, Debit, PersonResponsible } from "@/app/types/financial"
 import { useQuery } from "@tanstack/react-query"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { DataTable } from "./data-table"
 import { columns } from "./columns"
 import { CreateDebit } from "@/app/components/create-debit"
@@ -41,6 +41,7 @@ import { SummaryKpiBar } from "@/app/components/summary-kpi-bar"
 import { BottomSheetFilters } from "@/app/components/ui/bottom-sheet-filters"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
+import { EmptyState } from "@/app/components/states/empty-state"
 
 const DEBIT_TYPES = [
   { value: "Comum", label: "Comum (Pontual)" },
@@ -456,6 +457,17 @@ export default function Page() {
               title="Não foi possível carregar as despesas"
               message={error.message}
               onRetry={() => refetch()}
+            />
+          ) : filteredDebits.length === 0 ? (
+            <EmptyState
+              icon={Receipt}
+              title={hasActiveFilters ? "Nenhuma despesa encontrada" : "Nenhuma despesa neste período"}
+              description={hasActiveFilters
+                ? "Ajuste ou limpe os filtros para consultar outros lançamentos."
+                : "Registre uma despesa para começar a acompanhar seus gastos."}
+              action={hasActiveFilters
+                ? <Button variant="outline" onClick={clearFilters}>Limpar filtros</Button>
+                : <CreateDebit />}
             />
           ) : (
             <DataTable

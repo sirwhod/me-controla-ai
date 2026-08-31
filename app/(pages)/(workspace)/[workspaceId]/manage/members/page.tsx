@@ -22,7 +22,7 @@ import {
   WorkspacePendingInvite,
 } from "@/app/http/members"
 import { Skeleton } from "@/app/components/ui/skeleton"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { Users, Clock, ShieldCheck } from "lucide-react"
 import { InviteMemberDialog } from "@/app/components/invite-member-dialog"
 import { toast } from "sonner"

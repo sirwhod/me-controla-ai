@@ -18,7 +18,7 @@ import { useQuery } from "@tanstack/react-query"
 import { getResponsibles } from "@/app/http/responsibles"
 import { PersonResponsible } from "@/app/types/financial"
 import { Skeleton } from "@/app/components/ui/skeleton"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { useMemo } from "react"
 import { Calendar, Users } from "lucide-react"
 import { useParams } from "next/navigation"
@@ -27,6 +27,7 @@ import { MonthYearNavigator } from "@/app/components/month-year-navigator"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
 import { CreateResponsible } from "@/app/components/create-responsible"
+import { EmptyState } from "@/app/components/states/empty-state"
 
 export default function ResponsiblesPage() {
   const params = useParams()
@@ -164,6 +165,13 @@ export default function ResponsiblesPage() {
               title="Não foi possível carregar os responsáveis"
               message={error.message}
               onRetry={() => refetch()}
+            />
+          ) : !responsibles?.length ? (
+            <EmptyState
+              icon={Users}
+              title="Nenhum responsável cadastrado"
+              description="Cadastre uma pessoa para dividir despesas e acompanhar valores em aberto."
+              action={<CreateResponsible />}
             />
           ) : (
             <DataTable

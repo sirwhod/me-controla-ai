@@ -17,7 +17,7 @@ import { getCredits } from "@/app/http/credits/get-credits"
 import { getResponsibles } from "@/app/http/responsibles"
 import { Bank, Category, Credit, PersonResponsible } from "@/app/types/financial"
 import { useQuery } from "@tanstack/react-query"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { DataTable } from "./data-table"
 import { columns } from "./columns"
 import { CreateCredit } from "@/app/components/create-credit"
@@ -41,6 +41,7 @@ import { SummaryKpiBar } from "@/app/components/summary-kpi-bar"
 import { BottomSheetFilters } from "@/app/components/ui/bottom-sheet-filters"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
+import { EmptyState } from "@/app/components/states/empty-state"
 
 const CREDIT_TYPES = [
   { value: "Comum", label: "Receita Comum" },
@@ -455,6 +456,17 @@ export default function Page() {
               title="Não foi possível carregar as receitas"
               message={error.message}
               onRetry={() => refetch()}
+            />
+          ) : filteredCredits.length === 0 ? (
+            <EmptyState
+              icon={HandCoins}
+              title={hasActiveFilters ? "Nenhuma receita encontrada" : "Nenhuma receita neste período"}
+              description={hasActiveFilters
+                ? "Ajuste ou limpe os filtros para consultar outros lançamentos."
+                : "Registre uma receita para começar a acompanhar suas entradas."}
+              action={hasActiveFilters
+                ? <Button variant="outline" onClick={clearFilters}>Limpar filtros</Button>
+                : <CreateCredit />}
             />
           ) : (
             <DataTable

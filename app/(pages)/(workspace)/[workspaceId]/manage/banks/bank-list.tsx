@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { Bank } from "@/app/types/financial"
 import { CreditCard, Landmark, MoreHorizontal, QrCode, Copy, Pencil } from "lucide-react"
 import Image from "next/image"

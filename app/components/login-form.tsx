@@ -287,15 +287,7 @@ export function LoginForm({
       </div>
 
       <div className="text-muted-foreground text-center text-xs text-balance">
-        Ao continuar, você concorda com nossos{" "}
-        <a href="#" className="underline underline-offset-4 hover:text-primary">
-          Termos de Uso
-        </a>{" "}
-        e{" "}
-        <a href="#" className="underline underline-offset-4 hover:text-primary">
-          Política de Privacidade
-        </a>
-        .
+        Ao continuar, você concorda com os Termos de Uso e a Política de Privacidade do MeControla.AI.
       </div>
     </div>
   )

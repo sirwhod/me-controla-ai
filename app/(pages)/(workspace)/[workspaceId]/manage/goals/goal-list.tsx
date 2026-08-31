@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { Goal } from "@/app/types/financial"
 import { formatCurrency } from "@/app/lib/utils"
 import { format } from "date-fns"

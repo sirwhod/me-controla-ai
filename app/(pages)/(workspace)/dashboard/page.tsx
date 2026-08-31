@@ -1,7 +1,7 @@
 "use client"
 
 import { useWorkspace } from "@/app/hooks/use-workspace"
-import { useRouter } from "next/navigation"
+import { useContextualRouter as useRouter } from "@/app/hooks/use-contextual-router"
 import { useEffect } from "react"
 import { Loader } from "@/app/components/ui/loader"
 

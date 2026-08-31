@@ -25,7 +25,7 @@ import { formatCurrency } from "@/app/lib/utils"
 import { Bank } from "@/app/types/financial"
 import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 
 interface ResponsiblePixModalProps {
   responsibleId: string

@@ -18,12 +18,13 @@ import { useQuery } from "@tanstack/react-query"
 import { getCards } from "@/app/http/cards"
 import { CreditCard } from "@/app/types/financial"
 import { Skeleton } from "@/app/components/ui/skeleton"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import { Button } from "@/app/components/ui/button"
 import { CreditCard as CardIcon, Landmark } from "lucide-react"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
 import { CreateCard } from "@/app/components/create-card"
+import { EmptyState } from "@/app/components/states/empty-state"
 
 export default function CardsPage() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
@@ -155,6 +156,13 @@ export default function CardsPage() {
               title="Não foi possível carregar os cartões de crédito"
               message={error.message}
               onRetry={() => refetch()}
+            />
+          ) : !cards?.length ? (
+            <EmptyState
+              icon={CardIcon}
+              title="Nenhum cartão cadastrado"
+              description="Cadastre um cartão para acompanhar limites, compras e datas da fatura."
+              action={<CreateCard />}
             />
           ) : (
             <DataTable columns={columns} data={cards || []} />

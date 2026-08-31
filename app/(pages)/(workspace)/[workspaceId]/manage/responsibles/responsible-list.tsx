@@ -6,7 +6,7 @@ import { formatCurrency } from "@/app/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Badge } from "@/app/components/ui/badge"
 import { CheckCircle2, MoreHorizontal, Mail, DollarSign, Pencil } from "lucide-react"
-import Link from "next/link"
+import Link from "@/app/components/context-link"
 import {
   DropdownMenu,
   DropdownMenuContent,
