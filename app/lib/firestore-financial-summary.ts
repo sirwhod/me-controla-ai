@@ -14,8 +14,10 @@ export type MonthlyTotal = {
 
 export async function getMonthlyFinancialSummary(workspaceId: string, year: number, month: string): Promise<MonthlyTotal> {
   const workspace = db.collection('workspaces').doc(workspaceId)
-  const aggregate = await workspace.collection('financialPeriods').doc(financialPeriodId(year, month)).get()
-  if (aggregate.exists && aggregate.data()?.schemaVersion === FINANCIAL_PERIOD_SCHEMA_VERSION) return { ...serializeFinancialPeriod(aggregate.data()!), source: 'aggregate' }
+  if (process.env.FINANCIAL_PERIOD_READS_ENABLED === 'true') {
+    const aggregate = await workspace.collection('financialPeriods').doc(financialPeriodId(year, month)).get()
+    if (aggregate.exists && aggregate.data()?.schemaVersion === FINANCIAL_PERIOD_SCHEMA_VERSION) return { ...serializeFinancialPeriod(aggregate.data()!), source: 'aggregate' }
+  }
   const [debits, credits] = await Promise.all([
     workspace.collection('debits').where('month', '==', month).where('year', '==', year).get(),
     workspace.collection('credits').where('month', '==', month).where('year', '==', year).get(),

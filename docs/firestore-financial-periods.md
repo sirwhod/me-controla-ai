@@ -39,13 +39,16 @@ resumed with the same bounded filters; apply overwrites the calculated generatio
 
 ## Rollout
 
+Aggregate reads are disabled by default. Set `FINANCIAL_PERIOD_READS_ENABLED=true` only after backfill and audit. Removing
+the variable or setting it to `false` immediately returns readers to month-scoped source queries without deleting data.
+
 1. Deploy `firestore.indexes.json` manually and wait until indexes are ready.
 2. Deploy the dual-compatible write/read code.
 3. Run dry-run for one workspace and month.
 4. Run audit and review divergences.
 5. Obtain manual approval and run a separately reviewed production-capable backfill tool; the repository script remains emulator-only.
 6. Audit again.
-7. Gradually enable aggregate reads and monitor `summary.monthly`, `summary.annual`, `aggregate-fallback` and document counts.
+7. Gradually enable aggregate reads with `FINANCIAL_PERIOD_READS_ENABLED=true` and monitor `summary.monthly`, `summary.annual`, `aggregate-fallback` and document counts.
 8. Monitor errors, fallback rate, latency and Firestore usage.
 9. Remove legacy collections only in a future, separately approved project.
 

@@ -17,6 +17,7 @@
     ,"analytics:backfill:dry-run": "tsx scripts/backfill-financial-periods.ts"
     ,"analytics:backfill:audit": "tsx scripts/backfill-financial-periods.ts --audit"
     ,"analytics:backfill:apply": "tsx scripts/backfill-financial-periods.ts --apply"
+    ,"analytics:test:emulator": "tsx scripts/financial-periods-emulator-suite.ts"
   },
   "dependencies": {
     "@auth/firebase-adapter": "^2.11.3",
