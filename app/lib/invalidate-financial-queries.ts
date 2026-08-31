@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { queryKeys } from '@/app/lib/query-keys'
+import { queryKeys } from './query-keys.ts'
 
 export function invalidateFinancialQueries(queryClient: QueryClient, workspaceId?: string) {
   if (!workspaceId) return Promise.resolve()
