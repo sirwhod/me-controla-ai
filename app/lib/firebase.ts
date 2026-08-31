@@ -50,8 +50,13 @@ export const db = getFirestore()
 
 export const storage = getStorage().bucket()
 
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>()
+
 export async function getDownloadURLFromPath(path?: string) {
   if (!path) return
+
+  const cached = signedUrlCache.get(path)
+  if (cached && cached.expiresAt > Date.now()) return cached.url
 
   const file = storage.file(path)
 
@@ -59,6 +64,8 @@ export async function getDownloadURLFromPath(path?: string) {
     action: "read",
     expires: Date.now() + 5 * 60 * 1000,
   })
-  
+  // Cache expires one minute before the signed URL itself. The persistent
+  // reference remains `iconPath`; signed URLs are transient Storage data.
+  signedUrlCache.set(path, { url, expiresAt: Date.now() + 4 * 60 * 1000 })
   return url
 }
