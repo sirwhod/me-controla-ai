@@ -41,27 +41,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
     const requestedLimit = Number(requestSearchParams.get('limit'))
     const pageLimit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(Math.floor(requestedLimit), 100) : 50
     const cursor = requestSearchParams.get('cursor')
-    const hasPeriodFilter = Boolean((month && month !== 'todos') || (year && year !== 'todos'))
-
     let creditsQuery: FirebaseFirestore.Query = db
       .collection('workspaces')
       .doc(workspaceId)
       .collection('credits')
-
-    // Period views are small, sorted in memory, and must not depend on a
-    // composite month/year/date index while indexes are being provisioned.
-    if (!hasPeriodFilter && (pageLimit || cursor)) {
-      creditsQuery = creditsQuery.orderBy('date', 'desc').orderBy(FieldPath.documentId(), 'desc')
-      if (cursor) {
-        try {
-          const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { date: string; id: string }
-          creditsQuery = creditsQuery.startAfter(new Date(decoded.date), decoded.id)
-        } catch {
-          return NextResponse.json({ message: 'Cursor inválido' }, { status: 400 })
-        }
-      }
-      if (pageLimit) creditsQuery = creditsQuery.limit(pageLimit)
-    }
 
     if (month && month !== 'todos') {
       creditsQuery = creditsQuery.where('month', '==', month.toLowerCase())
@@ -69,6 +52,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
     if (year && year !== 'todos') {
       creditsQuery = creditsQuery.where('year', '==', Number(year))
     }
+    creditsQuery = creditsQuery.orderBy('date', 'desc').orderBy(FieldPath.documentId(), 'desc')
+    if (cursor) {
+      try { const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { date: string; id: string }; creditsQuery = creditsQuery.startAfter(new Date(decoded.date), decoded.id) }
+      catch { return NextResponse.json({ message: 'Cursor inválido' }, { status: 400 }) }
+    }
+    creditsQuery = creditsQuery.limit(pageLimit)
 
     const querySnapshot = await creditsQuery.get()
     logFirestoreQuery({ requestId, endpoint: '/api/workspaces/:workspaceId/credits', collection: 'credits', operation: 'query.get', documents: querySnapshot.size, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId, origin: 'credits.list' })
@@ -89,7 +78,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
     })
 
     const lastDoc = querySnapshot.docs.at(-1)
-    const nextCursor = !hasPeriodFilter && pageLimit && lastDoc && querySnapshot.size === pageLimit
+    const nextCursor = lastDoc && querySnapshot.size === pageLimit
       ? Buffer.from(JSON.stringify({ date: lastDoc.data().date.toDate?.()?.toISOString?.() || new Date(lastDoc.data().date).toISOString(), id: lastDoc.id })).toString('base64url')
       : null
     logHttpRequest({ requestId, endpoint: '/api/workspaces/:workspaceId/credits', method: 'GET', status: 200, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId })

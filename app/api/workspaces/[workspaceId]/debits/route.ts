@@ -41,27 +41,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
     const requestedLimit = Number(searchParams.get('limit'))
     const pageLimit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(Math.floor(requestedLimit), 100) : 50
     const cursor = searchParams.get('cursor')
-    const hasPeriodFilter = Boolean((month && month !== 'todos') || (year && year !== 'todos'))
-
     let debitsQuery: FirebaseFirestore.Query = db
       .collection('workspaces')
       .doc(workspaceId)
       .collection('debits')
-
-    // Period views are small, sorted in memory, and must not depend on a
-    // composite month/year/date index while indexes are being provisioned.
-    if (!hasPeriodFilter && (pageLimit || cursor)) {
-      debitsQuery = debitsQuery.orderBy('date', 'desc').orderBy(FieldPath.documentId(), 'desc')
-      if (cursor) {
-        try {
-          const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { date: string; id: string }
-          debitsQuery = debitsQuery.startAfter(new Date(decoded.date), decoded.id)
-        } catch {
-          return NextResponse.json({ message: 'Cursor inválido' }, { status: 400 })
-        }
-      }
-      if (pageLimit) debitsQuery = debitsQuery.limit(pageLimit)
-    }
 
     if (month && month !== 'todos') {
       debitsQuery = debitsQuery.where('month', '==', month.toLowerCase())
@@ -69,6 +52,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
     if (year && year !== 'todos') {
       debitsQuery = debitsQuery.where('year', '==', Number(year))
     }
+    debitsQuery = debitsQuery.orderBy('date', 'desc').orderBy(FieldPath.documentId(), 'desc')
+    if (cursor) {
+      try { const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { date: string; id: string }; debitsQuery = debitsQuery.startAfter(new Date(decoded.date), decoded.id) }
+      catch { return NextResponse.json({ message: 'Cursor inválido' }, { status: 400 }) }
+    }
+    debitsQuery = debitsQuery.limit(pageLimit)
 
     const querySnapshot = await debitsQuery.get()
     logFirestoreQuery({ requestId, endpoint: '/api/workspaces/:workspaceId/debits', collection: 'debits', operation: 'query.get', documents: querySnapshot.size, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId, origin: 'debits.list' })
@@ -91,7 +80,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
     })
 
     const lastDoc = querySnapshot.docs.at(-1)
-    const nextCursor = !hasPeriodFilter && pageLimit && lastDoc && querySnapshot.size === pageLimit
+    const nextCursor = lastDoc && querySnapshot.size === pageLimit
       ? Buffer.from(JSON.stringify({ date: lastDoc.data().date.toDate?.()?.toISOString?.() || new Date(lastDoc.data().date).toISOString(), id: lastDoc.id })).toString('base64url')
       : null
     logHttpRequest({ requestId, endpoint: '/api/workspaces/:workspaceId/debits', method: 'GET', status: 200, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId })
