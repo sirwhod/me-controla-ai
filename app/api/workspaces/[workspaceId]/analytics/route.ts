@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { AggregateField } from 'firebase-admin/firestore'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { auth } from '@/app/lib/auth'
-import { db } from '@/app/lib/firebase'
 import { isValidFinancialPeriod } from '@/app/lib/financial-period'
+import { getYearlyFinancialSummary } from '@/app/lib/firestore-financial-summary'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ workspaceId: string }> }) {
   const { workspaceId } = await params
@@ -16,15 +15,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ work
   if (!isValidFinancialPeriod(month, year)) {
     return NextResponse.json({ message: 'Período inválido' }, { status: 400 })
   }
-  const base = db.collection('workspaces').doc(workspaceId)
-  const build = (collection: 'debits' | 'credits') => {
-    return base
-      .collection(collection)
-      .where('month', '==', month)
-      .where('year', '==', year)
-      .aggregate({ total: AggregateField.sum('value'), count: AggregateField.count() })
-      .get()
-  }
-  const [debits, credits] = await Promise.all([build('debits'), build('credits')])
-  return NextResponse.json({ totalExpenses: Number(debits.data().total || 0), totalIncome: Number(credits.data().total || 0), debitCount: debits.data().count, creditCount: credits.data().count, balance: Number(credits.data().total || 0) - Number(debits.data().total || 0) })
+  const totals = (await getYearlyFinancialSummary(workspaceId, year)).get(month)!
+  return NextResponse.json({
+    ...totals,
+    balance: totals.totalIncome - totals.totalExpenses,
+  })
 }
