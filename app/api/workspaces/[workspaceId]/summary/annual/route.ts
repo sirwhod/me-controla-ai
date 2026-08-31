@@ -3,8 +3,7 @@ import { AggregateField } from 'firebase-admin/firestore'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
-
-const MONTHS = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
+import { FINANCIAL_MONTHS } from '@/app/lib/financial-period'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ workspaceId: string }> }) {
   const { workspaceId } = await params
@@ -25,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ work
     return Number(result.data().total || 0)
   }
   const monthlyTotals = await Promise.all(
-    MONTHS.map(async (month) => {
+    FINANCIAL_MONTHS.map(async (month) => {
       const [totalExpenses, totalIncome] = await Promise.all([
         aggregateMonth('debits', month),
         aggregateMonth('credits', month),

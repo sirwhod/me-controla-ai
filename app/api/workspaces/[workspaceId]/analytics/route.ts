@@ -3,8 +3,7 @@ import { AggregateField } from 'firebase-admin/firestore'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
-
-const MONTHS = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
+import { isValidFinancialPeriod } from '@/app/lib/financial-period'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ workspaceId: string }> }) {
   const { workspaceId } = await params
@@ -14,7 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ work
   const search = new URL(req.url).searchParams
   const month = (search.get('month') || '').toLowerCase()
   const year = Number(search.get('year'))
-  if (!MONTHS.includes(month) || !Number.isInteger(year) || year < 2000 || year > 2200) {
+  if (!isValidFinancialPeriod(month, year)) {
     return NextResponse.json({ message: 'Período inválido' }, { status: 400 })
   }
   const base = db.collection('workspaces').doc(workspaceId)
