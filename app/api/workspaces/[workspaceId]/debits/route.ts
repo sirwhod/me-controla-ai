@@ -41,13 +41,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
     const requestedLimit = Number(searchParams.get('limit'))
     const pageLimit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(Math.floor(requestedLimit), 100) : 50
     const cursor = searchParams.get('cursor')
+    const hasPeriodFilter = Boolean((month && month !== 'todos') || (year && year !== 'todos'))
 
     let debitsQuery: FirebaseFirestore.Query = db
       .collection('workspaces')
       .doc(workspaceId)
       .collection('debits')
 
-    if (pageLimit || cursor) {
+    // Period views are small, sorted in memory, and must not depend on a
+    // composite month/year/date index while indexes are being provisioned.
+    if (!hasPeriodFilter && (pageLimit || cursor)) {
       debitsQuery = debitsQuery.orderBy('date', 'desc').orderBy(FieldPath.documentId(), 'desc')
       if (cursor) {
         try {
@@ -88,7 +91,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
     })
 
     const lastDoc = querySnapshot.docs.at(-1)
-    const nextCursor = pageLimit && lastDoc && querySnapshot.size === pageLimit
+    const nextCursor = !hasPeriodFilter && pageLimit && lastDoc && querySnapshot.size === pageLimit
       ? Buffer.from(JSON.stringify({ date: lastDoc.data().date.toDate?.()?.toISOString?.() || new Date(lastDoc.data().date).toISOString(), id: lastDoc.id })).toString('base64url')
       : null
     logHttpRequest({ requestId, endpoint: '/api/workspaces/:workspaceId/debits', method: 'GET', status: 200, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId })
