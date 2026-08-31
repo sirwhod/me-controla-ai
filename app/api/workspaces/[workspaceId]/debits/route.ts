@@ -7,7 +7,7 @@ import { DocumentReference } from 'firebase-admin/firestore'
 import { FieldPath } from 'firebase-admin/firestore'
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestId, logFirestoreQuery, logHttpRequest } from '@/app/lib/observability'
-import { applyMonthlyAnalyticsDelta } from '@/app/lib/firestore-analytics'
+import { calculateEntryDeltas, writeFinancialPeriodDeltas } from '@/app/lib/financial-periods'
 import { InvalidWorkspaceReferenceError, validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
 
 interface DebitsRouteParams {
@@ -226,8 +226,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
     switch (type) {
       case 'Comum': {
         const newDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
-        await newDebitRef.set(newDebitData)
-        await applyMonthlyAnalyticsDelta({ workspaceId, month, year, expenses: value, debitCount: 1 })
+        const batch = db.batch()
+        batch.set(newDebitRef, newDebitData)
+        writeFinancialPeriodDeltas(batch, workspaceId, calculateEntryDeltas('debit', null, newDebitData))
+        await batch.commit()
         return NextResponse.json({
           message: 'Débito criado com sucesso!',
           debitId: newDebitRef.id,
