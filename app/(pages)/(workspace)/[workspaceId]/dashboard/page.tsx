@@ -14,8 +14,8 @@ import { Logo } from "@/app/components/logo"
 import WorkspaceSelector from "@/app/components/workspace-selector"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { useQuery } from "@tanstack/react-query"
-import { getDebits } from "@/app/http/debits/get-debits"
-import { getCredits } from "@/app/http/credits/get-credits"
+import { getDebitsPage } from "@/app/http/debits/get-debits"
+import { getCreditsPage } from "@/app/http/credits/get-credits"
 import { getAnnualSummary } from "@/app/http/summary/get-annual-summary"
 import { getAnalyticsSummary } from "@/app/http/summary/get-analytics-summary"
 import { getGoals } from "@/app/http/goals/get-goals"
@@ -72,19 +72,22 @@ export default function Page() {
   const yearFilter = String(yearFilterNumber)
   const prefix = workspaceActive?.id ? `/${workspaceActive.id}` : ""
 
-  const { data: debits, isLoading: isDebitsLoading } = useQuery<Debit[], Error>({
+  const { data: debitsPage, isLoading: isDebitsLoading } = useQuery({
     queryKey: ["debits", workspaceActive?.id, monthFilter, yearFilter],
-    queryFn: () => getDebits(workspaceActive!.id, { month: monthFilter, year: yearFilter }),
+    queryFn: () => getDebitsPage(workspaceActive!.id, { month: monthFilter, year: yearFilter, limit: 100 }),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
 
-  const { data: credits, isLoading: isCreditsLoading } = useQuery<Credit[], Error>({
+  const { data: creditsPage, isLoading: isCreditsLoading } = useQuery({
     queryKey: ["credits", workspaceActive?.id, monthFilter, yearFilter],
-    queryFn: () => getCredits(workspaceActive!.id, { month: monthFilter, year: yearFilter }),
+    queryFn: () => getCreditsPage(workspaceActive!.id, { month: monthFilter, year: yearFilter, limit: 100 }),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
+  const debits: Debit[] | undefined = debitsPage?.items
+  const credits: Credit[] | undefined = creditsPage?.items
+  const hasPartialDebitData = Boolean(debitsPage?.nextCursor)
   const {
     data: annualSummary,
     isLoading: isAnnualSummaryLoading,
@@ -837,6 +840,10 @@ export default function Page() {
                       <Skeleton key={i} className="h-6 w-full" />
                     ))}
                   </div>
+                ) : hasPartialDebitData ? (
+                  <p className="text-xs text-muted-foreground text-center py-3">
+                    Detalhamento indisponível: o período possui mais de 100 despesas.
+                  </p>
                 ) : expensesByCategory.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-3">
                     Sem despesas registradas no período.
@@ -881,6 +888,10 @@ export default function Page() {
               <CardContent className="p-3.5 sm:p-5 pt-0 sm:pt-0">
                 {isLoading ? (
                   <Skeleton className="h-14 w-full" />
+                ) : hasPartialDebitData ? (
+                  <p className="text-xs text-muted-foreground text-center py-2">
+                    Detalhamento indisponível para períodos com mais de 100 despesas.
+                  </p>
                 ) : totalDebits === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-2">Sem dados no período.</p>
                 ) : (

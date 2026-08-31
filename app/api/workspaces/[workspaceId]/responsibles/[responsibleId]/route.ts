@@ -4,6 +4,8 @@ import { db } from '@/app/lib/firebase'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { updatePersonResponsibleSchema } from '@/app/types/financial'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
+import { FieldPath } from 'firebase-admin/firestore'
+import { FINANCIAL_PERIOD_SCHEMA_VERSION, financialPeriodId } from '@/app/lib/financial-periods'
 
 interface RouteParams {
   params: Promise<{
@@ -28,6 +30,12 @@ export async function GET(req: NextRequest, props: RouteParams) {
     const { searchParams } = new URL(req.url)
     const month = searchParams.get('month')
     const year = searchParams.get('year')
+    if (!month || month === 'todos' || !year || year === 'todos') {
+      return NextResponse.json({ message: 'Mês e ano são obrigatórios para o detalhe' }, { status: 400 })
+    }
+    const requestedLimit = Number(searchParams.get('limit'))
+    const pageLimit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(Math.floor(requestedLimit), 100) : 50
+    const cursor = searchParams.get('cursor')
 
     const responsibleDoc = await db
       .collection('workspaces')
@@ -42,26 +50,38 @@ export async function GET(req: NextRequest, props: RouteParams) {
 
     const responsibleData = responsibleDoc.data()!
 
-    // Buscar todas as DESPESAS e RECEITAS deste responsável
+    const workspaceRef = db.collection('workspaces').doc(workspaceId)
+    const periodRef = workspaceRef.collection('financialPeriods').doc(financialPeriodId(Number(year), month))
+    const [periodDoc, responsiblePeriod] = await Promise.all([periodRef.get(), periodRef.collection('responsibles').doc(responsibleId).get()])
+    const hasAggregate = process.env.FINANCIAL_PERIOD_READS_ENABLED === 'true' && periodDoc.data()?.schemaVersion === FINANCIAL_PERIOD_SCHEMA_VERSION
+
     let debitsQuery: FirebaseFirestore.Query = db.collection('workspaces').doc(workspaceId)
       .collection('debits').where('responsibleId', '==', responsibleId)
     let creditsQuery: FirebaseFirestore.Query = db.collection('workspaces').doc(workspaceId)
       .collection('credits').where('responsibleId', '==', responsibleId)
 
-    if (month && month !== 'todos') {
-      debitsQuery = debitsQuery.where('month', '==', month.toLowerCase())
-      creditsQuery = creditsQuery.where('month', '==', month.toLowerCase())
+    debitsQuery = debitsQuery.where('month', '==', month.toLowerCase()).where('year', '==', Number(year))
+    creditsQuery = creditsQuery.where('month', '==', month.toLowerCase()).where('year', '==', Number(year))
+    let decodedCursor: { date: string; id: string } | null = null
+    if (cursor) {
+      try { decodedCursor = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) }
+      catch { return NextResponse.json({ message: 'Cursor inválido' }, { status: 400 }) }
     }
-    if (year && year !== 'todos') {
-      debitsQuery = debitsQuery.where('year', '==', Number(year))
-      creditsQuery = creditsQuery.where('year', '==', Number(year))
+    if (hasAggregate) {
+      debitsQuery = debitsQuery.orderBy('date', 'desc').orderBy(FieldPath.documentId(), 'desc')
+      if (decodedCursor) debitsQuery = debitsQuery.startAfter(new Date(decodedCursor.date), decodedCursor.id)
+      debitsQuery = debitsQuery.limit(pageLimit)
     }
-
-    const [debitsSnap, creditsSnap] = await Promise.all([debitsQuery.get(), creditsQuery.get()])
+    const [debitsSnap, creditsSnap] = await Promise.all([debitsQuery.get(), hasAggregate ? Promise.resolve(null) : creditsQuery.get()])
 
     let totalDebits = 0
     let totalCredits = 0
-    const pendingDebits = []
+    let pendingDebits: Array<Record<string, unknown>> = []
+
+    if (hasAggregate) {
+      totalDebits = Number(responsiblePeriod.data()?.totalExpensesCents || 0) / 100
+      totalCredits = Number(responsiblePeriod.data()?.totalIncomeCents || 0) / 100
+    }
 
     for (const doc of debitsSnap.docs) {
       const d = doc.data()
@@ -74,7 +94,7 @@ export async function GET(req: NextRequest, props: RouteParams) {
         continue
       }
 
-      totalDebits += d.value || 0
+      if (!hasAggregate) totalDebits += d.value || 0
       const dateStr = d.date?.toDate ? d.date.toDate().toLocaleDateString('pt-BR') : ''
 
       pendingDebits.push({
@@ -90,7 +110,7 @@ export async function GET(req: NextRequest, props: RouteParams) {
       })
     }
 
-    for (const doc of creditsSnap.docs) {
+    for (const doc of creditsSnap?.docs || []) {
       const c = doc.data()
       if (month && month !== 'todos' && c.month && c.month.toLowerCase() !== month.toLowerCase()) {
         continue
@@ -100,6 +120,18 @@ export async function GET(req: NextRequest, props: RouteParams) {
       }
       totalCredits += c.value || 0
     }
+
+    if (!hasAggregate) {
+      pendingDebits = pendingDebits.sort((left, right) => new Date(String(right.date)).getTime() - new Date(String(left.date)).getTime())
+      if (decodedCursor) {
+        const index = pendingDebits.findIndex((item) => item.id === decodedCursor?.id)
+        pendingDebits = index >= 0 ? pendingDebits.slice(index + 1) : []
+      }
+      pendingDebits = pendingDebits.slice(0, pageLimit)
+    }
+    const lastDebit = pendingDebits.at(-1)
+    const nextCursor = pendingDebits.length === pageLimit && lastDebit
+      ? Buffer.from(JSON.stringify({ date: lastDebit.date, id: lastDebit.id })).toString('base64url') : null
 
     const totalPending = Math.max(0, totalDebits - totalCredits)
 
@@ -133,6 +165,7 @@ export async function GET(req: NextRequest, props: RouteParams) {
       totalCredits: Number(totalCredits.toFixed(2)),
       pendingDebits,
       pendingCredits: pendingDebits, // Alias para retrocompatibilidade
+      nextCursor,
       createdAt: serializeFirestoreDate(responsibleData.createdAt),
       updatedAt: serializeFirestoreDate(responsibleData.updatedAt),
     }, { status: 200 })
