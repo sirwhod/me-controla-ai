@@ -1,8 +1,8 @@
 'use client'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import axios from 'axios'
 import { useState } from 'react'
+import { queryRetryDelay, shouldRetryQuery } from '@/app/lib/query-retry'
 
 export default function QueryProvider({ children }: { children: React.ReactNode }) {
 
@@ -14,11 +14,8 @@ export default function QueryProvider({ children }: { children: React.ReactNode 
         refetchOnMount: false,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
-        retry: (failureCount, error) => {
-          const status = axios.isAxiosError(error) ? error.response?.status : undefined
-          if (status && [400, 401, 403, 404].includes(status)) return false
-          return failureCount < 2
-        },
+        retry: shouldRetryQuery,
+        retryDelay: queryRetryDelay,
       },
       mutations: {
         retry: false,

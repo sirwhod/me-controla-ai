@@ -42,7 +42,7 @@ resumed with the same bounded filters; apply overwrites the calculated generatio
 Aggregate reads are disabled by default. Set `FINANCIAL_PERIOD_READS_ENABLED=true` only after backfill and audit. Removing
 the variable or setting it to `false` immediately returns readers to month-scoped source queries without deleting data.
 
-1. Deploy `firestore.indexes.json` manually and wait until indexes are ready.
+1. Deploy `firestore.indexes.json` and run `npm run deploy:check-indexes`; do not publish dependent code until it reports every required index as `READY`.
 2. Deploy the dual-compatible write/read code.
 3. Run dry-run for one workspace and month.
 4. Run audit and review divergences.
@@ -69,5 +69,7 @@ cache is enabled for private responses.
 
 ## Indexes
 
-The committed composite indexes cover `month + year + date desc + __name__ desc` for both debits and credits. Index deploy
-is manual; this work does not run `firebase deploy`.
+The committed composite indexes cover `month + year + date desc + __name__ desc` for both debits and credits. The readiness
+check calls the Firestore Admin API and fails for missing or non-`READY` indexes. If an index becomes temporarily unavailable,
+the list endpoints use an exact in-memory fallback only for workspaces with at most 500 source documents; larger workspaces
+receive a structured, retryable `503` instead of incomplete results.

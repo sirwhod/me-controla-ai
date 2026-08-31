@@ -4,11 +4,11 @@ import { db } from '@/app/lib/firebase'
 import { createCreditSchema } from '@/app/types/financial'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { NextRequest, NextResponse } from 'next/server'
-import { FieldPath } from 'firebase-admin/firestore'
 import { getRequestId, logFirestoreQuery, logHttpRequest } from '@/app/lib/observability'
 import { calculateEntryDeltas, writeFinancialPeriodDeltas } from '@/app/lib/financial-periods'
 import { InvalidWorkspaceReferenceError, validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
 import { getIdempotencyKey, runIdempotentFinancialWrite } from '@/app/lib/idempotent-financial-write'
+import { FinancialIndexNotReadyError, getFinancialListPage } from '@/app/lib/financial-list-query'
 
 interface CreditsRouteParams {
   workspaceId: string;
@@ -42,28 +42,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
     const requestedLimit = Number(requestSearchParams.get('limit'))
     const pageLimit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(Math.floor(requestedLimit), 100) : 50
     const cursor = requestSearchParams.get('cursor')
-    let creditsQuery: FirebaseFirestore.Query = db
+    const creditsCollection = db
       .collection('workspaces')
       .doc(workspaceId)
       .collection('credits')
-
-    if (month && month !== 'todos') {
-      creditsQuery = creditsQuery.where('month', '==', month.toLowerCase())
+    let page
+    try {
+      page = await getFinancialListPage({ collection: creditsCollection, month, year, pageLimit, cursor })
+    } catch (error) {
+      if (error instanceof Error && error.message === 'INVALID_CURSOR') {
+        return NextResponse.json({ message: 'Cursor inválido' }, { status: 400 })
+      }
+      throw error
     }
-    if (year && year !== 'todos') {
-      creditsQuery = creditsQuery.where('year', '==', Number(year))
-    }
-    creditsQuery = creditsQuery.orderBy('date', 'desc').orderBy(FieldPath.documentId(), 'desc')
-    if (cursor) {
-      try { const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { date: string; id: string }; creditsQuery = creditsQuery.startAfter(new Date(decoded.date), decoded.id) }
-      catch { return NextResponse.json({ message: 'Cursor inválido' }, { status: 400 }) }
-    }
-    creditsQuery = creditsQuery.limit(pageLimit)
+    logFirestoreQuery({ requestId, endpoint: '/api/workspaces/:workspaceId/credits', collection: 'credits', operation: page.fallback ? 'fallback.get' : 'query.get', documents: page.documentsRead, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId, origin: page.fallback ? 'credits.list.index-fallback' : 'credits.list' })
 
-    const querySnapshot = await creditsQuery.get()
-    logFirestoreQuery({ requestId, endpoint: '/api/workspaces/:workspaceId/credits', collection: 'credits', operation: 'query.get', documents: querySnapshot.size, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId, origin: 'credits.list' })
-
-    const credits = querySnapshot.docs.map(doc => {
+    const credits = page.docs.map(doc => {
       const data = doc.data()
       return {
         id: doc.id,
@@ -78,12 +72,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
       return right - left
     })
 
-    const lastDoc = querySnapshot.docs.at(-1)
-    const nextCursor = lastDoc && querySnapshot.size === pageLimit
-      ? Buffer.from(JSON.stringify({ date: lastDoc.data().date.toDate?.()?.toISOString?.() || new Date(lastDoc.data().date).toISOString(), id: lastDoc.id })).toString('base64url')
-      : null
     logHttpRequest({ requestId, endpoint: '/api/workspaces/:workspaceId/credits', method: 'GET', status: 200, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId })
-    return NextResponse.json(credits, { status: 200, headers: { 'x-request-id': requestId, ...(nextCursor ? { 'x-next-cursor': nextCursor } : {}) } })
+    return NextResponse.json(credits, { status: 200, headers: { 'x-request-id': requestId, ...(page.nextCursor ? { 'x-next-cursor': page.nextCursor } : {}), ...(page.fallback ? { 'x-query-fallback': 'firestore-index' } : {}) } })
 
   } catch (error) {
     if (error instanceof InvalidWorkspaceReferenceError) {
@@ -91,6 +81,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
     }
     const searchParams = await params
     console.error(`Erro ao listar créditos para workspace ${searchParams.workspaceId}:`, error)
+    if (error instanceof FinancialIndexNotReadyError) {
+      return NextResponse.json({ code: error.code, message: error.message, retryable: error.retryable }, { status: 503, headers: { 'retry-after': '15', 'x-request-id': requestId } })
+    }
     return NextResponse.json({ message: 'Erro interno do servidor ao listar créditos' }, { status: 500 })
   }
 }
