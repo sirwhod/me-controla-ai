@@ -35,7 +35,7 @@ export default function Page() {
     refetch,
   } = useQuery<Bank[], Error>({
     queryKey: ["banks", workspaceActive?.id],
-    queryFn: () => getBanks(workspaceActive!.id),
+    queryFn: () => getBanks(workspaceActive!.id, true),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
