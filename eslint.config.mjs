@@ -31,12 +31,21 @@ export default [
   },
   prettier,
   {
+    files: ["scripts/test-suite.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "prefer-rest-params": "off",
+    },
+  },
+  {
     ignores: [
       ".next/",
       "node_modules/",
       "dist/",
       "public/",
       "**/__tests__/",
+      "next-env.d.ts",
+      "next.config.mjs",
       "eslint.config.mjs",
       "postcss.config.mjs"
     ],
