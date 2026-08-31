@@ -264,6 +264,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         debitsToCreate.forEach((debit) => {
           const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
           batch.set(ref, debit)
+          writeFinancialPeriodDeltas(batch, workspaceId, calculateEntryDeltas('debit', null, debit))
         })
         await batch.commit()
 
@@ -301,6 +302,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         assinaturaDebitsToCreate.forEach((debit) => {
           const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
           assinaturaBatch.set(ref, debit)
+          writeFinancialPeriodDeltas(assinaturaBatch, workspaceId, calculateEntryDeltas('debit', null, debit))
         })
         await assinaturaBatch.commit()
 
@@ -366,6 +368,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         const parcelaBatch = db.batch()
         parcelasToCreate.forEach(({ ref, ...debitData }) => {
           parcelaBatch.set(ref, debitData)
+          writeFinancialPeriodDeltas(parcelaBatch, workspaceId, calculateEntryDeltas('debit', null, debitData))
         })
         await parcelaBatch.commit()
 

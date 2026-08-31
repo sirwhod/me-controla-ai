@@ -220,6 +220,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       creditsToCreate.forEach((credit) => {
         const ref = db.collection('workspaces').doc(workspaceId).collection('credits').doc()
         batch.set(ref, credit)
+        writeFinancialPeriodDeltas(batch, workspaceId, calculateEntryDeltas('credit', null, credit))
       })
       await batch.commit()
 
