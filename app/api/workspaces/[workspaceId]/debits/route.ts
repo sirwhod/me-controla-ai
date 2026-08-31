@@ -7,8 +7,9 @@ import { DocumentReference } from 'firebase-admin/firestore'
 import { FieldPath } from 'firebase-admin/firestore'
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestId, logFirestoreQuery, logHttpRequest } from '@/app/lib/observability'
-import { applyMonthlyAnalyticsDelta } from '@/app/lib/firestore-analytics'
+import { calculateEntryDeltas, writeFinancialPeriodDeltas } from '@/app/lib/financial-periods'
 import { InvalidWorkspaceReferenceError, validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
+import { getIdempotencyKey, runIdempotentFinancialWrite } from '@/app/lib/idempotent-financial-write'
 
 interface DebitsRouteParams {
   workspaceId: string
@@ -41,27 +42,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
     const requestedLimit = Number(searchParams.get('limit'))
     const pageLimit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(Math.floor(requestedLimit), 100) : 50
     const cursor = searchParams.get('cursor')
-    const hasPeriodFilter = Boolean((month && month !== 'todos') || (year && year !== 'todos'))
-
     let debitsQuery: FirebaseFirestore.Query = db
       .collection('workspaces')
       .doc(workspaceId)
       .collection('debits')
-
-    // Period views are small, sorted in memory, and must not depend on a
-    // composite month/year/date index while indexes are being provisioned.
-    if (!hasPeriodFilter && (pageLimit || cursor)) {
-      debitsQuery = debitsQuery.orderBy('date', 'desc').orderBy(FieldPath.documentId(), 'desc')
-      if (cursor) {
-        try {
-          const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { date: string; id: string }
-          debitsQuery = debitsQuery.startAfter(new Date(decoded.date), decoded.id)
-        } catch {
-          return NextResponse.json({ message: 'Cursor inválido' }, { status: 400 })
-        }
-      }
-      if (pageLimit) debitsQuery = debitsQuery.limit(pageLimit)
-    }
 
     if (month && month !== 'todos') {
       debitsQuery = debitsQuery.where('month', '==', month.toLowerCase())
@@ -69,6 +53,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
     if (year && year !== 'todos') {
       debitsQuery = debitsQuery.where('year', '==', Number(year))
     }
+    debitsQuery = debitsQuery.orderBy('date', 'desc').orderBy(FieldPath.documentId(), 'desc')
+    if (cursor) {
+      try { const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { date: string; id: string }; debitsQuery = debitsQuery.startAfter(new Date(decoded.date), decoded.id) }
+      catch { return NextResponse.json({ message: 'Cursor inválido' }, { status: 400 }) }
+    }
+    debitsQuery = debitsQuery.limit(pageLimit)
 
     const querySnapshot = await debitsQuery.get()
     logFirestoreQuery({ requestId, endpoint: '/api/workspaces/:workspaceId/debits', collection: 'debits', operation: 'query.get', documents: querySnapshot.size, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId, origin: 'debits.list' })
@@ -91,7 +81,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Debits
     })
 
     const lastDoc = querySnapshot.docs.at(-1)
-    const nextCursor = !hasPeriodFilter && pageLimit && lastDoc && querySnapshot.size === pageLimit
+    const nextCursor = lastDoc && querySnapshot.size === pageLimit
       ? Buffer.from(JSON.stringify({ date: lastDoc.data().date.toDate?.()?.toISOString?.() || new Date(lastDoc.data().date).toISOString(), id: lastDoc.id })).toString('base64url')
       : null
     logHttpRequest({ requestId, endpoint: '/api/workspaces/:workspaceId/debits', method: 'GET', status: 200, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId })
@@ -222,16 +212,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
     }
 
     const effectiveFrequency = frequency || 'monthly'
+    const idempotencyKey = getIdempotencyKey(req)
 
     switch (type) {
       case 'Comum': {
         const newDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
-        await newDebitRef.set(newDebitData)
-        await applyMonthlyAnalyticsDelta({ workspaceId, month, year, expenses: value, debitCount: 1 })
-        return NextResponse.json({
-          message: 'Débito criado com sucesso!',
-          debitId: newDebitRef.id,
-        }, { status: 201 })
+        const operation = await runIdempotentFinancialWrite(workspaceId, 'create-debit', idempotencyKey, (transaction) => {
+          transaction.set(newDebitRef, newDebitData)
+          writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('debit', null, newDebitData))
+          return { message: 'Débito criado com sucesso!', debitId: newDebitRef.id }
+        })
+        return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
       }
 
       case 'Fixo': {
@@ -241,7 +232,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         newDebitData.startDate = effStartDate
         newDebitData.endDate = endDateObj
 
-        const debitsToCreate = []
+        const debitsToCreate: FirebaseFirestore.DocumentData[] = []
         const baseStartDate = getInvoiceDate(effStartDate)
         const currentYear = baseStartDate.getFullYear()
         const current = new Date(baseStartDate.getFullYear(), baseStartDate.getMonth(), 1)
@@ -258,14 +249,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
           current.setMonth(current.getMonth() + 1)
         }
 
-        const batch = db.batch()
-        debitsToCreate.forEach((debit) => {
-          const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
-          batch.set(ref, debit)
+        const operation = await runIdempotentFinancialWrite(workspaceId, 'create-debit', idempotencyKey, (transaction) => {
+          debitsToCreate.forEach((debit) => transaction.set(db.collection('workspaces').doc(workspaceId).collection('debits').doc(), debit))
+          writeFinancialPeriodDeltas(transaction, workspaceId, debitsToCreate.flatMap((debit) => calculateEntryDeltas('debit', null, debit)))
+          return { message: 'Débitos fixos criados com sucesso!', count: debitsToCreate.length }
         })
-        await batch.commit()
-
-        return NextResponse.json({ message: 'Débitos fixos criados com sucesso!', count: debitsToCreate.length }, { status: 201 })
+        return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
       }
 
       case 'Assinatura': {
@@ -276,7 +265,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         newDebitData.endDate = endDateObj
         newDebitData.isActive = true
 
-        const assinaturaDebitsToCreate = []
+        const assinaturaDebitsToCreate: FirebaseFirestore.DocumentData[] = []
         const baseAssinaturaDate = getInvoiceDate(effStartDate)
         const baseDay = baseAssinaturaDate.getDate() || 1
         const startYear = baseAssinaturaDate.getFullYear()
@@ -295,14 +284,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
           assinaturaDebitsToCreate.push(debitForMonth)
         }
 
-        const assinaturaBatch = db.batch()
-        assinaturaDebitsToCreate.forEach((debit) => {
-          const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
-          assinaturaBatch.set(ref, debit)
+        const operation = await runIdempotentFinancialWrite(workspaceId, 'create-debit', idempotencyKey, (transaction) => {
+          assinaturaDebitsToCreate.forEach((debit) => transaction.set(db.collection('workspaces').doc(workspaceId).collection('debits').doc(), debit))
+          writeFinancialPeriodDeltas(transaction, workspaceId, assinaturaDebitsToCreate.flatMap((debit) => calculateEntryDeltas('debit', null, debit)))
+          return { message: 'Assinatura criada com sucesso!', count: assinaturaDebitsToCreate.length }
         })
-        await assinaturaBatch.commit()
-
-        return NextResponse.json({ message: 'Assinatura criada com sucesso!', count: assinaturaDebitsToCreate.length }, { status: 201 })
+        return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
       }
 
       case 'Parcelamento': {
@@ -361,18 +348,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
           parcelasToCreate.push(parcelaData)
         }
 
-        const parcelaBatch = db.batch()
-        parcelasToCreate.forEach(({ ref, ...debitData }) => {
-          parcelaBatch.set(ref, debitData)
+        const operation = await runIdempotentFinancialWrite(workspaceId, 'create-debit', idempotencyKey, (transaction) => {
+          parcelasToCreate.forEach(({ ref, ...debitData }) => transaction.set(ref, debitData))
+          writeFinancialPeriodDeltas(transaction, workspaceId, parcelasToCreate.flatMap((debit) => calculateEntryDeltas('debit', null, debit)))
+          return { message: 'Parcelamento criado com sucesso!', originalDebitId: firstRef.id, totalInstallments: numInstallments, currentInstallment: currInstallment }
         })
-        await parcelaBatch.commit()
-
-        return NextResponse.json({
-          message: 'Parcelamento criado com sucesso!',
-          originalDebitId: firstRef.id,
-          totalInstallments: numInstallments,
-          currentInstallment: currInstallment,
-        }, { status: 201 })
+        return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
       }
 
       default:

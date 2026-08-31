@@ -4,7 +4,7 @@ import { db } from '@/app/lib/firebase'
 import { updateDebitSchema } from '@/app/types/financial';
 import { serializeFirestoreDate } from '@/app/lib/date-utils';
 import { NextRequest, NextResponse } from 'next/server'
-import { applyMonthlyAnalyticsDelta } from '@/app/lib/firestore-analytics'
+import { calculateEntryDeltas, writeFinancialPeriodDeltas } from '@/app/lib/financial-periods'
 import { validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
 
 interface CreditsRouteParams {
@@ -180,11 +180,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
       dataToUpdate.endDate = null
     }
 
-    await debitRef.update(dataToUpdate)
-    const previous = debitDoc.data() || {}
-    const next = { ...previous, ...dataToUpdate }
-    await applyMonthlyAnalyticsDelta({ workspaceId, month: String(previous.month || ''), year: Number(previous.year), expenses: -Number(previous.value || 0), debitCount: -1 })
-    await applyMonthlyAnalyticsDelta({ workspaceId, month: String(next.month || ''), year: Number(next.year), expenses: Number(next.value || 0), debitCount: 1 })
+    await db.runTransaction(async (transaction) => {
+      const current = await transaction.get(debitRef)
+      if (!current.exists) throw new Error('Débito não encontrado')
+      const previous = current.data() || {}
+      transaction.update(debitRef, dataToUpdate as FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData>)
+      writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('debit', previous, { ...previous, ...dataToUpdate }))
+    })
 
     return NextResponse.json({ message: 'Débito atualizado com sucesso!' }, { status: 200 })
 
@@ -223,9 +225,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Cre
         return NextResponse.json({ message: 'Débito não encontrado para exclusão' }, { status: 404 })
     }
 
-    await debitRef.delete()
-    const removed = debitDoc.data()
-    await applyMonthlyAnalyticsDelta({ workspaceId, month: String(removed?.month || ''), year: Number(removed?.year), expenses: -Number(removed?.value || 0), debitCount: -1 })
+    await db.runTransaction(async (transaction) => {
+      const current = await transaction.get(debitRef)
+      if (!current.exists) throw new Error('Débito não encontrado')
+      transaction.delete(debitRef)
+      writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('debit', current.data(), null))
+    })
 
     return NextResponse.json({ message: 'Débito excluído com sucesso!' }, { status: 200 })
 

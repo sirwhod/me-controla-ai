@@ -5,6 +5,8 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { createPersonResponsibleSchema } from '@/app/types/financial'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { getRequestId, logFirestoreQuery } from '@/app/lib/observability'
+import { FINANCIAL_MONTHS } from '@/app/lib/financial-period'
+import { FINANCIAL_PERIOD_SCHEMA_VERSION, financialPeriodId } from '@/app/lib/financial-periods'
 
 interface RouteParams {
   params: Promise<{
@@ -62,7 +64,17 @@ export async function GET(req: NextRequest, props: RouteParams) {
       creditsQuery = creditsQuery.where('year', '==', Number(year))
     }
 
-    const [debitsSnap, creditsSnap] = includeBalances
+    const requestedYear = Number(year)
+    const aggregateMonths = month && month !== 'todos' ? [month.toLowerCase()] : FINANCIAL_MONTHS
+    const periodRefs = includeBalances && Number.isInteger(requestedYear)
+      ? aggregateMonths.map((value) => db.collection('workspaces').doc(workspaceId).collection('financialPeriods').doc(financialPeriodId(requestedYear, value)))
+      : []
+    const periodDocs = periodRefs.length ? await db.getAll(...periodRefs) : []
+    const canUseAggregates = periodDocs.length > 0 && periodDocs.every((doc) => doc.exists && doc.data()?.schemaVersion === FINANCIAL_PERIOD_SCHEMA_VERSION)
+    const responsibleAggregateDocs = canUseAggregates
+      ? (await Promise.all(periodRefs.map((ref) => ref.collection('responsibles').get()))).flatMap((snapshot) => snapshot.docs)
+      : []
+    const [debitsSnap, creditsSnap] = includeBalances && !canUseAggregates
       ? await Promise.all([debitsQuery.get(), creditsQuery.get()])
       : [null, null]
     if (includeBalances) {
@@ -73,6 +85,12 @@ export async function GET(req: NextRequest, props: RouteParams) {
     // Calcular total de despesas e receitas por responsável no período
     const totalDebitsByResp: Record<string, number> = {}
     const totalCreditsByResp: Record<string, number> = {}
+
+    responsibleAggregateDocs.forEach((doc) => {
+      const data = doc.data()
+      totalDebitsByResp[doc.id] = (totalDebitsByResp[doc.id] || 0) + Number(data.totalExpensesCents || 0) / 100
+      totalCreditsByResp[doc.id] = (totalCreditsByResp[doc.id] || 0) + Number(data.totalIncomeCents || 0) / 100
+    })
 
     debitsSnap?.docs.forEach((doc) => {
       const data = doc.data()

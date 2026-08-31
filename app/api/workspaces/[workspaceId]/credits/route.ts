@@ -6,8 +6,9 @@ import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { NextRequest, NextResponse } from 'next/server'
 import { FieldPath } from 'firebase-admin/firestore'
 import { getRequestId, logFirestoreQuery, logHttpRequest } from '@/app/lib/observability'
-import { applyMonthlyAnalyticsDelta } from '@/app/lib/firestore-analytics'
+import { calculateEntryDeltas, writeFinancialPeriodDeltas } from '@/app/lib/financial-periods'
 import { InvalidWorkspaceReferenceError, validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
+import { getIdempotencyKey, runIdempotentFinancialWrite } from '@/app/lib/idempotent-financial-write'
 
 interface CreditsRouteParams {
   workspaceId: string;
@@ -41,27 +42,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
     const requestedLimit = Number(requestSearchParams.get('limit'))
     const pageLimit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(Math.floor(requestedLimit), 100) : 50
     const cursor = requestSearchParams.get('cursor')
-    const hasPeriodFilter = Boolean((month && month !== 'todos') || (year && year !== 'todos'))
-
     let creditsQuery: FirebaseFirestore.Query = db
       .collection('workspaces')
       .doc(workspaceId)
       .collection('credits')
-
-    // Period views are small, sorted in memory, and must not depend on a
-    // composite month/year/date index while indexes are being provisioned.
-    if (!hasPeriodFilter && (pageLimit || cursor)) {
-      creditsQuery = creditsQuery.orderBy('date', 'desc').orderBy(FieldPath.documentId(), 'desc')
-      if (cursor) {
-        try {
-          const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { date: string; id: string }
-          creditsQuery = creditsQuery.startAfter(new Date(decoded.date), decoded.id)
-        } catch {
-          return NextResponse.json({ message: 'Cursor inválido' }, { status: 400 })
-        }
-      }
-      if (pageLimit) creditsQuery = creditsQuery.limit(pageLimit)
-    }
 
     if (month && month !== 'todos') {
       creditsQuery = creditsQuery.where('month', '==', month.toLowerCase())
@@ -69,6 +53,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
     if (year && year !== 'todos') {
       creditsQuery = creditsQuery.where('year', '==', Number(year))
     }
+    creditsQuery = creditsQuery.orderBy('date', 'desc').orderBy(FieldPath.documentId(), 'desc')
+    if (cursor) {
+      try { const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { date: string; id: string }; creditsQuery = creditsQuery.startAfter(new Date(decoded.date), decoded.id) }
+      catch { return NextResponse.json({ message: 'Cursor inválido' }, { status: 400 }) }
+    }
+    creditsQuery = creditsQuery.limit(pageLimit)
 
     const querySnapshot = await creditsQuery.get()
     logFirestoreQuery({ requestId, endpoint: '/api/workspaces/:workspaceId/credits', collection: 'credits', operation: 'query.get', documents: querySnapshot.size, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId, origin: 'credits.list' })
@@ -89,7 +79,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
     })
 
     const lastDoc = querySnapshot.docs.at(-1)
-    const nextCursor = !hasPeriodFilter && pageLimit && lastDoc && querySnapshot.size === pageLimit
+    const nextCursor = lastDoc && querySnapshot.size === pageLimit
       ? Buffer.from(JSON.stringify({ date: lastDoc.data().date.toDate?.()?.toISOString?.() || new Date(lastDoc.data().date).toISOString(), id: lastDoc.id })).toString('base64url')
       : null
     logHttpRequest({ requestId, endpoint: '/api/workspaces/:workspaceId/credits', method: 'GET', status: 200, durationMs: performance.now() - startedAt, userId: session.user.id, workspaceId })
@@ -192,9 +182,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       createdAt: now,
       updatedAt: now,
     }
+    const idempotencyKey = getIdempotencyKey(req)
 
     if (effectiveType === 'Fixo') {
-      const creditsToCreate = []
+      const creditsToCreate: FirebaseFirestore.DocumentData[] = []
       const currentYear = startDateObj.getFullYear()
       const baseDay = startDateObj.getDate() || 1
       const current = new Date(startDateObj.getFullYear(), startDateObj.getMonth(), baseDay, 12, 0, 0)
@@ -216,21 +207,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
         current.setMonth(current.getMonth() + 1)
       }
 
-      const batch = db.batch()
-      creditsToCreate.forEach((credit) => {
-        const ref = db.collection('workspaces').doc(workspaceId).collection('credits').doc()
-        batch.set(ref, credit)
+      const operation = await runIdempotentFinancialWrite(workspaceId, 'create-credit', idempotencyKey, (transaction) => {
+        creditsToCreate.forEach((credit) => transaction.set(db.collection('workspaces').doc(workspaceId).collection('credits').doc(), credit))
+        writeFinancialPeriodDeltas(transaction, workspaceId, creditsToCreate.flatMap((credit) => calculateEntryDeltas('credit', null, credit)))
+        return { message: 'Receitas fixas criadas com sucesso!', count: creditsToCreate.length }
       })
-      await batch.commit()
-
-      return NextResponse.json({ message: 'Receitas fixas criadas com sucesso!', count: creditsToCreate.length }, { status: 201 })
+      return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
     }
 
     const newCreditRef = db.collection('workspaces').doc(workspaceId).collection('credits').doc()
-    await newCreditRef.set(baseCreditData)
-    await applyMonthlyAnalyticsDelta({ workspaceId, month, year, income: value, creditCount: 1 })
-
-    return NextResponse.json({ message: 'Receita criada com sucesso!', creditId: newCreditRef.id }, { status: 201 })
+    const operation = await runIdempotentFinancialWrite(workspaceId, 'create-credit', idempotencyKey, (transaction) => {
+      transaction.set(newCreditRef, baseCreditData)
+      writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('credit', null, baseCreditData))
+      return { message: 'Receita criada com sucesso!', creditId: newCreditRef.id }
+    })
+    return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
 
   } catch (error) {
     if (error instanceof InvalidWorkspaceReferenceError) {

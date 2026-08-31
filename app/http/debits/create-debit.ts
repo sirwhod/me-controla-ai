@@ -55,7 +55,8 @@ export async function createDebit(
       startDate,
       totalInstallments,
       status
-    }
+    },
+    { headers: { 'Idempotency-Key': crypto.randomUUID() } }
   )
 
   return response.data

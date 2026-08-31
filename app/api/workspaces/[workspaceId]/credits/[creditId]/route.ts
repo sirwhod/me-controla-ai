@@ -4,7 +4,7 @@ import { db } from '@/app/lib/firebase'
 import { updateCreditSchema } from '@/app/types/financial';
 import { serializeFirestoreDate } from '@/app/lib/date-utils';
 import { NextRequest, NextResponse } from 'next/server'
-import { applyMonthlyAnalyticsDelta } from '@/app/lib/firestore-analytics'
+import { calculateEntryDeltas, writeFinancialPeriodDeltas } from '@/app/lib/financial-periods'
 import { validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
 
 interface CreditsRouteParams {
@@ -158,11 +158,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
       dataToUpdate.year = dateObj.getFullYear()
     }
 
-    await creditRef.update(dataToUpdate)
-    const previous = creditDoc.data() || {}
-    const next = { ...previous, ...dataToUpdate }
-    await applyMonthlyAnalyticsDelta({ workspaceId, month: String(previous.month || ''), year: Number(previous.year), income: -Number(previous.value || 0), creditCount: -1 })
-    await applyMonthlyAnalyticsDelta({ workspaceId, month: String(next.month || ''), year: Number(next.year), income: Number(next.value || 0), creditCount: 1 })
+    await db.runTransaction(async (transaction) => {
+      const current = await transaction.get(creditRef)
+      if (!current.exists) throw new Error('Crédito não encontrado')
+      const previous = current.data() || {}
+      transaction.update(creditRef, dataToUpdate as FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData>)
+      writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('credit', previous, { ...previous, ...dataToUpdate }))
+    })
 
     return NextResponse.json({ message: 'Crédito atualizado com sucesso!' }, { status: 200 })
 
@@ -201,9 +203,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Cre
         return NextResponse.json({ message: 'Crédito não encontrado para exclusão' }, { status: 404 })
     }
 
-    await creditRef.delete()
-    const removed = creditDoc.data()
-    await applyMonthlyAnalyticsDelta({ workspaceId, month: String(removed?.month || ''), year: Number(removed?.year), income: -Number(removed?.value || 0), creditCount: -1 })
+    await db.runTransaction(async (transaction) => {
+      const current = await transaction.get(creditRef)
+      if (!current.exists) throw new Error('Crédito não encontrado')
+      transaction.delete(creditRef)
+      writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('credit', current.data(), null))
+    })
 
     return NextResponse.json({ message: 'Crédito excluído com sucesso!' }, { status: 200 })
 

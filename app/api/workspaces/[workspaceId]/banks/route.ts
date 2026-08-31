@@ -32,9 +32,10 @@ export async function GET(req: NextRequest, { params }: {params: Promise<BankRou
        return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
     }
 
+    const includeCardsCount = new URL(req.url).searchParams.get('includeCardsCount') === 'true'
     const workspaceRef = db.collection('workspaces').doc(workspaceId)
     const banksSnapshot = await workspaceRef.collection('banks').orderBy('name', 'asc').get()
-    const cardCounts = await Promise.all(
+    const cardCounts = includeCardsCount ? await Promise.all(
       banksSnapshot.docs.map(async (bankDoc) => {
         const countSnapshot = await workspaceRef
           .collection('cards')
@@ -44,7 +45,7 @@ export async function GET(req: NextRequest, { params }: {params: Promise<BankRou
 
         return [bankDoc.id, countSnapshot.data().count] as const
       })
-    )
+    ) : []
     const cardsByBank = new Map(cardCounts)
 
     const banks = await Promise.all(banksSnapshot.docs.map(async doc => {
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest, { params }: {params: Promise<BankRou
         id: doc.id,
         ...data,
         iconUrl: data.iconPath ? await getDownloadURLFromPath(data.iconPath) : null,
-        cardsCount: cardsByBank.get(doc.id) || 0,
+        ...(includeCardsCount ? { cardsCount: cardsByBank.get(doc.id) || 0 } : {}),
         createdAt: serializeFirestoreDate(data.createdAt),
         updatedAt: serializeFirestoreDate(data.updatedAt),
       }

@@ -21,6 +21,7 @@ export interface ResponsibleDetails extends PersonResponsible {
   totalCredits?: number
   pendingDebits?: ResponsiblePendingDebit[]
   pendingCredits?: ResponsiblePendingCredit[]
+  nextCursor?: string | null
 }
 
 export async function getResponsibles(
@@ -48,7 +49,7 @@ export async function createResponsible(
 export async function getResponsibleDetails(
   workspaceId: string,
   responsibleId: string,
-  params?: { month?: string; year?: string }
+  params?: { month?: string; year?: string; limit?: number; cursor?: string }
 ): Promise<ResponsibleDetails> {
   const response = await api.get<ResponsibleDetails>(
     `/workspaces/${workspaceId}/responsibles/${responsibleId}`,
