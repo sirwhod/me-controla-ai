@@ -11,7 +11,7 @@ export type AnalyticsDelta = {
   creditCount?: number
 }
 
-/** Atualiza uma projeção mensal de forma atômica; os lançamentos continuam sendo a fonte de verdade. */
+/** @deprecated Compatibilidade temporária. Novas escritas usam `financialPeriods`. */
 export async function applyMonthlyAnalyticsDelta(delta: AnalyticsDelta) {
   const id = `${delta.year}-${delta.month}`
   const ref = db.collection('workspaces').doc(delta.workspaceId).collection('analytics').doc(id)
