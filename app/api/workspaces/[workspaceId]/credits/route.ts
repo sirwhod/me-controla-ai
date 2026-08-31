@@ -8,6 +8,7 @@ import { FieldPath } from 'firebase-admin/firestore'
 import { getRequestId, logFirestoreQuery, logHttpRequest } from '@/app/lib/observability'
 import { calculateEntryDeltas, writeFinancialPeriodDeltas } from '@/app/lib/financial-periods'
 import { InvalidWorkspaceReferenceError, validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
+import { getIdempotencyKey, runIdempotentFinancialWrite } from '@/app/lib/idempotent-financial-write'
 
 interface CreditsRouteParams {
   workspaceId: string;
@@ -181,9 +182,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       createdAt: now,
       updatedAt: now,
     }
+    const idempotencyKey = getIdempotencyKey(req)
 
     if (effectiveType === 'Fixo') {
-      const creditsToCreate = []
+      const creditsToCreate: FirebaseFirestore.DocumentData[] = []
       const currentYear = startDateObj.getFullYear()
       const baseDay = startDateObj.getDate() || 1
       const current = new Date(startDateObj.getFullYear(), startDateObj.getMonth(), baseDay, 12, 0, 0)
@@ -205,24 +207,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
         current.setMonth(current.getMonth() + 1)
       }
 
-      const batch = db.batch()
-      creditsToCreate.forEach((credit) => {
-        const ref = db.collection('workspaces').doc(workspaceId).collection('credits').doc()
-        batch.set(ref, credit)
+      const operation = await runIdempotentFinancialWrite(workspaceId, 'create-credit', idempotencyKey, (transaction) => {
+        creditsToCreate.forEach((credit) => transaction.set(db.collection('workspaces').doc(workspaceId).collection('credits').doc(), credit))
+        writeFinancialPeriodDeltas(transaction, workspaceId, creditsToCreate.flatMap((credit) => calculateEntryDeltas('credit', null, credit)))
+        return { message: 'Receitas fixas criadas com sucesso!', count: creditsToCreate.length }
       })
-      writeFinancialPeriodDeltas(batch, workspaceId, creditsToCreate.flatMap((credit) => calculateEntryDeltas('credit', null, credit)))
-      await batch.commit()
-
-      return NextResponse.json({ message: 'Receitas fixas criadas com sucesso!', count: creditsToCreate.length }, { status: 201 })
+      return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
     }
 
     const newCreditRef = db.collection('workspaces').doc(workspaceId).collection('credits').doc()
-    const batch = db.batch()
-    batch.set(newCreditRef, baseCreditData)
-    writeFinancialPeriodDeltas(batch, workspaceId, calculateEntryDeltas('credit', null, baseCreditData))
-    await batch.commit()
-
-    return NextResponse.json({ message: 'Receita criada com sucesso!', creditId: newCreditRef.id }, { status: 201 })
+    const operation = await runIdempotentFinancialWrite(workspaceId, 'create-credit', idempotencyKey, (transaction) => {
+      transaction.set(newCreditRef, baseCreditData)
+      writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('credit', null, baseCreditData))
+      return { message: 'Receita criada com sucesso!', creditId: newCreditRef.id }
+    })
+    return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
 
   } catch (error) {
     if (error instanceof InvalidWorkspaceReferenceError) {

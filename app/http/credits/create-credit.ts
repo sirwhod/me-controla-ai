@@ -47,7 +47,8 @@ export async function createCredit({
       responsibleId,
       paymentMethod,
       status,
-    }
+    },
+    { headers: { 'Idempotency-Key': crypto.randomUUID() } }
   )
 
   return response.data

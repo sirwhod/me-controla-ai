@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getRequestId, logFirestoreQuery, logHttpRequest } from '@/app/lib/observability'
 import { calculateEntryDeltas, writeFinancialPeriodDeltas } from '@/app/lib/financial-periods'
 import { InvalidWorkspaceReferenceError, validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
+import { getIdempotencyKey, runIdempotentFinancialWrite } from '@/app/lib/idempotent-financial-write'
 
 interface DebitsRouteParams {
   workspaceId: string
@@ -211,18 +212,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
     }
 
     const effectiveFrequency = frequency || 'monthly'
+    const idempotencyKey = getIdempotencyKey(req)
 
     switch (type) {
       case 'Comum': {
         const newDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
-        const batch = db.batch()
-        batch.set(newDebitRef, newDebitData)
-        writeFinancialPeriodDeltas(batch, workspaceId, calculateEntryDeltas('debit', null, newDebitData))
-        await batch.commit()
-        return NextResponse.json({
-          message: 'Débito criado com sucesso!',
-          debitId: newDebitRef.id,
-        }, { status: 201 })
+        const operation = await runIdempotentFinancialWrite(workspaceId, 'create-debit', idempotencyKey, (transaction) => {
+          transaction.set(newDebitRef, newDebitData)
+          writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('debit', null, newDebitData))
+          return { message: 'Débito criado com sucesso!', debitId: newDebitRef.id }
+        })
+        return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
       }
 
       case 'Fixo': {
@@ -232,7 +232,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         newDebitData.startDate = effStartDate
         newDebitData.endDate = endDateObj
 
-        const debitsToCreate = []
+        const debitsToCreate: FirebaseFirestore.DocumentData[] = []
         const baseStartDate = getInvoiceDate(effStartDate)
         const currentYear = baseStartDate.getFullYear()
         const current = new Date(baseStartDate.getFullYear(), baseStartDate.getMonth(), 1)
@@ -249,15 +249,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
           current.setMonth(current.getMonth() + 1)
         }
 
-        const batch = db.batch()
-        debitsToCreate.forEach((debit) => {
-          const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
-          batch.set(ref, debit)
+        const operation = await runIdempotentFinancialWrite(workspaceId, 'create-debit', idempotencyKey, (transaction) => {
+          debitsToCreate.forEach((debit) => transaction.set(db.collection('workspaces').doc(workspaceId).collection('debits').doc(), debit))
+          writeFinancialPeriodDeltas(transaction, workspaceId, debitsToCreate.flatMap((debit) => calculateEntryDeltas('debit', null, debit)))
+          return { message: 'Débitos fixos criados com sucesso!', count: debitsToCreate.length }
         })
-        writeFinancialPeriodDeltas(batch, workspaceId, debitsToCreate.flatMap((debit) => calculateEntryDeltas('debit', null, debit)))
-        await batch.commit()
-
-        return NextResponse.json({ message: 'Débitos fixos criados com sucesso!', count: debitsToCreate.length }, { status: 201 })
+        return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
       }
 
       case 'Assinatura': {
@@ -268,7 +265,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
         newDebitData.endDate = endDateObj
         newDebitData.isActive = true
 
-        const assinaturaDebitsToCreate = []
+        const assinaturaDebitsToCreate: FirebaseFirestore.DocumentData[] = []
         const baseAssinaturaDate = getInvoiceDate(effStartDate)
         const baseDay = baseAssinaturaDate.getDate() || 1
         const startYear = baseAssinaturaDate.getFullYear()
@@ -287,15 +284,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
           assinaturaDebitsToCreate.push(debitForMonth)
         }
 
-        const assinaturaBatch = db.batch()
-        assinaturaDebitsToCreate.forEach((debit) => {
-          const ref = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
-          assinaturaBatch.set(ref, debit)
+        const operation = await runIdempotentFinancialWrite(workspaceId, 'create-debit', idempotencyKey, (transaction) => {
+          assinaturaDebitsToCreate.forEach((debit) => transaction.set(db.collection('workspaces').doc(workspaceId).collection('debits').doc(), debit))
+          writeFinancialPeriodDeltas(transaction, workspaceId, assinaturaDebitsToCreate.flatMap((debit) => calculateEntryDeltas('debit', null, debit)))
+          return { message: 'Assinatura criada com sucesso!', count: assinaturaDebitsToCreate.length }
         })
-        writeFinancialPeriodDeltas(assinaturaBatch, workspaceId, assinaturaDebitsToCreate.flatMap((debit) => calculateEntryDeltas('debit', null, debit)))
-        await assinaturaBatch.commit()
-
-        return NextResponse.json({ message: 'Assinatura criada com sucesso!', count: assinaturaDebitsToCreate.length }, { status: 201 })
+        return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
       }
 
       case 'Parcelamento': {
@@ -354,19 +348,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
           parcelasToCreate.push(parcelaData)
         }
 
-        const parcelaBatch = db.batch()
-        parcelasToCreate.forEach(({ ref, ...debitData }) => {
-          parcelaBatch.set(ref, debitData)
+        const operation = await runIdempotentFinancialWrite(workspaceId, 'create-debit', idempotencyKey, (transaction) => {
+          parcelasToCreate.forEach(({ ref, ...debitData }) => transaction.set(ref, debitData))
+          writeFinancialPeriodDeltas(transaction, workspaceId, parcelasToCreate.flatMap((debit) => calculateEntryDeltas('debit', null, debit)))
+          return { message: 'Parcelamento criado com sucesso!', originalDebitId: firstRef.id, totalInstallments: numInstallments, currentInstallment: currInstallment }
         })
-        writeFinancialPeriodDeltas(parcelaBatch, workspaceId, parcelasToCreate.flatMap((debit) => calculateEntryDeltas('debit', null, debit)))
-        await parcelaBatch.commit()
-
-        return NextResponse.json({
-          message: 'Parcelamento criado com sucesso!',
-          originalDebitId: firstRef.id,
-          totalInstallments: numInstallments,
-          currentInstallment: currInstallment,
-        }, { status: 201 })
+        return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
       }
 
       default:
