@@ -18,6 +18,8 @@
     ,"analytics:backfill:audit": "tsx scripts/backfill-financial-periods.ts --audit"
     ,"analytics:backfill:apply": "tsx scripts/backfill-financial-periods.ts --apply"
     ,"analytics:test:emulator": "tsx scripts/financial-periods-emulator-suite.ts"
+    ,"test:index-rollout": "node --experimental-strip-types scripts/index-rollout-regression-tests.ts"
+    ,"deploy:check-indexes": "node --env-file=.env --experimental-strip-types scripts/check-firestore-indexes.ts"
   },
   "dependencies": {
     "@auth/firebase-adapter": "^2.11.3",
