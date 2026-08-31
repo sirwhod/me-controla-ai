@@ -162,7 +162,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
       const current = await transaction.get(creditRef)
       if (!current.exists) throw new Error('Crédito não encontrado')
       const previous = current.data() || {}
-      transaction.update(creditRef, dataToUpdate)
+      transaction.update(creditRef, dataToUpdate as FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData>)
       writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('credit', previous, { ...previous, ...dataToUpdate }))
     })
 

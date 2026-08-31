@@ -184,7 +184,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
       const current = await transaction.get(debitRef)
       if (!current.exists) throw new Error('Débito não encontrado')
       const previous = current.data() || {}
-      transaction.update(debitRef, dataToUpdate)
+      transaction.update(debitRef, dataToUpdate as FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData>)
       writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('debit', previous, { ...previous, ...dataToUpdate }))
     })
 
