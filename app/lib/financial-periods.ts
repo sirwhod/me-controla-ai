@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { FieldValue, Transaction, WriteBatch } from 'firebase-admin/firestore'
+import { DocumentReference, FieldValue } from 'firebase-admin/firestore'
 import { db } from '@/app/lib/firebase'
 import { FINANCIAL_MONTHS } from '@/app/lib/financial-period'
 
@@ -46,7 +46,7 @@ export function calculateEntryDeltas(kind: EntryKind, before?: FinancialEntrySta
   return [...(before ? [signedDelta(kind, before, -1)] : []), ...(after ? [signedDelta(kind, after, 1)] : [])]
 }
 
-type AtomicWriter = Pick<WriteBatch, 'set'> | Pick<Transaction, 'set'>
+type AtomicWriter = { set(ref: DocumentReference, data: FirebaseFirestore.DocumentData, options: { merge: boolean }): unknown }
 export function writeFinancialPeriodDeltas(writer: AtomicWriter, workspaceId: string, deltas: ReturnType<typeof calculateEntryDeltas>) {
   for (const item of deltas) {
     const period = db.collection('workspaces').doc(workspaceId).collection('financialPeriods').doc(item.id)
