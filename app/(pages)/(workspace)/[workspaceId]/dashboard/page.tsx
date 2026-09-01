@@ -170,19 +170,16 @@ export default function Page() {
     return Math.round(((totalCredits - totalDebits) / totalCredits) * 100)
   }, [totalCredits, totalDebits])
 
-  // Total de gastos no Cartão de Crédito
-  const creditCardTotal = useMemo(() => {
-    return filteredDebits
-      .filter((d) => d.paymentMethod === "Crédito")
-      .reduce((acc, curr) => acc + (Number(curr.value) || 0), 0)
-  }, [filteredDebits])
-
   const cardBalances = useMemo(() => cards.map((card) => ({
     card,
     total: filteredDebits
       .filter((debit) => debit.paymentMethod === "Crédito" && debit.creditCardId === card.id)
       .reduce((sum, debit) => sum + (Number(debit.value) || 0), 0),
   })), [cards, filteredDebits])
+  const creditCardTotal = useMemo(
+    () => cardBalances.reduce((sum, item) => sum + item.total, 0),
+    [cardBalances],
+  )
   const selectedCard = cardBalances[selectedCardIndex % Math.max(cardBalances.length, 1)]
 
   // Agrupamento de despesas por categoria
