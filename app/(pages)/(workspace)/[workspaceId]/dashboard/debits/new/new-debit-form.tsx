@@ -27,7 +27,6 @@ import {
   createDebitSchema,
   PersonResponsible,
   TypeDebit,
-  Debit,
 } from "@/app/types/financial"
 import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
 import { IconName } from "lucide-react/dynamic"
@@ -296,24 +295,7 @@ export function NewDebitForm() {
       })
 
       if (response?.message) {
-        if (payload.type === "Comum" && response.debitId) {
-          const date = new Date(payload.date || new Date().toISOString())
-          const month = date.toLocaleString("pt-BR", { month: "long" })
-          const optimisticDebit = {
-            ...payload,
-            id: response.debitId,
-            workspaceId: workspaceActive.id,
-            month,
-            year: date.getFullYear(),
-            date,
-          } as unknown as Debit
-          queryClient.setQueryData<Debit[]>(
-            ["debits", workspaceActive.id, month, String(date.getFullYear())],
-            (cached) => cached ? [optimisticDebit, ...cached] : [optimisticDebit]
-          )
-        } else {
-          await queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive.id] })
-        }
+        await queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive.id] })
         await invalidateFinancialQueries(queryClient, workspaceActive.id)
         toast.success(response.message)
         router.push(`/${workspaceActive.id}/dashboard/debits`)
