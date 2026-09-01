@@ -63,6 +63,16 @@ export const FINANCIAL_ICONS_CATALOG: IconCatalogItem[] = [
   { name: 'tag', label: 'Etiqueta / Geral', tags: ['geral', 'tag', 'etiqueta', 'outros', 'categoria'] },
 ]
 
+const FINANCIAL_ICON_NAMES = new Set<string>(FINANCIAL_ICONS_CATALOG.map((item) => item.name))
+
+/**
+ * Firestore data can outlive an icon rename/removal. Guard dynamic rendering so
+ * an old category icon never prevents a financial list from rendering.
+ */
+export function isFinancialIconName(value: unknown): value is IconName {
+  return typeof value === 'string' && FINANCIAL_ICON_NAMES.has(value)
+}
+
 export function searchCatalogIcons(query: string): IconName[] {
   if (!query || query.trim() === '') {
     return FINANCIAL_ICONS_CATALOG.map((item) => item.name)

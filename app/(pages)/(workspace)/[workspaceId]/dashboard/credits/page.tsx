@@ -15,7 +15,7 @@ import WorkspaceSelector from "@/app/components/workspace-selector"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { getCredits } from "@/app/http/credits/get-credits"
 import { getResponsibles } from "@/app/http/responsibles"
-import { Bank, Category, Credit, PersonResponsible } from "@/app/types/financial"
+import { Bank, Category, PersonResponsible } from "@/app/types/financial"
 import { useQuery } from "@tanstack/react-query"
 import Link from "@/app/components/context-link"
 import { DataTable } from "./data-table"
@@ -42,6 +42,8 @@ import { BottomSheetFilters } from "@/app/components/ui/bottom-sheet-filters"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
 import { EmptyState } from "@/app/components/states/empty-state"
+import { isFinancialIconName } from "@/app/lib/icons-catalog"
+import { queryKeys } from "@/app/lib/query-keys"
 
 const CREDIT_TYPES = [
   { value: "Comum", label: "Receita Comum" },
@@ -54,12 +56,12 @@ export default function Page() {
   const yearFilter = String(yearFilterNumber)
 
   const {
-    data: credits,
+    data: credits = [],
     isLoading: isCreditsLoading,
     error: creditsError,
     refetch,
-  } = useQuery<Credit[], Error>({
-    queryKey: ["credits", workspaceActive?.id, monthFilter, yearFilter],
+  } = useQuery({
+    queryKey: queryKeys.credits(workspaceActive?.id || "", monthFilter, yearFilterNumber),
     queryFn: () => getCredits(workspaceActive!.id, { month: monthFilter, year: yearFilter }),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
@@ -94,12 +96,14 @@ export default function Page() {
   const [typeFilter, setTypeFilter] = useState<string>("")
 
   const incomeCategories = useMemo(() => {
-    return categories?.filter((cat) => cat.type === "income" || cat.type === "all") || categories
+    return Array.isArray(categories)
+      ? categories.filter((cat) => cat.type === "income" || cat.type === "all")
+      : []
   }, [categories])
 
   // Filtragem local de receitas
   const filteredCredits = useMemo(() => {
-    if (!credits) return []
+    if (!credits.length) return []
     return credits.filter((credit) => {
       const matchCategory = categoryFilter ? credit.categoryId === categoryFilter : true
       const matchBank = bankFilter ? credit.bankId === bankFilter : true
@@ -177,12 +181,12 @@ export default function Page() {
         <div className="flex items-center gap-2 w-full">
           <Link
             href={workspaceActive?.id ? `/${workspaceActive.id}/dashboard` : "/dashboard"}
-            className="flex md:hidden items-center shrink-0"
+            className="flex items-center shrink-0 lg:hidden"
             aria-label="MeControla.AI"
           >
             <Logo className="h-6 w-6 text-primary" />
           </Link>
-          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground hidden md:flex" />
+          <SidebarTrigger className="-ml-1 hidden text-muted-foreground hover:text-foreground lg:flex" />
           <Separator orientation="vertical" className="mr-1 md:mr-2 h-4" />
           <Breadcrumb>
             <BreadcrumbList className="text-xs sm:text-sm">
@@ -195,8 +199,8 @@ export default function Page() {
                   )}
                 </BreadcrumbPage>
               </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem className="hidden md:block">
+              <BreadcrumbSeparator className="hidden lg:block" />
+              <BreadcrumbItem className="hidden lg:block">
                 <Link href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/dashboard`}>
                   Dashboard
                 </Link>
@@ -212,11 +216,11 @@ export default function Page() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-4 p-3 md:p-6 pt-3 max-w-7xl w-full mx-auto pb-20 md:pb-6">
+      <div className="mx-auto flex w-full min-w-0 max-w-7xl flex-1 flex-col gap-4 p-3 pt-3 pb-20 md:p-6 md:pt-3 lg:pb-6">
         {/* ========================================================================= */}
-        {/* 1. ESTRUTURA MOBILE (< 768px): Header + Período + CTA + Filtros + Listagem */}
+        {/* 1. ESTRUTURA MOBILE/TABLET (< 1024px): Header + Período + CTA + Filtros + Listagem */}
         {/* ========================================================================= */}
-        <div className="flex flex-col gap-3 md:hidden w-full">
+        <div className="flex w-full flex-col gap-3 lg:hidden">
           {/* Título da Página */}
           <div className="flex flex-col">
             <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -273,9 +277,9 @@ export default function Page() {
         </div>
 
         {/* ========================================================================= */}
-        {/* 2. ESTRUTURA DESKTOP (>= 768px): Header Amplo + Filtros Inline            */}
+        {/* 2. ESTRUTURA DESKTOP (>= 1024px): Header Amplo + Filtros Inline           */}
         {/* ========================================================================= */}
-        <div className="hidden md:flex flex-col gap-4 w-full">
+        <div className="hidden w-full flex-col gap-4 lg:flex">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -340,12 +344,13 @@ export default function Page() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas categorias</SelectItem>
-                  {incomeCategories?.map((cat) => (
+                  {incomeCategories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
-                      <DynamicIcon
-                        name={cat.icon as IconName}
-                        className="w-4 h-4 mr-1.5 inline-block"
-                      />
+                      {isFinancialIconName(cat.icon) ? (
+                        <DynamicIcon name={cat.icon as IconName} className="w-4 h-4 mr-1.5 inline-block" />
+                      ) : (
+                        <Tags className="w-4 h-4 mr-1.5 inline-block" />
+                      )}
                       {cat.name}
                     </SelectItem>
                   ))}

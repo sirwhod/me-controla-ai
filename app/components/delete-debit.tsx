@@ -19,7 +19,6 @@ import {
 import { deleteDebit } from "@/app/http/debits/delete-debit"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { DropdownMenuItem } from "@/app/components/ui/dropdown-menu"
-import type { Debit } from "@/app/types/financial"
 import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
 
 interface DeleteDebitProps {
@@ -34,12 +33,11 @@ export function DeleteDebit({ debitId, asDropdownItem = false }: DeleteDebitProp
 
   const { mutateAsync: deleteDebitMutation, isPending } = useMutation({
     mutationFn: () => deleteDebit(workspaceActive!.id, debitId),
-    onSuccess: () => {
-      queryClient.setQueriesData<Debit[]>(
-        { queryKey: ["debits", workspaceActive?.id] },
-        (cached) => cached?.filter((debit) => debit.id !== debitId)
-      )
-      void invalidateFinancialQueries(queryClient, workspaceActive?.id)
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive?.id] }),
+        invalidateFinancialQueries(queryClient, workspaceActive?.id),
+      ])
       toast.success("Despesa excluída com sucesso!")
       setOpen(false)
     },

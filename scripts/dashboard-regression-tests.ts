@@ -25,6 +25,10 @@ async function testFinancialQueryInvalidation() {
 
   await invalidateFinancialQueries(queryClient, 'workspace-1')
   assert.deepEqual(invalidatedKeys, [
+    ['debits', 'workspace-1'],
+    ['credits', 'workspace-1'],
+    ['dashboard-debits', 'workspace-1'],
+    ['dashboard-credits', 'workspace-1'],
     ['analytics-summary', 'workspace-1'],
     ['annual-summary', 'workspace-1'],
   ])

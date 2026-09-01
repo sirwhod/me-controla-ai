@@ -98,12 +98,11 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
   const { mutateAsync: updateDebitMutation, isPending } = useMutation({
     mutationFn: (data: UpdateDebitProps) =>
       updateDebit(workspaceActive!.id, debit.id!, data),
-    onSuccess: (_response, variables) => {
-      queryClient.setQueriesData<Debit[]>(
-        { queryKey: ["debits", workspaceActive?.id] },
-        (cached) => cached?.map((item) => item.id === debit.id ? ({ ...item, ...variables } as unknown as Debit) : item)
-      )
-      void invalidateFinancialQueries(queryClient, workspaceActive?.id)
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive?.id] }),
+        invalidateFinancialQueries(queryClient, workspaceActive?.id),
+      ])
       toast.success("Despesa atualizada com sucesso!")
       setOpen(false)
     },

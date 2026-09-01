@@ -1,5 +1,6 @@
 import { api } from '@/app/lib/axios'
 import { Debit } from '@/app/types/financial'
+import { collectFinancialPages } from '@/app/http/collect-financial-pages'
 
 export interface FinancialPeriodParams {
   month?: string
@@ -19,5 +20,5 @@ export async function getDebits(
   workspaceId: string,
   params?: FinancialPeriodParams
 ): Promise<Debit[]> {
-  return (await getDebitsPage(workspaceId, params)).items
+  return collectFinancialPages((cursor) => getDebitsPage(workspaceId, { ...params, limit: 100, cursor }))
 }

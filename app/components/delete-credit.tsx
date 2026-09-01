@@ -8,7 +8,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { deleteCredit } from "../http/credits/delete-credit"
 import { toast } from "sonner"
 import { ConfirmationDialog } from "@/app/components/ui/confirmation-dialog"
-import type { Credit } from "@/app/types/financial"
 import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
 
 interface DeleteCreditProps {
@@ -27,12 +26,11 @@ export function DeleteCredit({ creditId, creditDescription = "esta receita" }: D
         creditId: creditId || "",
         workspaceId: workspaceActive!.id,
       }),
-    onSuccess: (response) => {
-      queryClient.setQueriesData<Credit[]>(
-        { queryKey: ["credits", workspaceActive?.id] },
-        (cached) => cached?.filter((credit) => credit.id !== creditId)
-      )
-      void invalidateFinancialQueries(queryClient, workspaceActive?.id)
+    onSuccess: async (response) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive?.id] }),
+        invalidateFinancialQueries(queryClient, workspaceActive?.id),
+      ])
       toast.success(response.message || "Receita excluída com sucesso!")
       setOpen(false)
     },
