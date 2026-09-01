@@ -487,18 +487,49 @@ export default function Page() {
               </span>
             </Card>
 
-            {/* Dívidas em cartões */}
-            <Card className="shadow-xs border-border/70 bg-card/70 p-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Cartões
-                </span>
-                <CreditCard className="h-3.5 w-3.5 text-violet-500" />
-              </div>
-              <div className="text-sm sm:text-base font-bold text-violet-400 mt-1 truncate">
-                {isLoading || isCardsLoading ? <Skeleton className="h-5 w-20" /> : formatCurrency(creditCardTotal)}
-              </div>
-              <span className="text-[10px] text-muted-foreground mt-0.5 block">Total no período</span>
+            {/* Fatura por cartão */}
+            <Card className="col-span-2 shadow-xs border-border/70 bg-card/70">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cartão no período</CardTitle>
+                <CreditCard className="h-4 w-4 text-violet-500" />
+              </CardHeader>
+              <CardContent>
+                {isLoading || isCardsLoading ? <Skeleton className="h-40 w-full" /> : cardBalances.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum cartão cadastrado.</p>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <div className="relative aspect-[1.586/1] w-full overflow-hidden rounded-xl p-4 text-white shadow-sm" style={{ backgroundColor: selectedCard.card.color || "#6366f1" }}>
+                      <div className="pointer-events-none absolute -right-10 -bottom-10 size-36 rounded-full bg-white/10 blur-xl" />
+                      <div className="pointer-events-none absolute -left-10 -top-10 size-32 rounded-full bg-black/10 blur-xl" />
+                      <div className="relative flex h-full flex-col justify-between">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-semibold uppercase tracking-widest text-white/80">{selectedCard.card.bankName || "Banco emissor"}</p>
+                            <p className="truncate text-lg font-bold tracking-tight">{selectedCard.card.name}</p>
+                          </div>
+                          <CreditCard className="shrink-0 text-white/90" />
+                        </div>
+                        <div className="size-9 rounded-md border border-amber-400/50 bg-amber-300/80 shadow-inner" />
+                        <div className="flex items-end justify-between gap-3">
+                          <p className="font-mono text-sm tracking-wider">•••• •••• •••• {selectedCard.card.last4Digits || "••••"}</p>
+                          <p className="shrink-0 text-right text-xs font-semibold">Fatura<br /><span className="text-base">{formatCurrency(selectedCard.total)}</span></p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <Button variant="outline" size="sm" aria-label="Cartão anterior" onClick={() => setSelectedCardIndex((index) => (index - 1 + cardBalances.length) % cardBalances.length)}>
+                        <ChevronLeft data-icon="inline-start" />
+                        Anterior
+                      </Button>
+                      <span className="text-center text-xs text-muted-foreground">{selectedCardIndex + 1} de {cardBalances.length} · Total: {formatCurrency(creditCardTotal)}</span>
+                      <Button variant="outline" size="sm" aria-label="Próximo cartão" onClick={() => setSelectedCardIndex((index) => (index + 1) % cardBalances.length)}>
+                        Próximo
+                        <ChevronRight data-icon="inline-end" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
             </Card>
 
             {/* Taxa Poupança */}
@@ -617,11 +648,11 @@ export default function Page() {
             </CardContent>
           </Card>
 
-          {/* 4. Dívidas por cartão */}
+          {/* 4. Fatura por cartão */}
           <Card className="shadow-xs border-border/70 bg-card/70">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Total por cartão
+                Cartão no período
               </CardTitle>
               <div className="p-1.5 rounded-lg bg-violet-500/10 text-violet-500">
                 <CreditCard className="h-4 w-4" />
@@ -629,26 +660,29 @@ export default function Page() {
             </CardHeader>
             <CardContent>
               {isLoading || isCardsLoading ? (
-                <Skeleton className="h-7 w-28" />
+                <Skeleton className="h-36 w-full" />
               ) : cardBalances.length === 0 ? (
                 <p className="text-xs text-muted-foreground">Nenhum cartão cadastrado.</p>
               ) : (
                 <>
-                  <div className="flex items-center justify-between gap-2">
-                    <Button variant="ghost" size="icon" aria-label="Cartão anterior" onClick={() => setSelectedCardIndex((index) => (index - 1 + cardBalances.length) % cardBalances.length)}>
-                      <ChevronLeft />
-                    </Button>
-                    <div className="min-w-0 text-center">
-                      <p className="truncate text-xs font-medium">{selectedCard.card.name}</p>
-                      <div className="text-lg sm:text-xl font-bold text-violet-400">{formatCurrency(selectedCard.total)}</div>
+                  <div className="flex flex-col gap-2">
+                    <div className="relative aspect-[1.586/1] w-full overflow-hidden rounded-xl p-3 text-white shadow-sm" style={{ backgroundColor: selectedCard.card.color || "#6366f1" }}>
+                      <div className="pointer-events-none absolute -right-8 -bottom-8 size-28 rounded-full bg-white/10 blur-xl" />
+                      <div className="relative flex h-full flex-col justify-between">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0"><p className="truncate text-[10px] font-semibold uppercase tracking-wider text-white/80">{selectedCard.card.bankName || "Banco emissor"}</p><p className="truncate text-sm font-bold">{selectedCard.card.name}</p></div>
+                          <CreditCard className="shrink-0 text-white/90" />
+                        </div>
+                        <div className="size-7 rounded-md border border-amber-400/50 bg-amber-300/80 shadow-inner" />
+                        <div className="flex items-end justify-between gap-2"><p className="font-mono text-[10px] tracking-wide">•••• {selectedCard.card.last4Digits || "••••"}</p><p className="text-right text-sm font-bold">{formatCurrency(selectedCard.total)}</p></div>
+                      </div>
                     </div>
-                    <Button variant="ghost" size="icon" aria-label="Próximo cartão" onClick={() => setSelectedCardIndex((index) => (index + 1) % cardBalances.length)}>
-                      <ChevronRight />
-                    </Button>
+                    <div className="flex items-center justify-between gap-1">
+                      <Button variant="ghost" size="icon" aria-label="Cartão anterior" onClick={() => setSelectedCardIndex((index) => (index - 1 + cardBalances.length) % cardBalances.length)}><ChevronLeft /></Button>
+                      <span className="text-xs text-muted-foreground">{selectedCardIndex + 1}/{cardBalances.length}</span>
+                      <Button variant="ghost" size="icon" aria-label="Próximo cartão" onClick={() => setSelectedCardIndex((index) => (index + 1) % cardBalances.length)}><ChevronRight /></Button>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Total no período: {formatCurrency(creditCardTotal)} · {selectedCardIndex + 1}/{cardBalances.length}
-                  </p>
                 </>
               )}
             </CardContent>
