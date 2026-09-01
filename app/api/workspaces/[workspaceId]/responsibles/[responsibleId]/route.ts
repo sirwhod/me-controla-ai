@@ -30,9 +30,6 @@ export async function GET(req: NextRequest, props: RouteParams) {
     const { searchParams } = new URL(req.url)
     const month = searchParams.get('month')
     const year = searchParams.get('year')
-    if (!month || month === 'todos' || !year || year === 'todos') {
-      return NextResponse.json({ message: 'Mês e ano são obrigatórios para o detalhe' }, { status: 400 })
-    }
     const requestedLimit = Number(searchParams.get('limit'))
     const pageLimit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(Math.floor(requestedLimit), 100) : 50
     const cursor = searchParams.get('cursor')
@@ -50,6 +47,46 @@ export async function GET(req: NextRequest, props: RouteParams) {
 
     const responsibleData = responsibleDoc.data()!
 
+    // Editing a responsible only needs its registration data. Financial
+    // details are loaded exclusively when a complete period is provided.
+    const hasMonth = Boolean(month && month !== 'todos')
+    const hasYear = Boolean(year && year !== 'todos')
+    if (hasMonth !== hasYear) {
+      return NextResponse.json({ message: 'Informe mês e ano juntos para consultar os saldos' }, { status: 400 })
+    }
+
+    let userImage: string | null = null
+    let isRegisteredUser = false
+    if (responsibleData.email) {
+      const userSnap = await db
+        .collection('users')
+        .where('email', '==', responsibleData.email.toLowerCase().trim())
+        .limit(1)
+        .get()
+      if (!userSnap.empty) {
+        userImage = userSnap.docs[0].data()?.image || null
+        isRegisteredUser = true
+      }
+    }
+
+    const registration = {
+      id: responsibleDoc.id,
+      workspaceId,
+      name: responsibleData.name,
+      email: responsibleData.email || null,
+      userImage,
+      isRegisteredUser,
+      status: responsibleData.status || 'active',
+      createdAt: serializeFirestoreDate(responsibleData.createdAt),
+      updatedAt: serializeFirestoreDate(responsibleData.updatedAt),
+    }
+
+    if (!hasMonth && !hasYear) {
+      return NextResponse.json(registration, { status: 200 })
+    }
+    const periodMonth = month as string
+    const periodYear = year as string
+
     // Responsible aggregates from schema v1 do not encode debt direction.
     // Read source entries until a directional aggregate is backfilled.
     const hasAggregate = false
@@ -59,8 +96,8 @@ export async function GET(req: NextRequest, props: RouteParams) {
     let creditsQuery: FirebaseFirestore.Query = db.collection('workspaces').doc(workspaceId)
       .collection('credits').where('responsibleId', '==', responsibleId)
 
-    debitsQuery = debitsQuery.where('month', '==', month.toLowerCase()).where('year', '==', Number(year))
-    creditsQuery = creditsQuery.where('month', '==', month.toLowerCase()).where('year', '==', Number(year))
+    debitsQuery = debitsQuery.where('month', '==', periodMonth.toLowerCase()).where('year', '==', Number(periodYear))
+    creditsQuery = creditsQuery.where('month', '==', periodMonth.toLowerCase()).where('year', '==', Number(periodYear))
     let decodedCursor: { date: string; id: string } | null = null
     if (cursor) {
       try { decodedCursor = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) }
@@ -130,34 +167,14 @@ export async function GET(req: NextRequest, props: RouteParams) {
 
     const balance = calculateResponsibleBalance(balanceDebits, balanceCredits)
 
-    // Verificar se o e-mail corresponde a um usuário cadastrado
-    let userImage: string | null = null
-    let isRegisteredUser = false
-
-    if (responsibleData.email) {
-      const userSnap = await db
-        .collection('users')
-        .where('email', '==', responsibleData.email.toLowerCase().trim())
-        .limit(1)
-        .get()
-
-      if (!userSnap.empty) {
-        userImage = userSnap.docs[0].data()?.image || null
-        isRegisteredUser = true
-      }
-    }
-
     return NextResponse.json({
-      id: responsibleDoc.id,
-      workspaceId,
-      name: responsibleData.name,
-      email: responsibleData.email || null,
-      userImage,
-      isRegisteredUser,
-      status: responsibleData.status || 'active',
+      ...registration,
       totalPending: Number(balance.outstandingReceivable.toFixed(2)),
       totalDebits: Number(balance.expensesResponsibleOwes.toFixed(2)),
       totalCredits: Number(balance.received.toFixed(2)),
+      received: Number(balance.received.toFixed(2)),
+      appliedReceived: Number(balance.appliedReceived.toFixed(2)),
+      overpayment: Number(balance.overpayment.toFixed(2)),
       payable: Number(balance.payable.toFixed(2)),
       receivable: Number(balance.receivable.toFixed(2)),
       outstandingReceivable: Number(balance.outstandingReceivable.toFixed(2)),
@@ -165,8 +182,6 @@ export async function GET(req: NextRequest, props: RouteParams) {
       pendingDebits,
       pendingCredits: pendingDebits, // Alias para retrocompatibilidade
       nextCursor,
-      createdAt: serializeFirestoreDate(responsibleData.createdAt),
-      updatedAt: serializeFirestoreDate(responsibleData.updatedAt),
     }, { status: 200 })
   } catch (error) {
     console.error('Erro ao buscar responsável:', error)
@@ -223,7 +238,13 @@ export async function PATCH(req: NextRequest, props: RouteParams) {
         if (!userSnap.empty) {
           updateData.linkedUserId = userSnap.docs[0].id
           updateData.status = 'linked'
+        } else {
+          updateData.linkedUserId = null
+          updateData.status = 'active'
         }
+      } else {
+        updateData.linkedUserId = null
+        updateData.status = 'active'
       }
     }
 
