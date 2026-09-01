@@ -33,16 +33,20 @@ export function ResponsibleList({ children, className }: ResponsibleListProps) {
 }
 
 interface ResponsibleListItemProps {
-  resp: PersonResponsible & { pendingBalance: number; payable?: number; receivable?: number; netBalance?: number }
+  resp: PersonResponsible & { pendingBalance: number; payable?: number; receivable?: number; received?: number; overpayment?: number; outstandingReceivable?: number; netBalance?: number }
   month?: string
   year?: string
 }
 
 export function ResponsibleListItem({ resp, month, year }: ResponsibleListItemProps) {
   const receivable = resp.receivable ?? resp.pendingBalance ?? 0
+  const received = resp.received ?? 0
   const payable = resp.payable ?? 0
-  const balance = resp.netBalance ?? receivable - payable
-  const hasDebt = receivable > 0
+  const outstandingReceivable = resp.outstandingReceivable ?? resp.pendingBalance ?? 0
+  const overpayment = resp.overpayment ?? 0
+  const balance = resp.netBalance ?? outstandingReceivable - payable
+  const hasReceivable = balance > 0
+  const hasPayable = balance < 0
   const initials = (resp.name || "??")
     .trim()
     .split(/\s+/)
@@ -138,7 +142,7 @@ export function ResponsibleListItem({ resp, month, year }: ResponsibleListItemPr
           </span>
 
           <div className="flex items-baseline gap-1.5">
-            {hasDebt ? (
+            {hasReceivable ? (
               <span className="text-base font-bold text-rose-500 tracking-tight">
                 {formatCurrency(balance)}
               </span>
@@ -150,15 +154,20 @@ export function ResponsibleListItem({ resp, month, year }: ResponsibleListItemPr
           </div>
 
           {/* Status Indicador com ponto colorido acessível */}
-          {hasDebt ? (
+          {hasReceivable ? (
             <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-500 mt-0.5">
               <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
-              <span>A receber: {formatCurrency(receivable)} · A pagar: {formatCurrency(payable)}</span>
+              <span>Em aberto: {formatCurrency(outstandingReceivable)}</span>
             </div>
-          ) : (
+          ) : hasPayable ? (
             <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500 mt-0.5">
               <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-              <span>{balance < 0 ? "Você deve ao responsável" : "Em dia"}</span>
+              <span>Você deve por lançamentos: {formatCurrency(payable)}</span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-0.5 text-xs text-muted-foreground mt-0.5">
+              <span>Em dia · Gerado {formatCurrency(receivable)} · Recebido {formatCurrency(received)}</span>
+              {overpayment > 0 && <span>Excedente de {formatCurrency(overpayment)} não gera dívida</span>}
             </div>
           )}
         </div>

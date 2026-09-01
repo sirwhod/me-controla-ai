@@ -28,4 +28,13 @@ const mixed = calculateResponsibleBalance(
 )
 assert(mixed.receivable === 150 && mixed.outstandingReceivable === 100 && mixed.payable === 40 && mixed.netBalance === 60, 'direções mistas não podem ser compensadas incorretamente')
 
+const overpaid = calculateResponsibleBalance(
+  [{ value: 16.65, debtDirection: 'responsible_owes_me' }],
+  [{ value: 16.65 }, { value: 16.65 }],
+)
+assert(overpaid.receivable === 16.65, 'o total gerado a receber deve permanecer fixo')
+assert(overpaid.received === 33.3 && overpaid.appliedReceived === 16.65, 'somente o valor da cobrança pode ser aplicado')
+assert(overpaid.outstandingReceivable === 0 && overpaid.netBalance === 0, 'pagamento excedente não pode criar dívida a pagar')
+assert(overpaid.overpayment === 16.65, 'pagamento excedente deve ser informado separadamente')
+
 console.log('Responsible balance regression tests passed.')

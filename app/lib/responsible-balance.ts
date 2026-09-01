@@ -12,6 +12,8 @@ export interface ResponsibleBalance {
   expensesResponsibleOwes: number
   expensesIOwe: number
   received: number
+  appliedReceived: number
+  overpayment: number
   payable: number
   receivable: number
   outstandingReceivable: number
@@ -41,14 +43,19 @@ export function calculateResponsibleBalance(
   // Credits are settlements, so only the net balance changes after a receipt.
   const receivable = Math.max(0, expensesResponsibleOwes)
   const payable = Math.max(0, expensesIOwe)
-  const outstandingReceivable = Math.max(0, receivable - received)
+  const appliedReceived = Math.min(receivable, Math.max(0, received))
+  const overpayment = Math.max(0, received - receivable)
+  const outstandingReceivable = receivable - appliedReceived
   return {
     expensesResponsibleOwes,
     expensesIOwe,
     received,
+    appliedReceived,
+    overpayment,
     payable,
     receivable,
     outstandingReceivable,
-    netBalance: receivable - payable - received,
+    // A payment can settle a receivable, but it must never create a payable.
+    netBalance: outstandingReceivable - payable,
   }
 }

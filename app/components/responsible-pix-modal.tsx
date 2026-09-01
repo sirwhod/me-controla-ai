@@ -86,6 +86,8 @@ export function ResponsiblePixModal({
 
   const receivable = details?.receivable ?? details?.totalPending ?? pendingBalance
   const outstandingReceivable = details?.outstandingReceivable ?? details?.totalPending ?? pendingBalance
+  const received = details?.received ?? details?.totalCredits ?? 0
+  const overpayment = details?.overpayment ?? 0
   const payable = details?.payable ?? 0
   const netBalance = details?.netBalance ?? receivable - payable
   const receivableDebits = useMemo(() => debitsList.filter((item) => item.debtDirection !== "i_owe_responsible"), [debitsList])
@@ -104,13 +106,16 @@ export function ResponsiblePixModal({
       ...(receivableDebits.length ? ["A RECEBER:", ...receivableDebits.map((d) => `• ${d.dateFormatted ? d.dateFormatted + ' - ' : ''}${d.description}: ${formatCurrency(d.value)}`)] : ["A RECEBER: nenhum valor"]),
       ...(payableDebits.length ? ["A PAGAR:", ...payableDebits.map((d) => `• ${d.dateFormatted ? d.dateFormatted + ' - ' : ''}${d.description}: ${formatCurrency(d.value)}`)] : ["A PAGAR: nenhum valor"]),
       `---------------------------------`,
-      `💰 Total a receber: ${formatCurrency(receivable)}`,
+      `🧾 Total gerado a receber: ${formatCurrency(receivable)}`,
+      `✅ Total recebido: ${formatCurrency(received)}`,
+      `💰 Ainda em aberto: ${formatCurrency(outstandingReceivable)}`,
       `💸 Total a pagar: ${formatCurrency(payable)}`,
       `↔️ Saldo líquido: ${formatCurrency(netBalance)}`,
+      ...(overpayment > 0 ? [`ℹ️ Excedente recebido (não gera dívida): ${formatCurrency(overpayment)}`] : []),
       bankInfo,
       `\nObrigado! 🚀`,
     ].join('\n')
-  }, [receivableDebits, payableDebits, receivable, payable, netBalance, month, year, responsibleName, selectedBank])
+  }, [receivableDebits, payableDebits, receivable, received, outstandingReceivable, payable, netBalance, overpayment, month, year, responsibleName, selectedBank])
 
   // Mutation para registrar a Receita de acerto e abater o saldo
   const { mutateAsync: generateCreditMutation, isPending: isGeneratingCredit } = useMutation({
@@ -232,11 +237,15 @@ export function ResponsiblePixModal({
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-center justify-between">
               <div>
                 <span className="text-xs font-semibold text-muted-foreground uppercase">
-                  A receber {month && month !== 'todos' ? `(${month})` : ''}
+                  Gerado a receber {month && month !== 'todos' ? `(${month})` : ''}
                 </span>
                 <div className="text-2xl font-extrabold text-foreground">
                   {formatCurrency(receivable)}
                 </div>
+                <div className="text-xs text-muted-foreground">
+                  Recebido {formatCurrency(received)} · Em aberto {formatCurrency(outstandingReceivable)}
+                </div>
+                {overpayment > 0 && <div className="text-xs text-muted-foreground">Excedente de {formatCurrency(overpayment)} não gera dívida.</div>}
               </div>
               <div className="text-right">
                 <span className="text-xs text-muted-foreground">Chave PIX:</span>

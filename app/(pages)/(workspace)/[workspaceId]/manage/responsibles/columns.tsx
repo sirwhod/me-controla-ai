@@ -20,7 +20,7 @@ import { formatCurrency } from "@/app/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Badge } from "@/app/components/ui/badge"
 
-type ResponsibleFinancial = PersonResponsible & { pendingBalance: number; payable?: number; receivable?: number; netBalance?: number }
+type ResponsibleFinancial = PersonResponsible & { pendingBalance: number; payable?: number; receivable?: number; received?: number; overpayment?: number; outstandingReceivable?: number; netBalance?: number }
 
 export function getColumns(month?: string, year?: string): ColumnDef<ResponsibleFinancial>[] {
   return [
@@ -61,14 +61,16 @@ export function getColumns(month?: string, year?: string): ColumnDef<Responsible
       accessorKey: "netBalance",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Saldo com responsável" />,
       cell: ({ row }) => {
-        const { receivable = row.original.pendingBalance || 0, payable = 0, netBalance = receivable - payable } = row.original
+        const { receivable = 0, received = 0, payable = 0, overpayment = 0, outstandingReceivable = row.original.pendingBalance || 0, netBalance = outstandingReceivable - payable } = row.original
         return (
-          <div className="flex flex-col gap-0.5 text-xs">
-            <span>A receber: <strong>{formatCurrency(receivable)}</strong></span>
-            <span>A pagar: <strong>{formatCurrency(payable)}</strong></span>
+          <div className="flex flex-col gap-1 text-xs">
+            <span>Gerado a receber: <strong>{formatCurrency(receivable)}</strong></span>
+            <span>Recebido: <strong>{formatCurrency(received)}</strong></span>
+            <span>Gerado a pagar: <strong>{formatCurrency(payable)}</strong></span>
             <span className={netBalance < 0 ? "font-bold text-rose-500" : "font-bold text-emerald-600"}>
-              {netBalance < 0 ? "Você deve: " : "Saldo líquido: "}{formatCurrency(Math.abs(netBalance))}
+              {netBalance < 0 ? "Você deve por lançamentos: " : "Saldo ainda em aberto: "}{formatCurrency(Math.abs(netBalance))}
             </span>
+            {overpayment > 0 && <span className="text-muted-foreground">Excedente recebido: {formatCurrency(overpayment)} — não gera dívida</span>}
           </div>
         )
       },
