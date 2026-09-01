@@ -19,8 +19,9 @@ import { getCreditsPage } from "@/app/http/credits/get-credits"
 import { getAnnualSummary } from "@/app/http/summary/get-annual-summary"
 import { getAnalyticsSummary } from "@/app/http/summary/get-analytics-summary"
 import { getGoals } from "@/app/http/goals/get-goals"
-import { Debit, Credit, Goal } from "@/app/types/financial"
-import { useMemo } from "react"
+import { getCards } from "@/app/http/cards"
+import { Debit, Credit, CreditCard as CreditCardType, Goal } from "@/app/types/financial"
+import { useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card"
 import {
   ArrowDownCircle,
@@ -28,6 +29,7 @@ import {
   Banknote,
   BarChart3,
   ChevronRight,
+  ChevronLeft,
   CreditCard,
   Landmark,
   PieChart,
@@ -71,6 +73,7 @@ export default function Page() {
   const { month: monthFilter, year: yearFilterNumber } = useDateFilter()
   const yearFilter = String(yearFilterNumber)
   const prefix = workspaceActive?.id ? `/${workspaceActive.id}` : ""
+  const [selectedCardIndex, setSelectedCardIndex] = useState(0)
 
   const { data: debitsPage, isLoading: isDebitsLoading } = useQuery({
     queryKey: ["debits", workspaceActive?.id, monthFilter, yearFilter],
@@ -114,6 +117,12 @@ export default function Page() {
   const { data: goals, isLoading: isGoalsLoading } = useQuery<Goal[], Error>({
     queryKey: ["goals", workspaceActive?.id],
     queryFn: () => getGoals(workspaceActive!.id),
+    staleTime: 1000 * 60 * 5,
+    enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
+  })
+  const { data: cards = [], isLoading: isCardsLoading } = useQuery<CreditCardType[], Error>({
+    queryKey: ["cards", workspaceActive?.id],
+    queryFn: () => getCards(workspaceActive!.id),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
@@ -167,6 +176,14 @@ export default function Page() {
       .filter((d) => d.paymentMethod === "Crédito")
       .reduce((acc, curr) => acc + (Number(curr.value) || 0), 0)
   }, [filteredDebits])
+
+  const cardBalances = useMemo(() => cards.map((card) => ({
+    card,
+    total: filteredDebits
+      .filter((debit) => debit.paymentMethod === "Crédito" && debit.creditCardId === card.id)
+      .reduce((sum, debit) => sum + (Number(debit.value) || 0), 0),
+  })), [cards, filteredDebits])
+  const selectedCard = cardBalances[selectedCardIndex % Math.max(cardBalances.length, 1)]
 
   // Agrupamento de despesas por categoria
   const expensesByCategory = useMemo(() => {
@@ -473,18 +490,18 @@ export default function Page() {
               </span>
             </Card>
 
-            {/* Fatura Cartão */}
+            {/* Dívidas em cartões */}
             <Card className="shadow-xs border-border/70 bg-card/70 p-3">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Fatura Cartão
+                  Cartões
                 </span>
                 <CreditCard className="h-3.5 w-3.5 text-violet-500" />
               </div>
               <div className="text-sm sm:text-base font-bold text-violet-400 mt-1 truncate">
-                {isLoading ? <Skeleton className="h-5 w-20" /> : formatCurrency(creditCardTotal)}
+                {isLoading || isCardsLoading ? <Skeleton className="h-5 w-20" /> : formatCurrency(creditCardTotal)}
               </div>
-              <span className="text-[10px] text-muted-foreground mt-0.5 block">No crédito</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">Total no período</span>
             </Card>
 
             {/* Taxa Poupança */}
@@ -603,26 +620,37 @@ export default function Page() {
             </CardContent>
           </Card>
 
-          {/* 4. Fatura do Cartão */}
+          {/* 4. Dívidas por cartão */}
           <Card className="shadow-xs border-border/70 bg-card/70">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Fatura Cartão
+                Total por cartão
               </CardTitle>
               <div className="p-1.5 rounded-lg bg-violet-500/10 text-violet-500">
                 <CreditCard className="h-4 w-4" />
               </div>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
+              {isLoading || isCardsLoading ? (
                 <Skeleton className="h-7 w-28" />
+              ) : cardBalances.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhum cartão cadastrado.</p>
               ) : (
                 <>
-                  <div className="text-lg sm:text-xl font-bold text-violet-400">
-                    {formatCurrency(creditCardTotal)}
+                  <div className="flex items-center justify-between gap-2">
+                    <Button variant="ghost" size="icon" aria-label="Cartão anterior" onClick={() => setSelectedCardIndex((index) => (index - 1 + cardBalances.length) % cardBalances.length)}>
+                      <ChevronLeft />
+                    </Button>
+                    <div className="min-w-0 text-center">
+                      <p className="truncate text-xs font-medium">{selectedCard.card.name}</p>
+                      <div className="text-lg sm:text-xl font-bold text-violet-400">{formatCurrency(selectedCard.total)}</div>
+                    </div>
+                    <Button variant="ghost" size="icon" aria-label="Próximo cartão" onClick={() => setSelectedCardIndex((index) => (index + 1) % cardBalances.length)}>
+                      <ChevronRight />
+                    </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    No cartão de crédito
+                    Total no período: {formatCurrency(creditCardTotal)} · {selectedCardIndex + 1}/{cardBalances.length}
                   </p>
                 </>
               )}
