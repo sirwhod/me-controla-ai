@@ -26,7 +26,7 @@ try {
   try { moneyToCents('invalid') } catch { invalidRejected = true }
   check('valor inválido é rejeitado', invalidRejected)
 
-  const entry = { value: 10.01, month: 'janeiro', year: 2026, responsibleId: 'responsible-a' }
+  const entry = { value: 10.01, month: 'janeiro', year: 2026, responsibleId: 'responsible-a', creditCardId: 'card-a' }
   const create = () => runIdempotentFinancialWrite(workspaceId, 'create-debit', 'same-operation-key', (transaction) => {
     const ref = workspace.collection('debits').doc('stable-debit')
     transaction.set(ref, entry)
@@ -37,11 +37,12 @@ try {
   check('repetição concorrente tem um replay', concurrent.filter((result) => result.replayed).length === 1)
   const january = await workspace.collection('financialPeriods').doc('2026-01').get()
   check('retry não duplica total', january.data()?.totalExpensesCents === 1001 && january.data()?.debitCount === 1)
+  check('retry não duplica total do cartão', january.data()?.cardExpensesCents?.['card-a'] === 1001 && january.data()?.cardDebitCount?.['card-a'] === 1)
 
   const debitRef = workspace.collection('debits').doc('stable-debit')
   await db.runTransaction(async (transaction) => {
     const current = await transaction.get(debitRef); const before = current.data()!
-    const after = { ...before, value: 20.02, month: 'fevereiro', responsibleId: 'responsible-b' }
+    const after = { ...before, value: 20.02, month: 'fevereiro', responsibleId: 'responsible-b', creditCardId: 'card-b' }
     transaction.set(debitRef, after)
     writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('debit', before, after))
   })
@@ -53,6 +54,7 @@ try {
   check('mudança de período compensa origem', januaryAfter.data()?.totalExpensesCents === 0 && januaryAfter.data()?.debitCount === 0)
   check('mudança de período incrementa destino', february.data()?.totalExpensesCents === 2002 && february.data()?.debitCount === 1)
   check('mudança de responsável compensa ambos', responsibleA.data()?.totalExpensesCents === 0 && responsibleB.data()?.totalExpensesCents === 2002)
+  check('mudança de cartão compensa origem e destino', januaryAfter.data()?.cardExpensesCents?.['card-a'] === 0 && february.data()?.cardExpensesCents?.['card-b'] === 2002)
 
   const installments = [334, 333, 333]
   await db.runTransaction(async (transaction) => {

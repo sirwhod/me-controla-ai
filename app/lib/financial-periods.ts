@@ -5,8 +5,9 @@ import { db } from '@/app/lib/firebase'
 import { FINANCIAL_MONTHS } from '@/app/lib/financial-period'
 
 export const FINANCIAL_PERIOD_SCHEMA_VERSION = 1
+export const CARD_TOTALS_SCHEMA_VERSION = 1
 export type EntryKind = 'debit' | 'credit'
-export type FinancialEntryState = { value?: unknown; month?: unknown; year?: unknown; responsibleId?: unknown }
+export type FinancialEntryState = { value?: unknown; month?: unknown; year?: unknown; responsibleId?: unknown; creditCardId?: unknown }
 export type PeriodDelta = { expensesCents: number; incomeCents: number; debitCount: number; creditCount: number }
 
 export function moneyToCents(value: unknown): number {
@@ -36,6 +37,7 @@ function signedDelta(kind: EntryKind, state: FinancialEntryState, multiplier: 1 
   return {
     id: financialPeriodId(state.year, state.month), year: Number(state.year), month: monthNumber(state.month),
     responsibleId: typeof state.responsibleId === 'string' && state.responsibleId ? state.responsibleId : null,
+    creditCardId: kind === 'debit' && typeof state.creditCardId === 'string' && state.creditCardId ? state.creditCardId : null,
     delta: kind === 'debit'
       ? { expensesCents: cents, incomeCents: 0, debitCount: multiplier, creditCount: 0 }
       : { expensesCents: 0, incomeCents: cents, debitCount: 0, creditCount: multiplier },
@@ -64,13 +66,41 @@ export function writeFinancialPeriodDeltas(writer: AtomicWriter, workspaceId: st
     if (current) merge(current.delta, item.delta)
     else periodTotals.set(item.id, { ...item, responsibleId: null, delta: { ...item.delta } })
   }
+  const cardTotals = new Map<string, { id: string; year: number; month: number; cardId: string; expensesCents: number; debitCount: number }>()
+  for (const item of deltas) {
+    if (!item.creditCardId || item.delta.expensesCents === 0) continue
+    const key = `${item.id}:${item.creditCardId}`
+    const current = cardTotals.get(key)
+    if (current) {
+      current.expensesCents += item.delta.expensesCents
+      current.debitCount += item.delta.debitCount
+    } else {
+      cardTotals.set(key, {
+        id: item.id,
+        year: item.year,
+        month: item.month,
+        cardId: item.creditCardId,
+        expensesCents: item.delta.expensesCents,
+        debitCount: item.delta.debitCount,
+      })
+    }
+  }
+  const cardsByPeriod = new Map<string, typeof cardTotals extends Map<string, infer TValue> ? TValue[] : never>()
+  for (const item of cardTotals.values()) {
+    cardsByPeriod.set(item.id, [...(cardsByPeriod.get(item.id) ?? []), item])
+  }
   for (const item of periodTotals.values()) {
     const period = db.collection('workspaces').doc(workspaceId).collection('financialPeriods').doc(item.id)
+    const periodCards = cardsByPeriod.get(item.id) ?? []
     writer.set(period, {
       workspaceId, year: item.year, month: item.month, schemaVersion: FINANCIAL_PERIOD_SCHEMA_VERSION,
       totalExpensesCents: FieldValue.increment(item.delta.expensesCents),
       totalIncomeCents: FieldValue.increment(item.delta.incomeCents),
       debitCount: FieldValue.increment(item.delta.debitCount), creditCount: FieldValue.increment(item.delta.creditCount),
+      ...(periodCards.length ? {
+        cardExpensesCents: Object.fromEntries(periodCards.map((card) => [card.cardId, FieldValue.increment(card.expensesCents)])),
+        cardDebitCount: Object.fromEntries(periodCards.map((card) => [card.cardId, FieldValue.increment(card.debitCount)])),
+      } : {}),
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true })
   }
@@ -88,5 +118,6 @@ export function writeFinancialPeriodDeltas(writer: AtomicWriter, workspaceId: st
 
 export function serializeFinancialPeriod(data: FirebaseFirestore.DocumentData) {
   return { totalExpenses: Number(data.totalExpensesCents ?? 0) / 100, totalIncome: Number(data.totalIncomeCents ?? 0) / 100,
-    debitCount: Number(data.debitCount ?? 0), creditCount: Number(data.creditCount ?? 0) }
+    debitCount: Number(data.debitCount ?? 0), creditCount: Number(data.creditCount ?? 0),
+    cardTotals: Object.fromEntries(Object.entries(data.cardExpensesCents ?? {}).map(([cardId, cents]) => [cardId, Number(cents) / 100])) as Record<string, number> }
 }

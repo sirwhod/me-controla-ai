@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { FieldPath, FieldValue } from 'firebase-admin/firestore'
 import { db } from '../app/lib/firebase'
 import { FINANCIAL_MONTHS } from '../app/lib/financial-period'
-import { FINANCIAL_PERIOD_SCHEMA_VERSION, financialPeriodId, moneyToCents, monthNumber } from '../app/lib/financial-periods'
+import { CARD_TOTALS_SCHEMA_VERSION, FINANCIAL_PERIOD_SCHEMA_VERSION, financialPeriodId, moneyToCents, monthNumber } from '../app/lib/financial-periods'
 
 const args = new Map(process.argv.slice(2).map((arg) => { const [key, ...rest] = arg.split('='); return [key, rest.join('=') || 'true'] }))
 const apply = args.has('--apply')
@@ -21,9 +21,9 @@ if (apply && (!requestedMonth || !projectId || confirmation !== 'APPLY_TO_EMULAT
 if (apply && !process.env.FIRESTORE_EMULATOR_HOST) throw new Error('--apply é bloqueado fora do Firebase Emulator')
 if (apply && process.env.GCLOUD_PROJECT !== projectId) throw new Error('O --projectId não corresponde ao ambiente confirmado')
 
-type Totals = { expenses: number; income: number; debits: number; credits: number; responsibles: Map<string, Totals> }
+type Totals = { expenses: number; income: number; debits: number; credits: number; responsibles: Map<string, Totals>; cards: Map<string, { expenses: number; debits: number }> }
 const periods = new Map<string, Totals>()
-const empty = (): Totals => ({ expenses: 0, income: 0, debits: 0, credits: 0, responsibles: new Map() })
+const empty = (): Totals => ({ expenses: 0, income: 0, debits: 0, credits: 0, responsibles: new Map(), cards: new Map() })
 let scanned = 0
 
 for (const collection of ['debits', 'credits'] as const) {
@@ -39,6 +39,10 @@ for (const collection of ['debits', 'credits'] as const) {
       const data = document.data(); const id = financialPeriodId(data.year, data.month)
       const total = periods.get(id) ?? empty(); const cents = moneyToCents(data.value)
       if (collection === 'debits') { total.expenses += cents; total.debits += 1 } else { total.income += cents; total.credits += 1 }
+      if (collection === 'debits' && typeof data.creditCardId === 'string' && data.creditCardId) {
+        const card = total.cards.get(data.creditCardId) ?? { expenses: 0, debits: 0 }
+        card.expenses += cents; card.debits += 1; total.cards.set(data.creditCardId, card)
+      }
       if (data.responsibleId) {
         const responsible = total.responsibles.get(data.responsibleId) ?? empty()
         if (collection === 'debits') { responsible.expenses += cents; responsible.debits += 1 } else { responsible.income += cents; responsible.credits += 1 }
@@ -53,13 +57,18 @@ for (const collection of ['debits', 'credits'] as const) {
 const runId = randomUUID()
 const report: unknown[] = []
 for (const [id, totals] of periods) {
-  const canonical = JSON.stringify({ id, expenses: totals.expenses, income: totals.income, debits: totals.debits, credits: totals.credits })
+  const cards = Object.fromEntries([...totals.cards].sort(([left], [right]) => left.localeCompare(right)))
+  const canonical = JSON.stringify({ id, expenses: totals.expenses, income: totals.income, debits: totals.debits, credits: totals.credits, cards })
   const checksum = createHash('sha256').update(canonical).digest('hex')
   const ref = db.collection('workspaces').doc(workspaceId).collection('financialPeriods').doc(id)
   const current = audit ? await ref.get() : null
   const expected = { workspaceId, year, month: monthNumber(requestedMonth ?? FINANCIAL_MONTHS[Number(id.slice(-2)) - 1]),
     totalExpensesCents: totals.expenses, totalIncomeCents: totals.income, debitCount: totals.debits, creditCount: totals.credits,
-    sourceDebitCount: totals.debits, sourceCreditCount: totals.credits, schemaVersion: FINANCIAL_PERIOD_SCHEMA_VERSION, generation: runId, checksum }
+    sourceDebitCount: totals.debits, sourceCreditCount: totals.credits, schemaVersion: FINANCIAL_PERIOD_SCHEMA_VERSION,
+    cardTotalsSchemaVersion: CARD_TOTALS_SCHEMA_VERSION,
+    cardExpensesCents: Object.fromEntries([...totals.cards].map(([cardId, value]) => [cardId, value.expenses])),
+    cardDebitCount: Object.fromEntries([...totals.cards].map(([cardId, value]) => [cardId, value.debits])),
+    generation: runId, checksum }
   report.push({ period: id, status: current && current.exists && current.data()?.checksum === checksum ? 'match' : 'different', checksum })
   if (apply) {
     const batch = db.batch(); batch.set(ref, { ...expected, updatedAt: FieldValue.serverTimestamp(), reconciledAt: FieldValue.serverTimestamp() })

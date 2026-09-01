@@ -50,6 +50,7 @@ import { MonthYearNavigator } from "@/app/components/month-year-navigator"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { EmptyState } from "@/app/components/states/empty-state"
 import { ErrorState } from "@/app/components/states/error-state"
+import { queryKeys } from "@/app/lib/query-keys"
 
 const meses = [
   { value: "janeiro", label: "Janeiro", short: "Jan" },
@@ -76,14 +77,14 @@ export default function Page() {
   const [selectedCardIndex, setSelectedCardIndex] = useState(0)
 
   const { data: debitsPage, isLoading: isDebitsLoading } = useQuery({
-    queryKey: ["debits", workspaceActive?.id, monthFilter, yearFilter],
+    queryKey: queryKeys.dashboardDebits(workspaceActive?.id || "", monthFilter, yearFilterNumber),
     queryFn: () => getDebitsPage(workspaceActive!.id, { month: monthFilter, year: yearFilter, limit: 100 }),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
 
   const { data: creditsPage, isLoading: isCreditsLoading } = useQuery({
-    queryKey: ["credits", workspaceActive?.id, monthFilter, yearFilter],
+    queryKey: queryKeys.dashboardCredits(workspaceActive?.id || "", monthFilter, yearFilterNumber),
     queryFn: () => getCreditsPage(workspaceActive!.id, { month: monthFilter, year: yearFilter, limit: 100 }),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
@@ -108,7 +109,7 @@ export default function Page() {
     error: analyticsSummaryError,
     refetch: refetchAnalyticsSummary,
   } = useQuery({
-    queryKey: ["analytics-summary", workspaceActive?.id, monthFilter, yearFilter],
+    queryKey: queryKeys.monthlySummary(workspaceActive?.id || "", monthFilter, yearFilterNumber),
     queryFn: () => getAnalyticsSummary(workspaceActive!.id, { month: monthFilter, year: yearFilter }),
     enabled: Boolean(workspaceActive?.id),
     staleTime: 60_000,
@@ -121,7 +122,7 @@ export default function Page() {
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
   })
   const { data: cards = [], isLoading: isCardsLoading } = useQuery<CreditCardType[], Error>({
-    queryKey: ["cards", workspaceActive?.id],
+    queryKey: queryKeys.cards(workspaceActive?.id || ""),
     queryFn: () => getCards(workspaceActive!.id),
     staleTime: 1000 * 60 * 5,
     enabled: !!workspaceActive && !isWorkspaceLoading && !workspaceError,
@@ -172,10 +173,10 @@ export default function Page() {
 
   const cardBalances = useMemo(() => cards.map((card) => ({
     card,
-    total: filteredDebits
+    total: analyticsSummary?.cardTotals?.[card.id] ?? filteredDebits
       .filter((debit) => debit.paymentMethod === "Crédito" && debit.creditCardId === card.id)
       .reduce((sum, debit) => sum + (Number(debit.value) || 0), 0),
-  })), [cards, filteredDebits])
+  })), [cards, filteredDebits, analyticsSummary])
   const creditCardTotal = useMemo(
     () => cardBalances.reduce((sum, item) => sum + item.total, 0),
     [cardBalances],
