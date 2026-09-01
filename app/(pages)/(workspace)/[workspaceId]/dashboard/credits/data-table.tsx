@@ -73,7 +73,7 @@ export function DataTable<TData extends Credit, TValue>({
   }
 
   return (
-    <div className="flex flex-col space-y-4 w-full">
+    <div className="flex w-full min-w-0 flex-col gap-4">
       {/* Campo de Busca Rápida */}
       <div className="relative w-full sm:max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -87,8 +87,8 @@ export function DataTable<TData extends Credit, TValue>({
         />
       </div>
 
-      {/* 1. VISÃO MOBILE (< 768px): RevenueList com Cards Estruturados */}
-      <div className="block md:hidden w-full">
+      {/* 1. VISÃO MOBILE/TABLET (< 1024px): RevenueList com Cards Estruturados */}
+      <div className="block w-full lg:hidden">
         {rows.length ? (
           <RevenueList>
             {rows.map((row) => (
@@ -123,8 +123,8 @@ export function DataTable<TData extends Credit, TValue>({
         )}
       </div>
 
-      {/* 2. VISÃO DESKTOP (>= 768px): Tabela Tradicional Completa */}
-      <div className="hidden md:block rounded-xl border border-border/60 bg-card overflow-hidden">
+      {/* 2. VISÃO DESKTOP (>= 1024px): Tabela Tradicional Completa */}
+      <div className="hidden min-w-0 overflow-x-auto rounded-xl border border-border/60 bg-card lg:block">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

@@ -47,7 +47,7 @@ export default function WorkspaceLayout({
           <DateFilterProvider>
             <WorkspaceProvider>
               <AppSidebar />
-              <SidebarInset className="pb-20 md:my-3 md:mr-3 md:ml-0 md:rounded-2xl md:border md:border-border/50 md:pb-0 md:shadow-sm">
+              <SidebarInset className="pb-20 lg:my-3 lg:mr-3 lg:ml-0 lg:rounded-2xl lg:border lg:border-border/50 lg:pb-0 lg:shadow-sm">
                 {children}
               </SidebarInset>
               <MobileNav />

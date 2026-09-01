@@ -97,12 +97,12 @@ export default function ManageHubPage() {
         <div className="flex items-center gap-2 w-full">
           <Link
             href={`${prefix}/dashboard`}
-            className="flex md:hidden items-center shrink-0"
+            className="flex items-center shrink-0 lg:hidden"
             aria-label="MeControla.AI"
           >
             <Logo className="h-6 w-6 text-primary" />
           </Link>
-          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground hidden md:flex" />
+          <SidebarTrigger className="-ml-1 hidden text-muted-foreground hover:text-foreground lg:flex" />
           <Separator orientation="vertical" className="mr-1 md:mr-2 h-4" />
           <Breadcrumb>
             <BreadcrumbList className="text-xs sm:text-sm">
@@ -115,8 +115,8 @@ export default function ManageHubPage() {
                   )}
                 </BreadcrumbPage>
               </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem className="hidden md:block">
+              <BreadcrumbSeparator className="hidden lg:block" />
+              <BreadcrumbItem className="hidden lg:block">
                 <Link href={`${prefix}/dashboard`}>
                   Dashboard
                 </Link>
@@ -132,7 +132,7 @@ export default function ManageHubPage() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-5 p-3 md:p-6 pt-3 max-w-6xl w-full mx-auto pb-20 md:pb-6">
+      <div className="mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col gap-5 p-3 pt-3 pb-20 md:p-6 md:pt-3 lg:pb-6">
         {/* Cabeçalho */}
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">

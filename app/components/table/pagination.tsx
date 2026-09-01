@@ -29,14 +29,14 @@ export function DataTablePagination<TData>({
   const totalRows = table.getFilteredRowModel().rows.length
 
   return (
-    <div className="flex flex-col gap-3 md:gap-0 md:flex-row items-center justify-between px-1 py-1">
+    <div className="flex flex-col items-center justify-between gap-3 px-1 py-1 lg:flex-row lg:gap-0">
       {/* Contador Total */}
-      <div className="text-xs md:text-sm text-muted-foreground text-center md:text-left w-full md:w-auto">
+      <div className="w-full text-center text-xs text-muted-foreground md:text-sm lg:w-auto lg:text-left">
         {totalRows} {footerText}
       </div>
 
-      {/* Controles Mobile (< 768px) */}
-      <div className="flex md:hidden items-center justify-between w-full pt-1 border-t border-border/40">
+      {/* Controles Mobile/Tablet (< 1024px) */}
+      <div className="flex w-full items-center justify-between border-t border-border/40 pt-1 lg:hidden">
         <Button
           type="button"
           variant="outline"
@@ -66,9 +66,9 @@ export function DataTablePagination<TData>({
         </Button>
       </div>
 
-      {/* Controles Desktop (>= 768px) */}
-      <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
-        <div className="flex items-center space-x-2">
+      {/* Controles Desktop (>= 1024px) */}
+      <div className="hidden items-center gap-8 lg:flex">
+        <div className="flex items-center gap-2">
           <p className="text-sm font-medium">Linhas por página</p>
           <Select
             value={`${table.getState().pagination.pageSize}`}
@@ -93,7 +93,7 @@ export function DataTablePagination<TData>({
           Página {currentPage} de {totalPages}
         </div>
 
-        <div className="flex items-center space-x-1.5">
+        <div className="flex items-center gap-1.5">
           <Button
             variant="outline"
             className="hidden h-8 w-8 p-0 lg:flex"

@@ -89,33 +89,56 @@ export function ResponsiblePixModal({
   const received = details?.received ?? details?.totalCredits ?? 0
   const overpayment = details?.overpayment ?? 0
   const payable = details?.payable ?? 0
-  const netBalance = details?.netBalance ?? receivable - payable
+  const netBalance = details?.netBalance ?? outstandingReceivable - payable
+  const settlementAmount = Math.max(netBalance, 0)
   const receivableDebits = useMemo(() => debitsList.filter((item) => item.debtDirection !== "i_owe_responsible"), [debitsList])
   const payableDebits = useMemo(() => debitsList.filter((item) => item.debtDirection === "i_owe_responsible"), [debitsList])
 
-  // Gerar mensagem de cobrança personalizada com as despesas e chave PIX do banco selecionado
+  // Gerar mensagem de acerto com os valores atribuídos, pagos e ainda pendentes separados.
   const billingMessage = useMemo(() => {
-    const periodText = month && month !== 'todos' ? ` referente a ${month}${year && year !== 'todos' ? `/${year}` : ''}` : ''
+    const periodText = month && month !== 'todos'
+      ? ` de ${month}${year && year !== 'todos' ? `/${year}` : ''}`
+      : ''
 
     const bankInfo = selectedBank?.pixKey
-      ? `\n🏦 Banco: ${selectedBank.name}\n🔑 Chave PIX (${selectedBank.pixKeyType?.toUpperCase() || 'PIX'}): ${selectedBank.pixKey}`
-      : `\n⚠️ Favor solicitar a chave PIX para transferência.`
+      ? [``, `DADOS PARA PAGAMENTO`, `🏦 Banco: ${selectedBank.name}`, `🔑 Chave PIX (${selectedBank.pixKeyType?.toUpperCase() || 'PIX'}): ${selectedBank.pixKey}`]
+      : [``, `⚠️ Solicite a chave PIX antes de realizar o pagamento.`]
+
+    const settlementStatus = netBalance > 0
+      ? `Após considerar os pagamentos, você ainda precisa pagar ${formatCurrency(netBalance)}.`
+      : netBalance < 0
+        ? `Após o acerto, eu ainda preciso pagar ${formatCurrency(Math.abs(netBalance))} a você.`
+        : outstandingReceivable > 0 || payable > 0
+          ? `Os valores se compensam. Não há saldo final pendente.`
+          : `Tudo certo: não há nenhum valor pendente neste período.`
 
     return [
-      `Olá ${responsibleName}! Segue o extrato de despesas no MeControla.AI${periodText}:`,
-      ...(receivableDebits.length ? ["A RECEBER:", ...receivableDebits.map((d) => `• ${d.dateFormatted ? d.dateFormatted + ' - ' : ''}${d.description}: ${formatCurrency(d.value)}`)] : ["A RECEBER: nenhum valor"]),
-      ...(payableDebits.length ? ["A PAGAR:", ...payableDebits.map((d) => `• ${d.dateFormatted ? d.dateFormatted + ' - ' : ''}${d.description}: ${formatCurrency(d.value)}`)] : ["A PAGAR: nenhum valor"]),
-      `---------------------------------`,
-      `🧾 Total gerado a receber: ${formatCurrency(receivable)}`,
-      `✅ Total recebido: ${formatCurrency(received)}`,
-      `💰 Ainda em aberto: ${formatCurrency(outstandingReceivable)}`,
-      `💸 Total a pagar: ${formatCurrency(payable)}`,
-      `↔️ Saldo líquido: ${formatCurrency(netBalance)}`,
+      `Olá ${responsibleName}! Segue o resumo do nosso acerto${periodText} no MeControla.AI.`,
+      ``,
+      `DESPESAS ATRIBUÍDAS A VOCÊ`,
+      ...(receivableDebits.length
+        ? receivableDebits.map((d) => `• ${d.dateFormatted ? `${d.dateFormatted} - ` : ''}${d.description}: ${formatCurrency(d.value)}`)
+        : [`• Nenhuma despesa`]),
+      ``,
+      `VALORES QUE EU DEVO A VOCÊ`,
+      ...(payableDebits.length
+        ? payableDebits.map((d) => `• ${d.dateFormatted ? `${d.dateFormatted} - ` : ''}${d.description}: ${formatCurrency(d.value)}`)
+        : [`• Nenhum valor`]),
+      ``,
+      `RESUMO DO PERÍODO`,
+      `🧾 Despesas atribuídas a você: ${formatCurrency(receivable)}`,
+      `✅ Pagamentos já registrados em seu nome: ${formatCurrency(received)}`,
+      `💰 Valor que você ainda precisa pagar: ${formatCurrency(outstandingReceivable)}`,
+      `💸 Valor que eu preciso pagar a você: ${formatCurrency(payable)}`,
       ...(overpayment > 0 ? [`ℹ️ Excedente recebido (não gera dívida): ${formatCurrency(overpayment)}`] : []),
-      bankInfo,
-      `\nObrigado! 🚀`,
+      ``,
+      `SITUAÇÃO DO ACERTO`,
+      settlementStatus,
+      ...(settlementAmount > 0 ? bankInfo : []),
+      ``,
+      `Obrigado! 🚀`,
     ].join('\n')
-  }, [receivableDebits, payableDebits, receivable, received, outstandingReceivable, payable, netBalance, overpayment, month, year, responsibleName, selectedBank])
+  }, [receivableDebits, payableDebits, receivable, received, outstandingReceivable, payable, netBalance, settlementAmount, overpayment, month, year, responsibleName, selectedBank])
 
   // Mutation para registrar a Receita de acerto e abater o saldo
   const { mutateAsync: generateCreditMutation, isPending: isGeneratingCredit } = useMutation({
@@ -124,7 +147,7 @@ export function ResponsiblePixModal({
       return createCredit({
         workspaceId: workspaceActive.id,
         description: `Acerto PIX - ${responsibleName}${month && month !== 'todos' ? ` (${month})` : ''}`,
-        value: outstandingReceivable,
+        value: settlementAmount,
         date: new Date().toISOString(),
         paymentMethod: "Pix",
         bankId: selectedBankId || null,
@@ -137,7 +160,7 @@ export function ResponsiblePixModal({
       queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive?.id] })
       queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive?.id] })
       void invalidateFinancialQueries(queryClient, workspaceActive?.id)
-      toast.success(`Receita de ${formatCurrency(outstandingReceivable)} gerada com sucesso! Saldo abatido.`)
+      toast.success(`Receita de ${formatCurrency(settlementAmount)} gerada com sucesso! Saldo abatido.`)
       setOpen(false)
     },
     onError: (err: Error) => {
@@ -168,18 +191,20 @@ export function ResponsiblePixModal({
           className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10 font-semibold cursor-pointer"
         >
           <QrCode className="h-3.5 w-3.5" />
-          Cobrar PIX
+          {pendingBalance > 0 ? "Cobrar PIX" : "Ver acerto"}
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-xl max-h-[92vh]">
+      <DialogContent className="max-h-[92vh] w-[calc(100vw-1.5rem)] min-w-0 max-w-xl overflow-x-hidden overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex min-w-0 items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            Cobrança PIX: {responsibleName}
+            <span className="min-w-0 break-words [overflow-wrap:anywhere]">
+              Acerto com {responsibleName}
+            </span>
           </DialogTitle>
           <DialogDescription>
-            Envie o extrato de despesas do responsável e gere a receita de acerto para abater o saldo.
+            Confira separadamente as despesas, os pagamentos já registrados e o que ainda está pendente.
           </DialogDescription>
         </DialogHeader>
 
@@ -190,15 +215,15 @@ export function ResponsiblePixModal({
         ) : (
           <div className="space-y-4">
             {/* Seletor de Banco para Recebimento */}
-            <div className="space-y-1.5">
+            {settlementAmount > 0 && <div className="min-w-0 space-y-1.5">
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Landmark className="h-3.5 w-3.5 text-primary" />
                 Banco para Recebimento (Chave PIX):
               </label>
 
               {banks.length === 0 ? (
-                <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-300">
-                  <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-col items-stretch gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-900 sm:flex-row sm:items-center sm:justify-between dark:text-amber-300">
+                  <div className="flex min-w-0 items-center gap-2">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     <span>Nenhum banco cadastrado.</span>
                   </div>
@@ -214,10 +239,10 @@ export function ResponsiblePixModal({
                   <SelectContent>
                     {banks.map((bank) => (
                       <SelectItem key={bank.id} value={bank.id}>
-                        <div className="flex items-center justify-between w-full gap-4">
-                          <span className="font-medium">{bank.name}</span>
+                        <div className="flex min-w-0 w-full items-center justify-between gap-4">
+                          <span className="min-w-0 break-words font-medium [overflow-wrap:anywhere]">{bank.name}</span>
                           {bank.pixKey ? (
-                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono">
+                            <span className="min-w-0 break-all text-right font-mono text-xs text-emerald-600 dark:text-emerald-400">
                               PIX: {bank.pixKey} ({bank.pixKeyType || "chave"})
                             </span>
                           ) : (
@@ -231,35 +256,38 @@ export function ResponsiblePixModal({
                   </SelectContent>
                 </Select>
               )}
-            </div>
+            </div>}
 
             {/* Total Balance Card */}
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-center justify-between">
-              <div>
+            <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <span className="text-xs font-semibold text-muted-foreground uppercase">
-                  Gerado a receber {month && month !== 'todos' ? `(${month})` : ''}
+                  Valor do acerto a receber {month && month !== 'todos' ? `(${month})` : ''}
                 </span>
                 <div className="text-2xl font-extrabold text-foreground">
-                  {formatCurrency(receivable)}
+                  {formatCurrency(settlementAmount)}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Recebido {formatCurrency(received)} · Em aberto {formatCurrency(outstandingReceivable)}
+                <div className="break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
+                  Atribuído {formatCurrency(receivable)} · Já pago {formatCurrency(received)}
                 </div>
+                {payable > 0 && <div className="text-xs text-muted-foreground">Você deve {formatCurrency(payable)} ao responsável.</div>}
                 {overpayment > 0 && <div className="text-xs text-muted-foreground">Excedente de {formatCurrency(overpayment)} não gera dívida.</div>}
               </div>
-              <div className="text-right">
-                <span className="text-xs text-muted-foreground">Chave PIX:</span>
-                <div className="text-xs font-bold text-primary truncate max-w-[180px]">
-                  {selectedBank?.pixKey || "Nenhuma chave no banco"}
+              {settlementAmount > 0 && (
+                <div className="min-w-0 text-left sm:text-right">
+                  <span className="text-xs text-muted-foreground">Chave PIX:</span>
+                  <div className="max-w-full break-all text-xs font-bold text-primary sm:max-w-48">
+                    {selectedBank?.pixKey || "Nenhuma chave no banco"}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* List of directional debits */}
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-1 flex items-center gap-1.5">
                 <Receipt className="h-3.5 w-3.5" />
-                A receber ({receivableDebits.length}) · A pagar ({payableDebits.length})
+                Atribuídas ({receivableDebits.length}) · Devidas ao responsável ({payableDebits.length})
               </h4>
               <div className="max-h-36 overflow-y-auto space-y-1.5 mt-2 pr-1">
                 {debitsList.length === 0 ? (
@@ -270,12 +298,12 @@ export function ResponsiblePixModal({
                   debitsList.map((d) => (
                     <div
                       key={d.id}
-                      className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-xs"
+                      className="flex min-w-0 items-start justify-between gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs"
                     >
-                      <div className="truncate pr-2">
-                        <span className="font-medium text-foreground">{d.description}</span>
+                      <div className="min-w-0 flex-1">
+                        <span className="line-clamp-2 break-words font-medium text-foreground [overflow-wrap:anywhere]">{d.description}</span>
                         {d.dateFormatted && (
-                          <span className="text-[10px] text-muted-foreground ml-2">
+                          <span className="mt-0.5 block text-[10px] text-muted-foreground">
                             {d.dateFormatted}
                           </span>
                         )}
@@ -292,24 +320,25 @@ export function ResponsiblePixModal({
             {/* Formatted Message Ready to Send */}
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1">
-                Mensagem Formatada para Cobrança:
+                Mensagem do acerto:
               </label>
               <Textarea
                 readOnly
                 rows={4}
+                wrap="soft"
                 value={billingMessage}
-                className="font-mono text-xs bg-muted/30 resize-none"
+                className="max-w-full resize-none whitespace-pre-wrap break-words bg-muted/30 font-mono text-xs [overflow-wrap:anywhere]"
               />
             </div>
           </div>
         )}
 
         <DialogFooter className="flex flex-col sm:flex-row flex-wrap sm:justify-between items-stretch sm:items-center gap-2 pt-3 border-t">
-          {outstandingReceivable > 0 && (
+          {settlementAmount > 0 && (
             <Button
               type="button"
               onClick={() => generateCreditMutation()}
-              disabled={isGeneratingCredit || isDetailsLoading || outstandingReceivable <= 0}
+              disabled={isGeneratingCredit || isDetailsLoading || settlementAmount <= 0}
               className="w-full sm:w-auto gap-1.5 font-bold cursor-pointer shrink-0"
             >
               {isGeneratingCredit ? (

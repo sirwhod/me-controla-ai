@@ -63,9 +63,9 @@ export function DataTable<TData extends Debit, TValue>({
   const rows = table.getRowModel().rows
 
   return (
-    <div className="flex flex-col space-y-4 w-full">
-      {/* 1. VISÃO MOBILE (< 768px): ExpenseList com Cards Estruturados */}
-      <div className="block md:hidden w-full">
+    <div className="flex w-full min-w-0 flex-col gap-4">
+      {/* 1. VISÃO MOBILE/TABLET (< 1024px): ExpenseList com Cards Estruturados */}
+      <div className="block w-full lg:hidden">
         {rows.length ? (
           <ExpenseList>
             {rows.map((row) => (
@@ -102,8 +102,8 @@ export function DataTable<TData extends Debit, TValue>({
         )}
       </div>
 
-      {/* 2. VISÃO DESKTOP (>= 768px): Tabela Tradicional Completa */}
-      <div className="hidden md:block rounded-xl border border-border/60 bg-card overflow-hidden">
+      {/* 2. VISÃO DESKTOP (>= 1024px): Tabela Tradicional Completa */}
+      <div className="hidden min-w-0 overflow-x-auto rounded-xl border border-border/60 bg-card lg:block">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

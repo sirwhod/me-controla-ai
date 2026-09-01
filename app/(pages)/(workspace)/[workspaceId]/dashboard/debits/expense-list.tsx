@@ -92,8 +92,10 @@ export function ExpenseListItem({ debit }: ExpenseListItemProps) {
     }
   }
 
+  const typeBadge = getTypeBadge(debit.type)
+
   return (
-    <div className="flex flex-col p-3.5 rounded-xl border border-border/60 bg-card/60 hover:bg-card/90 transition-all shadow-xs gap-2.5">
+    <div className="flex min-w-0 max-w-full flex-col gap-2.5 overflow-hidden rounded-xl border border-border/60 bg-card/60 p-3.5 shadow-xs transition-all hover:bg-card/90">
       {/* Linha 1: Ícone + Descrição + Badge de Tipo + Menu de Ações (3 pontinhos) */}
       <div className="flex items-start justify-between gap-2 w-full">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -108,11 +110,14 @@ export function ExpenseListItem({ debit }: ExpenseListItemProps) {
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 min-w-0 flex-1 flex-wrap">
-            <span className="font-semibold text-sm sm:text-base text-foreground truncate">
+          <div className="min-w-0 flex-1">
+            <span
+              className="line-clamp-2 break-words text-sm font-semibold leading-snug text-foreground [overflow-wrap:anywhere] sm:text-base"
+              title={debit.description}
+            >
               {debit.description}
             </span>
-            {getTypeBadge(debit.type)}
+            {typeBadge && <div className="mt-1 flex">{typeBadge}</div>}
           </div>
         </div>
 
@@ -144,15 +149,15 @@ export function ExpenseListItem({ debit }: ExpenseListItemProps) {
       </div>
 
       {/* Linha 2: Categoria • Responsável */}
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground pl-1 flex-wrap">
-        <span className="flex items-center gap-1 text-foreground/80 font-medium">
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5 pl-1 text-xs text-muted-foreground">
+        <span className="flex min-w-0 max-w-full items-center gap-1 break-words font-medium text-foreground/80 [overflow-wrap:anywhere]">
           <Tag className="h-3 w-3 text-muted-foreground/70" />
           {categoryName}
         </span>
         {responsible && (
           <>
             <span className="text-muted-foreground/40">•</span>
-            <span className="flex items-center gap-1 text-foreground/90 font-medium">
+            <span className="flex min-w-0 max-w-full items-center gap-1 break-words font-medium text-foreground/90 [overflow-wrap:anywhere]">
               <User className="h-3 w-3 text-muted-foreground/70" />
               {responsible}
             </span>
@@ -162,10 +167,10 @@ export function ExpenseListItem({ debit }: ExpenseListItemProps) {
 
       {/* Linha 3: Metadados (Banco • Forma de Pagamento • Data) + Valor em Destaque */}
       <div className="flex items-end justify-between pt-1 border-t border-border/30 gap-2">
-        <div className="flex flex-col gap-0.5 text-[11px] text-muted-foreground/80">
-          <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-[11px] text-muted-foreground/80">
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
             {bankName && (
-              <span className="flex items-center gap-1">
+              <span className="flex min-w-0 max-w-full items-center gap-1 break-words [overflow-wrap:anywhere]">
                 <Landmark className="h-3 w-3 text-muted-foreground/60" />
                 {bankName}
               </span>
@@ -173,7 +178,7 @@ export function ExpenseListItem({ debit }: ExpenseListItemProps) {
             {paymentMethod && (
               <>
                 {bankName && <span className="text-muted-foreground/40">•</span>}
-                <span className="flex items-center gap-1">
+                <span className="flex min-w-0 max-w-full items-center gap-1 break-words [overflow-wrap:anywhere]">
                   <CreditCard className="h-3 w-3 text-muted-foreground/60" />
                   {paymentMethod}
                 </span>

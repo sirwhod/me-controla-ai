@@ -123,7 +123,7 @@ export function MobileNav() {
   return (
     <nav
       aria-label="Navegação móvel"
-      className="fixed bottom-0 left-0 right-0 z-40 block md:hidden border-t border-border/70 bg-background/95 backdrop-blur-md shadow-lg pb-[env(safe-area-inset-bottom,0px)]"
+      className="fixed bottom-0 left-0 right-0 z-40 block lg:hidden border-t border-border/70 bg-background/95 backdrop-blur-md shadow-lg pb-[env(safe-area-inset-bottom,0px)]"
     >
       <div className="grid grid-cols-4 h-16 items-center px-1">
         {/* 1. Despesas */}
