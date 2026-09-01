@@ -11,7 +11,7 @@ const receivableOnly = calculateResponsibleBalance(
   [{ value: 120, debtDirection: 'responsible_owes_me' }],
   [{ value: 20 }],
 )
-assert(receivableOnly.receivable === 100 && receivableOnly.payable === 0 && receivableOnly.netBalance === 100, 'cobrança parcial deve reduzir apenas o valor a receber')
+assert(receivableOnly.receivable === 120 && receivableOnly.outstandingReceivable === 100 && receivableOnly.payable === 0 && receivableOnly.netBalance === 100, 'cobrança parcial deve manter o total a receber e reduzir somente o saldo líquido')
 
 const payableOnly = calculateResponsibleBalance(
   [{ value: 75, debtDirection: 'i_owe_responsible' }],
@@ -26,6 +26,6 @@ const mixed = calculateResponsibleBalance(
   ],
   [{ value: 50 }],
 )
-assert(mixed.receivable === 100 && mixed.payable === 40 && mixed.netBalance === 60, 'direções mistas não podem ser compensadas incorretamente')
+assert(mixed.receivable === 150 && mixed.outstandingReceivable === 100 && mixed.payable === 40 && mixed.netBalance === 60, 'direções mistas não podem ser compensadas incorretamente')
 
 console.log('Responsible balance regression tests passed.')

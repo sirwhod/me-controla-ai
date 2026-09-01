@@ -85,7 +85,9 @@ export function ResponsiblePixModal({
   }, [details])
 
   const receivable = details?.receivable ?? details?.totalPending ?? pendingBalance
+  const outstandingReceivable = details?.outstandingReceivable ?? details?.totalPending ?? pendingBalance
   const payable = details?.payable ?? 0
+  const netBalance = details?.netBalance ?? receivable - payable
   const receivableDebits = useMemo(() => debitsList.filter((item) => item.debtDirection !== "i_owe_responsible"), [debitsList])
   const payableDebits = useMemo(() => debitsList.filter((item) => item.debtDirection === "i_owe_responsible"), [debitsList])
 
@@ -104,11 +106,11 @@ export function ResponsiblePixModal({
       `---------------------------------`,
       `💰 Total a receber: ${formatCurrency(receivable)}`,
       `💸 Total a pagar: ${formatCurrency(payable)}`,
-      `↔️ Saldo líquido: ${formatCurrency(receivable - payable)}`,
+      `↔️ Saldo líquido: ${formatCurrency(netBalance)}`,
       bankInfo,
       `\nObrigado! 🚀`,
     ].join('\n')
-  }, [receivableDebits, payableDebits, receivable, payable, month, year, responsibleName, selectedBank])
+  }, [receivableDebits, payableDebits, receivable, payable, netBalance, month, year, responsibleName, selectedBank])
 
   // Mutation para registrar a Receita de acerto e abater o saldo
   const { mutateAsync: generateCreditMutation, isPending: isGeneratingCredit } = useMutation({
@@ -117,7 +119,7 @@ export function ResponsiblePixModal({
       return createCredit({
         workspaceId: workspaceActive.id,
         description: `Acerto PIX - ${responsibleName}${month && month !== 'todos' ? ` (${month})` : ''}`,
-        value: receivable,
+        value: outstandingReceivable,
         date: new Date().toISOString(),
         paymentMethod: "Pix",
         bankId: selectedBankId || null,
@@ -130,7 +132,7 @@ export function ResponsiblePixModal({
       queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive?.id] })
       queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive?.id] })
       void invalidateFinancialQueries(queryClient, workspaceActive?.id)
-      toast.success(`Receita de ${formatCurrency(receivable)} gerada com sucesso! Saldo abatido.`)
+      toast.success(`Receita de ${formatCurrency(outstandingReceivable)} gerada com sucesso! Saldo abatido.`)
       setOpen(false)
     },
     onError: (err: Error) => {
@@ -294,11 +296,11 @@ export function ResponsiblePixModal({
         )}
 
         <DialogFooter className="flex flex-col sm:flex-row flex-wrap sm:justify-between items-stretch sm:items-center gap-2 pt-3 border-t">
-          {receivable > 0 && (
+          {outstandingReceivable > 0 && (
             <Button
               type="button"
               onClick={() => generateCreditMutation()}
-              disabled={isGeneratingCredit || isDetailsLoading || receivable <= 0}
+              disabled={isGeneratingCredit || isDetailsLoading || outstandingReceivable <= 0}
               className="w-full sm:w-auto gap-1.5 font-bold cursor-pointer shrink-0"
             >
               {isGeneratingCredit ? (

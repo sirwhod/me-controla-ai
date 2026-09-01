@@ -14,6 +14,7 @@ export interface ResponsibleBalance {
   received: number
   payable: number
   receivable: number
+  outstandingReceivable: number
   netBalance: number
 }
 
@@ -36,14 +37,18 @@ export function calculateResponsibleBalance(
 
   for (const credit of credits) received += Number(credit.value) || 0
 
-  const receivable = Math.max(0, expensesResponsibleOwes - received)
+  // The month totals remain an immutable statement of what each side spent.
+  // Credits are settlements, so only the net balance changes after a receipt.
+  const receivable = Math.max(0, expensesResponsibleOwes)
   const payable = Math.max(0, expensesIOwe)
+  const outstandingReceivable = Math.max(0, receivable - received)
   return {
     expensesResponsibleOwes,
     expensesIOwe,
     received,
     payable,
     receivable,
-    netBalance: receivable - payable,
+    outstandingReceivable,
+    netBalance: receivable - payable - received,
   }
 }

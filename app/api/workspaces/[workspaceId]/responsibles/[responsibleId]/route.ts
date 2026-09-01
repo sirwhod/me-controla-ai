@@ -155,11 +155,12 @@ export async function GET(req: NextRequest, props: RouteParams) {
       userImage,
       isRegisteredUser,
       status: responsibleData.status || 'active',
-      totalPending: Number(balance.receivable.toFixed(2)),
+      totalPending: Number(balance.outstandingReceivable.toFixed(2)),
       totalDebits: Number(balance.expensesResponsibleOwes.toFixed(2)),
       totalCredits: Number(balance.received.toFixed(2)),
       payable: Number(balance.payable.toFixed(2)),
       receivable: Number(balance.receivable.toFixed(2)),
+      outstandingReceivable: Number(balance.outstandingReceivable.toFixed(2)),
       netBalance: Number(balance.netBalance.toFixed(2)),
       pendingDebits,
       pendingCredits: pendingDebits, // Alias para retrocompatibilidade
