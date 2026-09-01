@@ -5,8 +5,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { createPersonResponsibleSchema } from '@/app/types/financial'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { getRequestId, logFirestoreQuery } from '@/app/lib/observability'
-import { FINANCIAL_MONTHS } from '@/app/lib/financial-period'
-import { FINANCIAL_PERIOD_SCHEMA_VERSION, financialPeriodId } from '@/app/lib/financial-periods'
+import { calculateResponsibleBalance } from '@/app/lib/responsible-balance'
 
 interface RouteParams {
   params: Promise<{
@@ -64,17 +63,9 @@ export async function GET(req: NextRequest, props: RouteParams) {
       creditsQuery = creditsQuery.where('year', '==', Number(year))
     }
 
-    const requestedYear = Number(year)
-    const aggregateMonths = month && month !== 'todos' ? [month.toLowerCase()] : FINANCIAL_MONTHS
-    const periodRefs = includeBalances && Number.isInteger(requestedYear)
-      ? aggregateMonths.map((value) => db.collection('workspaces').doc(workspaceId).collection('financialPeriods').doc(financialPeriodId(requestedYear, value)))
-      : []
-    const periodDocs = periodRefs.length ? await db.getAll(...periodRefs) : []
-    const canUseAggregates = periodDocs.length > 0 && periodDocs.every((doc) => doc.exists && doc.data()?.schemaVersion === FINANCIAL_PERIOD_SCHEMA_VERSION)
-    const responsibleAggregateDocs = canUseAggregates
-      ? (await Promise.all(periodRefs.map((ref) => ref.collection('responsibles').get()))).flatMap((snapshot) => snapshot.docs)
-      : []
-    const [debitsSnap, creditsSnap] = includeBalances && !canUseAggregates
+    // Direction was introduced after the period aggregate. Read the linked
+    // entries for balances so legacy aggregates never hide a payable amount.
+    const [debitsSnap, creditsSnap] = includeBalances
       ? await Promise.all([debitsQuery.get(), creditsQuery.get()])
       : [null, null]
     if (includeBalances) {
@@ -83,29 +74,15 @@ export async function GET(req: NextRequest, props: RouteParams) {
     }
 
     // Calcular total de despesas e receitas por responsável no período
-    const totalDebitsByResp: Record<string, number> = {}
-    const totalCreditsByResp: Record<string, number> = {}
-
-    responsibleAggregateDocs.forEach((doc) => {
-      const data = doc.data()
-      totalDebitsByResp[doc.id] = (totalDebitsByResp[doc.id] || 0) + Number(data.totalExpensesCents || 0) / 100
-      totalCreditsByResp[doc.id] = (totalCreditsByResp[doc.id] || 0) + Number(data.totalIncomeCents || 0) / 100
-    })
-
+    const debitsByResp = new Map<string, FirebaseFirestore.DocumentData[]>()
+    const creditsByResp = new Map<string, FirebaseFirestore.DocumentData[]>()
     debitsSnap?.docs.forEach((doc) => {
-      const data = doc.data()
-      if (data.responsibleId) {
-        totalDebitsByResp[data.responsibleId] =
-          (totalDebitsByResp[data.responsibleId] || 0) + (data.value || 0)
-      }
+      const entry = doc.data()
+      if (entry.responsibleId) debitsByResp.set(entry.responsibleId, [...(debitsByResp.get(entry.responsibleId) || []), entry])
     })
-
     creditsSnap?.docs.forEach((doc) => {
-      const data = doc.data()
-      if (data.responsibleId) {
-        totalCreditsByResp[data.responsibleId] =
-          (totalCreditsByResp[data.responsibleId] || 0) + (data.value || 0)
-      }
+      const entry = doc.data()
+      if (entry.responsibleId) creditsByResp.set(entry.responsibleId, [...(creditsByResp.get(entry.responsibleId) || []), entry])
     })
 
     const linkedUserIds = Array.from(new Set(
@@ -150,9 +127,7 @@ export async function GET(req: NextRequest, props: RouteParams) {
             : undefined
         const isRegisteredUser = Boolean(linkedUser)
 
-        const debitsVal = totalDebitsByResp[doc.id] || 0
-        const creditsVal = totalCreditsByResp[doc.id] || 0
-        const pendingBalance = Math.max(0, debitsVal - creditsVal)
+        const balance = calculateResponsibleBalance(debitsByResp.get(doc.id) || [], creditsByResp.get(doc.id) || [])
 
         return {
           id: doc.id,
@@ -163,9 +138,12 @@ export async function GET(req: NextRequest, props: RouteParams) {
           isRegisteredUser,
           status: isRegisteredUser ? 'linked' : data.status || 'active',
           linkedUserId: data.linkedUserId || null,
-          pendingBalance: Number(pendingBalance.toFixed(2)),
-          totalDebits: Number(debitsVal.toFixed(2)),
-          totalCredits: Number(creditsVal.toFixed(2)),
+          pendingBalance: Number(balance.receivable.toFixed(2)),
+          totalDebits: Number(balance.expensesResponsibleOwes.toFixed(2)),
+          totalCredits: Number(balance.received.toFixed(2)),
+          payable: Number(balance.payable.toFixed(2)),
+          receivable: Number(balance.receivable.toFixed(2)),
+          netBalance: Number(balance.netBalance.toFixed(2)),
           createdAt: serializeFirestoreDate(data.createdAt),
           updatedAt: serializeFirestoreDate(data.updatedAt),
         }

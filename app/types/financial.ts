@@ -5,6 +5,7 @@ import {
 
 // --- Interface para Débito (Debit) ---
 export type TypeDebit = 'Comum' | 'Fixo' | 'Assinatura' | 'Parcelamento'
+export type ResponsibleDebtDirection = 'i_owe_responsible' | 'responsible_owes_me'
 
 export interface Debit {
   id?: string; // O ID do documento do Firestore
@@ -26,6 +27,8 @@ export interface Debit {
   categoryUrl: string | null; // Imagem da categoria associada (pode ser null)
   responsibleId?: string | null; // ID do responsável vinculado à despesa
   responsibleName?: string | null;
+  /** Defaults to responsible_owes_me for legacy records. */
+  debtDirection?: ResponsibleDebtDirection | null;
   proofUrl: string | null; // URL do comprovante (pode ser null)
   status?: string | null; // Opcional (sem lógica de status)
   createdAt: Date | null; // Convertido de Timestamp para Date
@@ -60,6 +63,7 @@ export const createDebitSchema = z.object({
   }),
   categoryId: z.string().optional().nullable(),
   responsibleId: z.string().optional().nullable(),
+  debtDirection: z.enum(['i_owe_responsible', 'responsible_owes_me']).optional().nullable(),
   status: z.enum(['pending', 'paid', 'overdue']).optional(),
   frequency: z.enum(['monthly']).optional().or(z.literal('')).nullable(),
   startDate: z.string().optional().or(z.literal('')).nullable(),
@@ -81,6 +85,7 @@ export const updateDebitSchema = z.object({
   }).nullable().optional(),
   categoryId: z.string().optional().nullable(),
   responsibleId: z.string().optional().nullable(),
+  debtDirection: z.enum(['i_owe_responsible', 'responsible_owes_me']).optional().nullable(),
   status: z.string().max(50).optional(),
   frequency: z.enum(['monthly']).optional(),
   startDate: z.string().datetime({ message: 'Data de início inválida.' }).optional(),

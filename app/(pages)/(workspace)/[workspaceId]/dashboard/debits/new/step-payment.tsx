@@ -5,6 +5,7 @@ import { CreditCard, Landmark, QrCode, User, Wallet } from "lucide-react"
 import { UseFormReturn } from "react-hook-form"
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/app/components/ui/form"
 import { QuickCreateSelect } from "@/app/components/ui/quick-create-select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import { cn } from "@/app/lib/utils"
 import { Bank, Category, CreditCard as CreditCardType, CreateDebit as CreateDebitProps, PersonResponsible } from "@/app/types/financial"
 import { DynamicIcon, IconName } from "lucide-react/dynamic"
@@ -47,6 +48,7 @@ export function StepPayment({
   onQuickCreateResponsible,
 }: StepPaymentProps) {
   const currentPaymentMethod = form.watch("paymentMethod")
+  const responsibleId = form.watch("responsibleId")
   const isCreditPayment = currentPaymentMethod === "Crédito"
 
   const categoryItems = categories.map((cat) => ({
@@ -134,6 +136,30 @@ export function StepPayment({
             </FormItem>
           )}
         />
+
+        {responsibleId && (
+          <FormField
+            control={form.control}
+            name="debtDirection"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel className="text-xs font-semibold">Direção da dívida</FormLabel>
+                <Select value={field.value || "responsible_owes_me"} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a direção" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="responsible_owes_me">O responsável deve a mim</SelectItem>
+                    <SelectItem value="i_owe_responsible">Eu devo ao responsável</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         {/* Categoria e Cartão/Banco em Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

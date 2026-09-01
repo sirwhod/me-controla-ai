@@ -33,14 +33,16 @@ export function ResponsibleList({ children, className }: ResponsibleListProps) {
 }
 
 interface ResponsibleListItemProps {
-  resp: PersonResponsible & { pendingBalance: number }
+  resp: PersonResponsible & { pendingBalance: number; payable?: number; receivable?: number; netBalance?: number }
   month?: string
   year?: string
 }
 
 export function ResponsibleListItem({ resp, month, year }: ResponsibleListItemProps) {
-  const balance = resp.pendingBalance || 0
-  const hasDebt = balance > 0
+  const receivable = resp.receivable ?? resp.pendingBalance ?? 0
+  const payable = resp.payable ?? 0
+  const balance = resp.netBalance ?? receivable - payable
+  const hasDebt = receivable > 0
   const initials = (resp.name || "??")
     .trim()
     .split(/\s+/)
@@ -132,7 +134,7 @@ export function ResponsibleListItem({ resp, month, year }: ResponsibleListItemPr
         <div className="flex flex-col gap-0.5">
           <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider flex items-center gap-1">
             <DollarSign className="h-3 w-3 text-muted-foreground/70" />
-            Saldo Devedor
+            Saldo líquido
           </span>
 
           <div className="flex items-baseline gap-1.5">
@@ -142,7 +144,7 @@ export function ResponsibleListItem({ resp, month, year }: ResponsibleListItemPr
               </span>
             ) : (
               <span className="text-base font-bold text-emerald-500 tracking-tight">
-                R$ 0,00
+                {formatCurrency(Math.abs(balance))}
               </span>
             )}
           </div>
@@ -151,12 +153,12 @@ export function ResponsibleListItem({ resp, month, year }: ResponsibleListItemPr
           {hasDebt ? (
             <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-500 mt-0.5">
               <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
-              <span>A receber</span>
+              <span>A receber: {formatCurrency(receivable)} · A pagar: {formatCurrency(payable)}</span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500 mt-0.5">
               <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-              <span>Em dia</span>
+              <span>{balance < 0 ? "Você deve ao responsável" : "Em dia"}</span>
             </div>
           )}
         </div>

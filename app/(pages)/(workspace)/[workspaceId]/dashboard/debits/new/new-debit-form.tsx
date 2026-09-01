@@ -69,6 +69,7 @@ export function NewDebitForm() {
       creditCardId: "",
       categoryId: "",
       responsibleId: "",
+      debtDirection: null,
       paymentMethod: "Pix",
     },
   })
@@ -286,6 +287,7 @@ export function NewDebitForm() {
         currentInstallment: isParcelamento ? data.currentInstallment : undefined,
         // Limpar cartão se não for crédito
         creditCardId: isParcelamento || data.paymentMethod === "Crédito" ? data.creditCardId : null,
+        debtDirection: data.responsibleId ? data.debtDirection || "responsible_owes_me" : null,
       }
 
       const response = await createDebitFn({
@@ -293,7 +295,7 @@ export function NewDebitForm() {
         ...payload,
       })
 
-      if (response) {
+      if (response?.message) {
         if (payload.type === "Comum" && response.debitId) {
           const date = new Date(payload.date || new Date().toISOString())
           const month = date.toLocaleString("pt-BR", { month: "long" })
@@ -313,7 +315,7 @@ export function NewDebitForm() {
           await queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive.id] })
         }
         await invalidateFinancialQueries(queryClient, workspaceActive.id)
-        toast.success(response.message || "Despesa criada com sucesso!")
+        toast.success(response.message)
         router.push(`/${workspaceActive.id}/dashboard/debits`)
       }
     } catch (error: unknown) {

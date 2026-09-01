@@ -161,6 +161,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
     } else if (updateData.responsibleId === null || updateData.responsibleId === '') {
       dataToUpdate.responsibleId = null
       dataToUpdate.responsibleName = null
+      dataToUpdate.debtDirection = null
+    }
+
+    if (updateData.debtDirection && !dataToUpdate.responsibleId && !debitDoc.data()?.responsibleId) {
+      return NextResponse.json({ message: 'Selecione um responsável para informar a direção da dívida' }, { status: 400 })
     }
 
     if (updateData.date) {

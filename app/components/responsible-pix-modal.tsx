@@ -84,15 +84,14 @@ export function ResponsiblePixModal({
     return (details?.pendingDebits || details?.pendingCredits || []) as ResponsiblePendingDebit[]
   }, [details])
 
-  const total = details?.totalPending ?? pendingBalance
+  const receivable = details?.receivable ?? details?.totalPending ?? pendingBalance
+  const payable = details?.payable ?? 0
+  const receivableDebits = useMemo(() => debitsList.filter((item) => item.debtDirection !== "i_owe_responsible"), [debitsList])
+  const payableDebits = useMemo(() => debitsList.filter((item) => item.debtDirection === "i_owe_responsible"), [debitsList])
 
   // Gerar mensagem de cobrança personalizada com as despesas e chave PIX do banco selecionado
   const billingMessage = useMemo(() => {
     const periodText = month && month !== 'todos' ? ` referente a ${month}${year && year !== 'todos' ? `/${year}` : ''}` : ''
-
-    const lines = debitsList.map(
-      (d) => `• ${d.dateFormatted ? d.dateFormatted + ' - ' : ''}${d.description}: ${formatCurrency(d.value)}`
-    )
 
     const bankInfo = selectedBank?.pixKey
       ? `\n🏦 Banco: ${selectedBank.name}\n🔑 Chave PIX (${selectedBank.pixKeyType?.toUpperCase() || 'PIX'}): ${selectedBank.pixKey}`
@@ -100,13 +99,16 @@ export function ResponsiblePixModal({
 
     return [
       `Olá ${responsibleName}! Segue o extrato de despesas no MeControla.AI${periodText}:`,
-      ...lines,
+      ...(receivableDebits.length ? ["A RECEBER:", ...receivableDebits.map((d) => `• ${d.dateFormatted ? d.dateFormatted + ' - ' : ''}${d.description}: ${formatCurrency(d.value)}`)] : ["A RECEBER: nenhum valor"]),
+      ...(payableDebits.length ? ["A PAGAR:", ...payableDebits.map((d) => `• ${d.dateFormatted ? d.dateFormatted + ' - ' : ''}${d.description}: ${formatCurrency(d.value)}`)] : ["A PAGAR: nenhum valor"]),
       `---------------------------------`,
-      `💰 Total a pagar: ${formatCurrency(total)}`,
+      `💰 Total a receber: ${formatCurrency(receivable)}`,
+      `💸 Total a pagar: ${formatCurrency(payable)}`,
+      `↔️ Saldo líquido: ${formatCurrency(receivable - payable)}`,
       bankInfo,
       `\nObrigado! 🚀`,
     ].join('\n')
-  }, [debitsList, total, month, year, responsibleName, selectedBank])
+  }, [receivableDebits, payableDebits, receivable, payable, month, year, responsibleName, selectedBank])
 
   // Mutation para registrar a Receita de acerto e abater o saldo
   const { mutateAsync: generateCreditMutation, isPending: isGeneratingCredit } = useMutation({
@@ -115,7 +117,7 @@ export function ResponsiblePixModal({
       return createCredit({
         workspaceId: workspaceActive.id,
         description: `Acerto PIX - ${responsibleName}${month && month !== 'todos' ? ` (${month})` : ''}`,
-        value: total,
+        value: receivable,
         date: new Date().toISOString(),
         paymentMethod: "Pix",
         bankId: selectedBankId || null,
@@ -128,7 +130,7 @@ export function ResponsiblePixModal({
       queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive?.id] })
       queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive?.id] })
       void invalidateFinancialQueries(queryClient, workspaceActive?.id)
-      toast.success(`Receita de ${formatCurrency(total)} gerada com sucesso! Saldo abatido.`)
+      toast.success(`Receita de ${formatCurrency(receivable)} gerada com sucesso! Saldo abatido.`)
       setOpen(false)
     },
     onError: (err: Error) => {
@@ -228,10 +230,10 @@ export function ResponsiblePixModal({
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-center justify-between">
               <div>
                 <span className="text-xs font-semibold text-muted-foreground uppercase">
-                  Saldo Devedor {month && month !== 'todos' ? `(${month})` : ''}
+                  A receber {month && month !== 'todos' ? `(${month})` : ''}
                 </span>
                 <div className="text-2xl font-extrabold text-foreground">
-                  {formatCurrency(total)}
+                  {formatCurrency(receivable)}
                 </div>
               </div>
               <div className="text-right">
@@ -242,11 +244,11 @@ export function ResponsiblePixModal({
               </div>
             </div>
 
-            {/* List of Debits */}
+            {/* List of directional debits */}
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-1 flex items-center gap-1.5">
                 <Receipt className="h-3.5 w-3.5" />
-                Despesas Deste Responsável ({debitsList.length})
+                A receber ({receivableDebits.length}) · A pagar ({payableDebits.length})
               </h4>
               <div className="max-h-36 overflow-y-auto space-y-1.5 mt-2 pr-1">
                 {debitsList.length === 0 ? (
@@ -267,7 +269,7 @@ export function ResponsiblePixModal({
                           </span>
                         )}
                       </div>
-                      <span className="font-bold text-red-600 dark:text-red-400 shrink-0">
+                      <span className={d.debtDirection === "i_owe_responsible" ? "font-bold text-rose-600 shrink-0" : "font-bold text-emerald-600 shrink-0"}>
                         {formatCurrency(d.value)}
                       </span>
                     </div>
@@ -292,11 +294,11 @@ export function ResponsiblePixModal({
         )}
 
         <DialogFooter className="flex flex-col sm:flex-row flex-wrap sm:justify-between items-stretch sm:items-center gap-2 pt-3 border-t">
-          {total > 0 && (
+          {receivable > 0 && (
             <Button
               type="button"
               onClick={() => generateCreditMutation()}
-              disabled={isGeneratingCredit || isDetailsLoading || total <= 0}
+              disabled={isGeneratingCredit || isDetailsLoading || receivable <= 0}
               className="w-full sm:w-auto gap-1.5 font-bold cursor-pointer shrink-0"
             >
               {isGeneratingCredit ? (

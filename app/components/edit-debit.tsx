@@ -64,6 +64,7 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
       creditCardId: debit.creditCardId || null,
       categoryId: debit.categoryId || null,
       responsibleId: debit.responsibleId || null,
+      debtDirection: debit.debtDirection || (debit.responsibleId ? "responsible_owes_me" : null),
       paymentMethod: debit.paymentMethod || "Pix",
       status: debit.status || "pending",
       updateFutureOnly: true,
@@ -399,6 +400,30 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
                 </FormItem>
               )}
             />
+
+            {form.watch("responsibleId") && (
+              <FormField
+                control={form.control}
+                name="debtDirection"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Direção da dívida</FormLabel>
+                    <Select value={field.value || "responsible_owes_me"} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a direção" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="responsible_owes_me">O responsável deve a mim</SelectItem>
+                        <SelectItem value="i_owe_responsible">Eu devo ao responsável</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <DialogFooter className="justify-between pt-2">
               <DialogClose asChild>

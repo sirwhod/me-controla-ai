@@ -20,7 +20,9 @@ import { formatCurrency } from "@/app/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Badge } from "@/app/components/ui/badge"
 
-export function getColumns(month?: string, year?: string): ColumnDef<PersonResponsible & { pendingBalance: number }>[] {
+type ResponsibleFinancial = PersonResponsible & { pendingBalance: number; payable?: number; receivable?: number; netBalance?: number }
+
+export function getColumns(month?: string, year?: string): ColumnDef<ResponsibleFinancial>[] {
   return [
     {
       accessorKey: "name",
@@ -56,20 +58,17 @@ export function getColumns(month?: string, year?: string): ColumnDef<PersonRespo
       },
     },
     {
-      accessorKey: "pendingBalance",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Saldo Devedor (Despesas)" />,
+      accessorKey: "netBalance",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Saldo com responsável" />,
       cell: ({ row }) => {
-        const balance = row.original.pendingBalance || 0
+        const { receivable = row.original.pendingBalance || 0, payable = 0, netBalance = receivable - payable } = row.original
         return (
-          <div className="font-bold text-sm">
-            {balance > 0 ? (
-              <div className="flex flex-col">
-                <span className="text-red-500 font-extrabold">{formatCurrency(balance)}</span>
-                <span className="text-[10px] text-muted-foreground font-normal">A receber</span>
-              </div>
-            ) : (
-              <span className="text-emerald-500 font-semibold">R$ 0,00 (Em dia)</span>
-            )}
+          <div className="flex flex-col gap-0.5 text-xs">
+            <span>A receber: <strong>{formatCurrency(receivable)}</strong></span>
+            <span>A pagar: <strong>{formatCurrency(payable)}</strong></span>
+            <span className={netBalance < 0 ? "font-bold text-rose-500" : "font-bold text-emerald-600"}>
+              {netBalance < 0 ? "Você deve: " : "Saldo líquido: "}{formatCurrency(Math.abs(netBalance))}
+            </span>
           </div>
         )
       },

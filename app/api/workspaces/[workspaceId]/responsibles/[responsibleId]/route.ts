@@ -5,7 +5,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { updatePersonResponsibleSchema } from '@/app/types/financial'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { FieldPath } from 'firebase-admin/firestore'
-import { FINANCIAL_PERIOD_SCHEMA_VERSION, financialPeriodId } from '@/app/lib/financial-periods'
+import { calculateResponsibleBalance } from '@/app/lib/responsible-balance'
 
 interface RouteParams {
   params: Promise<{
@@ -50,10 +50,9 @@ export async function GET(req: NextRequest, props: RouteParams) {
 
     const responsibleData = responsibleDoc.data()!
 
-    const workspaceRef = db.collection('workspaces').doc(workspaceId)
-    const periodRef = workspaceRef.collection('financialPeriods').doc(financialPeriodId(Number(year), month))
-    const [periodDoc, responsiblePeriod] = await Promise.all([periodRef.get(), periodRef.collection('responsibles').doc(responsibleId).get()])
-    const hasAggregate = process.env.FINANCIAL_PERIOD_READS_ENABLED === 'true' && periodDoc.data()?.schemaVersion === FINANCIAL_PERIOD_SCHEMA_VERSION
+    // Responsible aggregates from schema v1 do not encode debt direction.
+    // Read source entries until a directional aggregate is backfilled.
+    const hasAggregate = false
 
     let debitsQuery: FirebaseFirestore.Query = db.collection('workspaces').doc(workspaceId)
       .collection('debits').where('responsibleId', '==', responsibleId)
@@ -74,14 +73,9 @@ export async function GET(req: NextRequest, props: RouteParams) {
     }
     const [debitsSnap, creditsSnap] = await Promise.all([debitsQuery.get(), hasAggregate ? Promise.resolve(null) : creditsQuery.get()])
 
-    let totalDebits = 0
-    let totalCredits = 0
+    const balanceDebits: FirebaseFirestore.DocumentData[] = []
+    const balanceCredits: FirebaseFirestore.DocumentData[] = []
     let pendingDebits: Array<Record<string, unknown>> = []
-
-    if (hasAggregate) {
-      totalDebits = Number(responsiblePeriod.data()?.totalExpensesCents || 0) / 100
-      totalCredits = Number(responsiblePeriod.data()?.totalIncomeCents || 0) / 100
-    }
 
     for (const doc of debitsSnap.docs) {
       const d = doc.data()
@@ -94,7 +88,7 @@ export async function GET(req: NextRequest, props: RouteParams) {
         continue
       }
 
-      if (!hasAggregate) totalDebits += d.value || 0
+      balanceDebits.push(d)
       const dateStr = d.date?.toDate ? d.date.toDate().toLocaleDateString('pt-BR') : ''
 
       pendingDebits.push({
@@ -105,6 +99,7 @@ export async function GET(req: NextRequest, props: RouteParams) {
         dateFormatted: dateStr,
         paymentMethod: d.paymentMethod,
         categoryName: d.categoryName || null,
+        debtDirection: d.debtDirection === 'i_owe_responsible' ? 'i_owe_responsible' : 'responsible_owes_me',
         month: d.month,
         year: d.year,
       })
@@ -118,7 +113,7 @@ export async function GET(req: NextRequest, props: RouteParams) {
       if (year && year !== 'todos' && c.year && Number(c.year) !== Number(year)) {
         continue
       }
-      totalCredits += c.value || 0
+      balanceCredits.push(c)
     }
 
     if (!hasAggregate) {
@@ -133,7 +128,7 @@ export async function GET(req: NextRequest, props: RouteParams) {
     const nextCursor = pendingDebits.length === pageLimit && lastDebit
       ? Buffer.from(JSON.stringify({ date: lastDebit.date, id: lastDebit.id })).toString('base64url') : null
 
-    const totalPending = Math.max(0, totalDebits - totalCredits)
+    const balance = calculateResponsibleBalance(balanceDebits, balanceCredits)
 
     // Verificar se o e-mail corresponde a um usuário cadastrado
     let userImage: string | null = null
@@ -160,9 +155,12 @@ export async function GET(req: NextRequest, props: RouteParams) {
       userImage,
       isRegisteredUser,
       status: responsibleData.status || 'active',
-      totalPending: Number(totalPending.toFixed(2)),
-      totalDebits: Number(totalDebits.toFixed(2)),
-      totalCredits: Number(totalCredits.toFixed(2)),
+      totalPending: Number(balance.receivable.toFixed(2)),
+      totalDebits: Number(balance.expensesResponsibleOwes.toFixed(2)),
+      totalCredits: Number(balance.received.toFixed(2)),
+      payable: Number(balance.payable.toFixed(2)),
+      receivable: Number(balance.receivable.toFixed(2)),
+      netBalance: Number(balance.netBalance.toFixed(2)),
       pendingDebits,
       pendingCredits: pendingDebits, // Alias para retrocompatibilidade
       nextCursor,

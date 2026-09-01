@@ -96,6 +96,18 @@ export function StepReview({
             </div>
           </div>
 
+          {selectedResponsible && (
+            <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-accent/20">
+              <User className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-muted-foreground font-medium">Direção da dívida</span>
+                <span className="text-foreground font-semibold">
+                  {values.debtDirection === "i_owe_responsible" ? "Eu devo ao responsável" : "O responsável deve a mim"}
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-accent/20">
             <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
             <div className="flex flex-col">

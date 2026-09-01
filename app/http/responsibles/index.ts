@@ -9,6 +9,7 @@ export interface ResponsiblePendingDebit {
   dateFormatted: string
   paymentMethod: string
   categoryName: string | null
+  debtDirection?: 'i_owe_responsible' | 'responsible_owes_me'
   month?: string
   year?: number
 }
@@ -19,6 +20,9 @@ export interface ResponsibleDetails extends PersonResponsible {
   totalPending: number
   totalDebits?: number
   totalCredits?: number
+  payable?: number
+  receivable?: number
+  netBalance?: number
   pendingDebits?: ResponsiblePendingDebit[]
   pendingCredits?: ResponsiblePendingCredit[]
   nextCursor?: string | null
@@ -27,7 +31,7 @@ export interface ResponsibleDetails extends PersonResponsible {
 export async function getResponsibles(
   workspaceId: string,
   params?: { month?: string; year?: string; includeBalances?: boolean }
-): Promise<(PersonResponsible & { pendingBalance: number })[]> {
+): Promise<(PersonResponsible & { pendingBalance: number; payable?: number; receivable?: number; netBalance?: number })[]> {
   const response = await api.get<(PersonResponsible & { pendingBalance: number })[]>(
     `/workspaces/${workspaceId}/responsibles`,
     { params }

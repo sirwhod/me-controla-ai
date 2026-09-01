@@ -1,9 +1,10 @@
 import { api } from '@/app/lib/axios'
 import { CreateDebit } from '@/app/types/financial'
 
-interface CreateDebitResponse {
+export interface CreateDebitResponse {
   message: string;
-  debitId: string;
+  debitId?: string;
+  count?: number;
 }
 
 interface CreateDebitProps extends CreateDebit {
@@ -20,6 +21,7 @@ export async function createDebit(
     creditCardId,
     categoryId,
     responsibleId,
+    debtDirection,
     currentInstallment,
     endDate,
     frequency,
@@ -48,6 +50,7 @@ export async function createDebit(
       creditCardId,
       categoryId,
       responsibleId,
+      debtDirection,
       currentInstallment,
       endDate,
       frequency,
