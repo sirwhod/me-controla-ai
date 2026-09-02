@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Landmark, Loader2, Plus, Save, X, Key, Calendar } from "lucide-react"
+import { Landmark, Loader2, Plus, Save, X, Key } from "lucide-react"
 
 import { Button } from "@/app/components/ui/button"
 import {
@@ -25,7 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select"
-import { ImageUploadField } from "@/app/components/image-upload-field"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { createBank } from "@/app/http/banks/create-bank"
 import { updateBank } from "@/app/http/banks/update-bank"
@@ -48,6 +47,8 @@ export function BankForm({ mode, bank }: BankFormProps) {
   const queryClient = useQueryClient()
 
   const isEdit = mode === "edit"
+  const [bankSearch, setBankSearch] = React.useState("")
+  const [bankStep, setBankStep] = React.useState(1)
 
   const form = useForm<CreateBankProps>({
     resolver: zodResolver(createBankSchema),
@@ -105,11 +106,6 @@ export function BankForm({ mode, bank }: BankFormProps) {
       if (data.catalogId) formData.append("catalogId", data.catalogId)
       if (data.pixKey) formData.append("pixKey", data.pixKey)
       if (data.pixKeyType) formData.append("pixKeyType", data.pixKeyType)
-      if (data.imageFile && data.imageFile.length > 0) {
-        formData.append("imageFile", data.imageFile[0])
-      }
-      if (data.invoiceClosingDay) formData.append("invoiceClosingDay", data.invoiceClosingDay)
-      if (data.invoiceDueDate) formData.append("invoiceDueDate", data.invoiceDueDate)
 
       await createMutation(formData)
     }
@@ -133,39 +129,46 @@ export function BankForm({ mode, bank }: BankFormProps) {
         </p>
       </div>
 
+      <div className="mb-6 grid grid-cols-3 gap-2" aria-label="Etapas do cadastro">
+        {["Instituição", "Chave Pix", "Revisão"].map((label, index) => {
+          const number = index + 1
+          return <div key={label} className={`flex items-center gap-2 border-b-2 pb-2 text-xs font-semibold ${bankStep >= number ? "border-primary text-foreground" : "border-border text-muted-foreground"}`}><span className={`flex h-7 w-7 items-center justify-center rounded-full border ${bankStep >= number ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>{number}</span><span className="hidden sm:inline">{label}</span></div>
+        })}
+      </div>
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* Seção 1: Identificação */}
-          <div className="space-y-4">
+          {bankStep === 1 && <div className="space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               1. Dados da Instituição
             </h3>
 
             {!isEdit && <FormField control={form.control} name="catalogId" render={({ field }) => (
               <FormItem><FormLabel className="text-xs font-semibold">Banco brasileiro (opcional)</FormLabel>
-                <Select value={field.value || "manual"} onValueChange={(value) => {
-                  if (value === "manual") { field.onChange(null); return }
-                  const item = brazilianBankCatalog.find((entry) => entry.id === value)
-                  field.onChange(value)
-                  if (item) { form.setValue("name", item.name, { shouldValidate: true }); form.setValue("code", item.code, { shouldValidate: true }) }
-                }}>
-                  <FormControl><SelectTrigger className="h-10 bg-background/80"><SelectValue placeholder="Selecione uma instituição" /></SelectTrigger></FormControl>
-                  <SelectContent><SelectItem value="manual">Cadastro manual / banco não encontrado</SelectItem>{brazilianBankCatalog.map((item) => <SelectItem key={item.id} value={item.id}>{item.code} — {item.name}</SelectItem>)}</SelectContent>
-                </Select><FormMessage />
+                <Input value={bankSearch} onChange={(event) => setBankSearch(event.target.value)} placeholder="Buscar por nome ou código..." className="mb-2 h-10 w-full bg-background/80" />
+                <FormControl>
+                  <div className="max-h-60 w-full overflow-y-auto rounded-xl border border-border/60 bg-background/70 p-1">
+                    <button type="button" onClick={() => field.onChange(null)} className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm hover:bg-muted ${!field.value ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}>Cadastro manual / banco não encontrado</button>
+                    {brazilianBankCatalog.filter((item) => `${item.code} ${item.name}`.toLowerCase().includes(bankSearch.toLowerCase())).map((item) => (
+                      <button type="button" key={item.id} onClick={() => { field.onChange(item.id); form.setValue("name", item.name, { shouldValidate: true }); form.setValue("code", item.code, { shouldValidate: true }) }} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted ${field.value === item.id ? "bg-primary/10 text-primary" : "text-foreground"}`}>
+                        <img src={item.iconPath} alt="" className="h-8 w-8 shrink-0 rounded-md object-contain" /><span><strong>{item.name}</strong><small className="ml-2 text-muted-foreground">{item.code}</small></span>
+                      </button>
+                    ))}
+                    {!brazilianBankCatalog.some((item) => `${item.code} ${item.name}`.toLowerCase().includes(bankSearch.toLowerCase())) && <p className="px-3 py-3 text-xs text-muted-foreground">Nenhum banco encontrado. Use o cadastro manual.</p>}
+                  </div>
+                </FormControl><FormMessage />
+                {field.value && field.value !== "manual" && (() => {
+                  const selected = brazilianBankCatalog.find((item) => item.id === field.value)
+                  return selected ? (
+                    <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/30 p-3">
+                      <img src={selected.iconPath} alt={`Logo ${selected.name}`} className="h-12 w-12 rounded-lg object-contain" />
+                      <div><p className="text-sm font-semibold">{selected.name}</p><p className="text-xs text-muted-foreground">Código COMPE {selected.code} · logo do catálogo</p></div>
+                    </div>
+                  ) : null
+                })()}
               </FormItem>
             )} />}
-
-            {/* Logo do Banco (Apenas no Create / upload) */}
-            {!isEdit && !form.watch("catalogId") && (
-              <ImageUploadField
-                name="imageFile"
-                setValue={form.setValue}
-                clearErrors={(name) => form.clearErrors(name as keyof CreateBankProps)}
-                formValue={form.watch("imageFile")}
-                error={form.formState.errors.imageFile}
-                label="Logo da Instituição (opcional)"
-              />
-            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Nome */}
@@ -207,10 +210,10 @@ export function BankForm({ mode, bank }: BankFormProps) {
                 )}
               />
             </div>
-          </div>
+          </div>}
 
           {/* Seção 2: Chave PIX */}
-          <div className="space-y-4 pt-4 border-t border-border/40">
+          {bankStep === 2 && <div className="space-y-4 pt-4 border-t border-border/40">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               2. Chave PIX (Para Pagamentos Rápidos)
             </h3>
@@ -265,60 +268,12 @@ export function BankForm({ mode, bank }: BankFormProps) {
                 )}
               />
             </div>
-          </div>
+          </div>}
 
-          {/* Seção 3: Ciclo de Fatura Opcional */}
-          <div className="space-y-4 pt-4 border-t border-border/40">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              3. Ciclo de Fatura da Conta (Opcional)
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="invoiceClosingDay"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-semibold">Dia de Fechamento</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Ex: 10"
-                          className="pl-9 h-10 bg-background/80"
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="invoiceDueDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-semibold">Dia de Vencimento</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Ex: 17"
-                          className="pl-9 h-10 bg-background/80"
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
+          {bankStep === 3 && <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Revise os dados antes de salvar</h3>
+            <div className="grid gap-3 text-sm sm:grid-cols-2"><div><span className="text-muted-foreground">Instituição</span><p className="font-semibold">{form.watch("name") || "Não informado"}</p></div><div><span className="text-muted-foreground">Código</span><p className="font-semibold">{form.watch("code") || "Não informado"}</p></div><div><span className="text-muted-foreground">Tipo de chave</span><p className="font-semibold uppercase">{form.watch("pixKeyType") || "Não informado"}</p></div><div><span className="text-muted-foreground">Chave Pix</span><p className="break-all font-semibold">{form.watch("pixKey") || "Não informado"}</p></div></div>
+          </div>}
 
           {/* Botões de Ação */}
           <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-4 border-t border-border/60">
@@ -333,7 +288,9 @@ export function BankForm({ mode, bank }: BankFormProps) {
               Cancelar
             </Button>
 
-            <Button
+            {bankStep > 1 && <Button type="button" variant="outline" onClick={() => setBankStep((step) => step - 1)} disabled={isPending}>Voltar</Button>}
+            {bankStep < 3 && <Button type="button" onClick={async () => { const fields = bankStep === 1 ? ["name", "code", "catalogId"] : ["pixKey", "pixKeyType"]; const valid = await form.trigger(fields as (keyof CreateBankProps)[]); if (valid) setBankStep((step) => step + 1) }} disabled={isPending}>Continuar</Button>}
+            {bankStep === 3 && <Button
               type="submit"
               disabled={isPending}
               className="h-10 text-xs font-semibold gap-1.5"
@@ -346,7 +303,7 @@ export function BankForm({ mode, bank }: BankFormProps) {
                 <Plus className="h-4 w-4" />
               )}
               {isEdit ? "Salvar Alterações" : "Cadastrar Banco"}
-            </Button>
+            </Button>}
           </div>
         </form>
       </Form>

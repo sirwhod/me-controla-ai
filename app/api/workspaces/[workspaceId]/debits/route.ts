@@ -164,7 +164,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
     }
 
     // Regra de Fechamento de Fatura de Cartão de Crédito
-    const closingDayRaw = cardDocData?.closingDay ?? bankDocData?.invoiceClosingDay
+    const closingDayRaw = cardDocData?.closingDay
     const getInvoiceDate = (baseDate: Date) => {
       if (paymentMethod === 'Crédito' && closingDayRaw !== undefined && closingDayRaw !== null) {
         const closingDay = typeof closingDayRaw === 'number' ? closingDayRaw : parseInt(String(closingDayRaw), 10)
