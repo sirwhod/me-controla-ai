@@ -96,12 +96,14 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
 
     const bankDataFromForm = {
       name: formData.get('name') as string,
-      code: formData.get('code') as string,
-      pixKey: formData.get('pixKey') as string | null,
-      pixKeyType: formData.get('pixKeyType') as string | null,
-      invoiceClosingDay: formData.get('invoiceClosingDay') as string | null, // Vem como string
-      invoiceDueDate: formData.get('invoiceDueDate') as string | null,     // Vem como string
-      catalogId: formData.get('catalogId') as string | null,
+      // FormData returns null for omitted fields. Normalize it to undefined so
+      // optional schema fields are not rejected as an invalid null value.
+      code: formData.get('code') as string | null ?? undefined,
+      pixKey: formData.get('pixKey') as string | null ?? undefined,
+      pixKeyType: formData.get('pixKeyType') as string | null ?? undefined,
+      invoiceClosingDay: formData.get('invoiceClosingDay') as string | null ?? undefined,
+      invoiceDueDate: formData.get('invoiceDueDate') as string | null ?? undefined,
+      catalogId: formData.get('catalogId') as string | null ?? undefined,
     }
 
     const validationResult = createBankSchema.safeParse(bankDataFromForm)

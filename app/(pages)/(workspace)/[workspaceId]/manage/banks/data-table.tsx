@@ -67,7 +67,7 @@ export function DataTable<TData extends Bank, TValue>({
 
   return (
     <div className="flex flex-col space-y-4 w-full">
-      {/* Barra de Busca + CTA Criar Banco (Desktop) */}
+      {/* Barra de busca */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1 w-full sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -81,9 +81,6 @@ export function DataTable<TData extends Bank, TValue>({
           />
         </div>
 
-        <div className="hidden sm:block">
-          <CreateBank />
-        </div>
       </div>
 
       {/* 1. VISÃO MOBILE (< 768px): BankList com Cards Estruturados */}
