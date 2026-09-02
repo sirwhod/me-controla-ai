@@ -6,6 +6,7 @@ import { db, getDownloadURLFromPath, storage } from '@/app/lib/firebase'
 import { createBankSchema } from '@/app/types/financial'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { NextRequest, NextResponse } from 'next/server'
+import { brazilianBankCatalog } from '@/app/lib/bank-catalog'
 
 interface BankRouteParams {
   workspaceId: string;
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest, { params }: {params: Promise<BankRou
       return {
         id: doc.id,
         ...data,
-        iconUrl: data.iconPath ? await getDownloadURLFromPath(data.iconPath) : null,
+        iconUrl: data.iconPath?.startsWith('/') ? data.iconPath : data.iconPath ? await getDownloadURLFromPath(data.iconPath) : null,
         ...(includeCardsCount ? { cardsCount: cardsByBank.get(doc.id) || 0 } : {}),
         createdAt: serializeFirestoreDate(data.createdAt),
         updatedAt: serializeFirestoreDate(data.updatedAt),
@@ -100,6 +101,7 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
       pixKeyType: formData.get('pixKeyType') as string | null,
       invoiceClosingDay: formData.get('invoiceClosingDay') as string | null, // Vem como string
       invoiceDueDate: formData.get('invoiceDueDate') as string | null,     // Vem como string
+      catalogId: formData.get('catalogId') as string | null,
     }
 
     const validationResult = createBankSchema.safeParse(bankDataFromForm)
@@ -111,9 +113,10 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
       }, { status: 400 })
     }
 
-    const { name, code, pixKey, pixKeyType, invoiceClosingDay, invoiceDueDate } = validationResult.data
+    const { name, code, pixKey, pixKeyType, invoiceClosingDay, invoiceDueDate, catalogId } = validationResult.data
     let uploadedIconUrl: string | undefined = undefined
     let uploadedIconPath: string | null = null
+    if (catalogId) uploadedIconPath = brazilianBankCatalog.find((item) => item.id === catalogId)?.iconPath || null
 
     if (imageFile) {
       if (imageFile.size > 5 * 1024 * 1024) { // 5MB
@@ -155,6 +158,7 @@ export async function POST(req: NextRequest, { params }: {params: Promise<BankRo
     const newBankData = {
       name: name.trim(),
       code: code?.trim() || null,
+      catalogId: catalogId || null,
       // Persist the revocable object path, never a long-lived signed URL.
       iconUrl: null,
       iconPath: uploadedIconPath,

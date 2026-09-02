@@ -35,6 +35,7 @@ import {
   createBankSchema,
   UpdateBank as UpdateBankProps,
 } from "@/app/types/financial"
+import { brazilianBankCatalog } from "@/app/lib/bank-catalog"
 
 interface BankFormProps {
   mode: "create" | "edit"
@@ -57,6 +58,7 @@ export function BankForm({ mode, bank }: BankFormProps) {
       pixKeyType: (bank?.pixKeyType as "cpf" | "cnpj" | "email" | "phone" | "random") || "cpf",
       invoiceClosingDay: bank?.invoiceClosingDay || "",
       invoiceDueDate: bank?.invoiceDueDate || "",
+      catalogId: bank?.catalogId || null,
     },
   })
 
@@ -100,6 +102,7 @@ export function BankForm({ mode, bank }: BankFormProps) {
       const formData = new FormData()
       formData.append("name", data.name)
       if (data.code) formData.append("code", data.code)
+      if (data.catalogId) formData.append("catalogId", data.catalogId)
       if (data.pixKey) formData.append("pixKey", data.pixKey)
       if (data.pixKeyType) formData.append("pixKeyType", data.pixKeyType)
       if (data.imageFile && data.imageFile.length > 0) {
@@ -138,15 +141,29 @@ export function BankForm({ mode, bank }: BankFormProps) {
               1. Dados da Instituição
             </h3>
 
+            {!isEdit && <FormField control={form.control} name="catalogId" render={({ field }) => (
+              <FormItem><FormLabel className="text-xs font-semibold">Banco brasileiro (opcional)</FormLabel>
+                <Select value={field.value || "manual"} onValueChange={(value) => {
+                  if (value === "manual") { field.onChange(null); return }
+                  const item = brazilianBankCatalog.find((entry) => entry.id === value)
+                  field.onChange(value)
+                  if (item) { form.setValue("name", item.name, { shouldValidate: true }); form.setValue("code", item.code, { shouldValidate: true }) }
+                }}>
+                  <FormControl><SelectTrigger className="h-10 bg-background/80"><SelectValue placeholder="Selecione uma instituição" /></SelectTrigger></FormControl>
+                  <SelectContent><SelectItem value="manual">Cadastro manual / banco não encontrado</SelectItem>{brazilianBankCatalog.map((item) => <SelectItem key={item.id} value={item.id}>{item.code} — {item.name}</SelectItem>)}</SelectContent>
+                </Select><FormMessage />
+              </FormItem>
+            )} />}
+
             {/* Logo do Banco (Apenas no Create / upload) */}
-            {!isEdit && (
+            {!isEdit && !form.watch("catalogId") && (
               <ImageUploadField
                 name="imageFile"
                 setValue={form.setValue}
                 clearErrors={(name) => form.clearErrors(name as keyof CreateBankProps)}
                 formValue={form.watch("imageFile")}
                 error={form.formState.errors.imageFile}
-                label="Logo da Instituição"
+                label="Logo da Instituição (opcional)"
               />
             )}
 

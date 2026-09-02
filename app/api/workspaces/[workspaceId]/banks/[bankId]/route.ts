@@ -43,7 +43,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<BankRo
     const formattedBank = {
       id: bankDoc.id,
       ...bankData,
-      iconUrl: bankData?.iconPath ? await getDownloadURLFromPath(bankData.iconPath) : null,
+      iconUrl: bankData?.iconPath?.startsWith('/') ? bankData.iconPath : bankData?.iconPath ? await getDownloadURLFromPath(bankData.iconPath) : null,
       createdAt: serializeFirestoreDate(bankData?.createdAt),
       updatedAt: serializeFirestoreDate(bankData?.updatedAt),
     }

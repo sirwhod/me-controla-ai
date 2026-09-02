@@ -26,6 +26,7 @@ import { Bank } from "@/app/types/financial"
 import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import Link from "@/app/components/context-link"
+import { createPixPayload } from "@/app/lib/pix"
 
 interface ResponsiblePixModalProps {
   responsibleId: string
@@ -45,6 +46,7 @@ export function ResponsiblePixModal({
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [selectedBankId, setSelectedBankId] = useState<string>("")
+  const [step, setStep] = useState(1)
   const { workspaceActive } = useWorkspace()
   const queryClient = useQueryClient()
 
@@ -91,6 +93,10 @@ export function ResponsiblePixModal({
   const payable = details?.payable ?? 0
   const netBalance = details?.netBalance ?? outstandingReceivable - payable
   const settlementAmount = Math.max(netBalance, 0)
+  const pixPayload = useMemo(() => {
+    if (!selectedBank?.pixKey || settlementAmount <= 0) return ''
+    try { return createPixPayload({ key: selectedBank.pixKey, amount: settlementAmount, description: `Acerto ${responsibleName}` }) } catch { return '' }
+  }, [selectedBank, settlementAmount, responsibleName])
   const receivableDebits = useMemo(() => debitsList.filter((item) => item.debtDirection !== "i_owe_responsible"), [debitsList])
   const payableDebits = useMemo(() => debitsList.filter((item) => item.debtDirection === "i_owe_responsible"), [debitsList])
 
@@ -138,15 +144,16 @@ export function ResponsiblePixModal({
       ``,
       `Obrigado! 🚀`,
     ].join('\n')
-  }, [receivableDebits, payableDebits, receivable, received, outstandingReceivable, payable, netBalance, settlementAmount, overpayment, month, year, responsibleName, selectedBank])
+  }, [receivableDebits, payableDebits, receivable, received, outstandingReceivable, payable, netBalance, settlementAmount, overpayment, month, year, responsibleName, selectedBank, pixPayload])
 
   // Mutation para registrar a Receita de acerto e abater o saldo
   const { mutateAsync: generateCreditMutation, isPending: isGeneratingCredit } = useMutation({
     mutationFn: async () => {
       if (!workspaceActive) return
+      if (!selectedBank?.pixKey || !pixPayload) throw new Error('Selecione um banco com chave PIX válida para gerar a cobrança.')
       return createCredit({
         workspaceId: workspaceActive.id,
-        description: `Acerto PIX - ${responsibleName}${month && month !== 'todos' ? ` (${month})` : ''}`,
+        description: `Acerto ${month && month !== 'todos' ? month : new Date().toLocaleString('pt-BR', { month: 'long' })} ${year && year !== 'todos' ? year : new Date().getFullYear()}`,
         value: settlementAmount,
         date: new Date().toISOString(),
         paymentMethod: "Pix",
@@ -169,21 +176,21 @@ export function ResponsiblePixModal({
   })
 
   const handleCopy = () => {
-    if (!billingMessage) return
-    navigator.clipboard.writeText(billingMessage)
+    if (!pixPayload) return
+    navigator.clipboard.writeText(pixPayload)
     setCopied(true)
-    toast.success("Mensagem copiada para a área de transferência!")
+    toast.success("Pix Copia e Cola copiado!")
     setTimeout(() => setCopied(false), 2500)
   }
 
   const handleWhatsApp = () => {
     if (!billingMessage) return
-    const textEncoded = encodeURIComponent(billingMessage)
+    const textEncoded = encodeURIComponent(`${billingMessage}${pixPayload ? `\n\nPIX COPIA E COLA\n${pixPayload}` : ''}`)
     window.open(`https://api.whatsapp.com/send?text=${textEncoded}`, "_blank")
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(nextOpen) => { setOpen(nextOpen); if (nextOpen) setStep(1) }}>
       <DialogTrigger asChild>
         <Button
           variant="outline"
@@ -195,7 +202,7 @@ export function ResponsiblePixModal({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-h-[92vh] w-[calc(100vw-1.5rem)] min-w-0 max-w-xl overflow-x-hidden overflow-y-auto sm:max-w-xl">
+      <DialogContent className="fixed inset-0 flex h-[100dvh] max-h-[100dvh] w-screen min-w-0 max-w-none translate-x-0 translate-y-0 flex-col rounded-none border-0 p-4 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[92vh] sm:w-[calc(100vw-1.5rem)] sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:border sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex min-w-0 items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -204,18 +211,22 @@ export function ResponsiblePixModal({
             </span>
           </DialogTitle>
           <DialogDescription>
-            Confira separadamente as despesas, os pagamentos já registrados e o que ainda está pendente.
+            Siga as etapas para revisar o acerto, gerar o Pix e registrar a receita.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="grid grid-cols-3 gap-2 border-b pb-4 text-xs font-semibold">
+          {(['Resumo', 'Pix', 'Concluir'] as const).map((label, index) => <button key={label} type="button" onClick={() => setStep(index + 1)} className={`flex items-center gap-2 ${step === index + 1 ? 'text-primary' : 'text-muted-foreground'}`}><span className={`flex h-6 w-6 items-center justify-center rounded-full border ${step === index + 1 ? 'border-primary bg-primary text-primary-foreground' : 'border-border'}`}>{index + 1}</span>{label}</button>)}
+        </div>
 
         {isDetailsLoading || isBanksLoading ? (
           <div className="py-8 text-center text-sm text-muted-foreground">
             Carregando extrato de despesas do responsável...
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
             {/* Seletor de Banco para Recebimento */}
-            {settlementAmount > 0 && <div className="min-w-0 space-y-1.5">
+            {settlementAmount > 0 && <div className={`min-w-0 space-y-1.5 ${step === 2 ? '' : 'hidden'}`}>
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Landmark className="h-3.5 w-3.5 text-primary" />
                 Banco para Recebimento (Chave PIX):
@@ -259,7 +270,7 @@ export function ResponsiblePixModal({
             </div>}
 
             {/* Total Balance Card */}
-            <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className={`flex min-w-0 flex-col gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between ${step === 1 ? '' : 'hidden'}`}>
               <div className="min-w-0">
                 <span className="text-xs font-semibold text-muted-foreground uppercase">
                   Valor do acerto a receber {month && month !== 'todos' ? `(${month})` : ''}
@@ -284,7 +295,7 @@ export function ResponsiblePixModal({
             </div>
 
             {/* List of directional debits */}
-            <div>
+            <div className={step === 1 ? '' : 'hidden'}>
               <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-1 flex items-center gap-1.5">
                 <Receipt className="h-3.5 w-3.5" />
                 Atribuídas ({receivableDebits.length}) · Devidas ao responsável ({payableDebits.length})
@@ -318,23 +329,24 @@ export function ResponsiblePixModal({
             </div>
 
             {/* Formatted Message Ready to Send */}
-            <div>
+            <div className={step === 3 ? '' : 'hidden'}>
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1">
                 Mensagem do acerto:
               </label>
               <Textarea
                 readOnly
-                rows={4}
+                rows={10}
                 wrap="soft"
                 value={billingMessage}
-                className="max-w-full resize-none whitespace-pre-wrap break-words bg-muted/30 font-mono text-xs [overflow-wrap:anywhere]"
+                className="h-[calc(100dvh-390px)] min-h-[360px] max-w-full resize-none whitespace-pre-wrap break-words bg-muted/30 font-mono text-xs [overflow-wrap:anywhere] sm:h-[360px]"
               />
+              {pixPayload && <div className="mt-2"><label className="mb-1 block text-xs font-semibold text-muted-foreground">Pix Copia e Cola</label><Textarea readOnly rows={3} value={pixPayload} className="resize-none break-all font-mono text-[10px]" /></div>}
             </div>
           </div>
         )}
 
         <DialogFooter className="flex flex-col sm:flex-row flex-wrap sm:justify-between items-stretch sm:items-center gap-2 pt-3 border-t">
-          {settlementAmount > 0 && (
+          {step === 3 && settlementAmount > 0 && (
             <Button
               type="button"
               onClick={() => generateCreditMutation()}
@@ -346,21 +358,24 @@ export function ResponsiblePixModal({
               ) : (
                 <PlusCircle className="h-4 w-4" />
               )}
-              Registrar Receita & Abater Saldo
+              Gerar Pix & Registrar Receita
             </Button>
           )}
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+            {step > 1 && <Button type="button" variant="outline" size="sm" onClick={() => setStep(step - 1)}>Voltar</Button>}
+            {step < 3 && <Button type="button" size="sm" onClick={() => setStep(step + 1)} disabled={step === 1 ? settlementAmount <= 0 : !pixPayload}>Continuar</Button>}
+            {step === 3 && <>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={handleCopy}
-              disabled={isDetailsLoading || !billingMessage}
+              disabled={isDetailsLoading || !pixPayload}
               className="flex-1 sm:flex-initial gap-1.5 cursor-pointer"
             >
               {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-              {copied ? "Copiado!" : "Copiar"}
+              {copied ? "Copiado!" : "Copiar Pix"}
             </Button>
 
             <Button
@@ -374,6 +389,7 @@ export function ResponsiblePixModal({
               WhatsApp
             </Button>
 
+            </>}
             <DialogClose asChild>
               <Button type="button" size="sm" variant="secondary" className="cursor-pointer">
                 Fechar

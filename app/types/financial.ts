@@ -174,6 +174,7 @@ export interface Bank {
   workspaceId: string; // ID do workspace pai
   name: string;
   code: string | null; // Código do banco (pode ser null)
+  catalogId?: string | null;
   iconUrl: string | null; // URL do ícone (pode ser null)
   pixKey?: string | null;
   pixKeyType?: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random' | null;
@@ -194,16 +195,16 @@ export const createBankSchema = z.object({
   pixKeyType: z.enum(['cpf', 'cnpj', 'email', 'phone', 'random']).optional().nullable(),
   imageFile: z
     .custom<FileList>()
-    .refine((files) => files && files.length > 0, "A imagem do logo é obrigatória.")
+    .optional()
     .refine(
-      (files) => files?.[0]?.size <= MAX_FILE_SIZE_BYTES,
+      (files) => !files?.[0] || files[0].size <= MAX_FILE_SIZE_BYTES,
       `O tamanho máximo da imagem é ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB.`
     )
     .refine(
-      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
+      (files) => !files?.[0] || ACCEPTED_IMAGE_TYPES.includes(files[0].type),
       "Tipo de arquivo inválido. Apenas .jpg, .jpeg, .png e .webp são permitidos."
-    )
-    .optional(),
+    ),
+  catalogId: z.string().trim().max(50).optional().nullable(),
   invoiceClosingDay: z.string().regex(/^([1-9]|[12][0-9]|3[01])$/, { message: 'O dia de fechamento deve ser entre 1 e 31.' }).optional().or(z.literal('')),
   invoiceDueDate: z.string().regex(/^([1-9]|[12][0-9]|3[01])$/, { message: 'O dia de vencimento deve ser entre 1 e 31.' }).optional().or(z.literal('')),
 })
@@ -213,6 +214,7 @@ export type CreateBank = z.infer<typeof createBankSchema>
 export const updateBankSchema = z.object({
   name: z.string().trim().min(1, { message: 'O nome do banco não pode ser vazio.' }).max(100, { message: 'Nome do banco não pode exceder 100 caracteres.' }).optional(),
   code: z.string().trim().max(20, { message: 'Código não pode exceder 20 caracteres.' }).optional().nullable(),
+  catalogId: z.string().trim().max(50).optional().nullable(),
   pixKey: z.string().trim().optional().or(z.literal('')).nullable(),
   pixKeyType: z.enum(['cpf', 'cnpj', 'email', 'phone', 'random']).optional().nullable(),
   invoiceClosingDay: z.string().regex(/^([1-9]|[12][0-9]|3[01])$/, { message: 'O dia de fechamento deve ser entre 1 e 31.' }).optional().or(z.literal('')).nullable(),
