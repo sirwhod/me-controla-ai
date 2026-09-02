@@ -93,10 +93,11 @@ export function ResponsiblePixModal({
   const payable = details?.payable ?? 0
   const netBalance = details?.netBalance ?? outstandingReceivable - payable
   const settlementAmount = Math.max(netBalance, 0)
+  const periodDescription = `Acerto ${month && month !== 'todos' ? month : new Date().toLocaleString('pt-BR', { month: 'long' })} ${year && year !== 'todos' ? year : new Date().getFullYear()}`
   const pixPayload = useMemo(() => {
     if (!selectedBank?.pixKey || settlementAmount <= 0) return ''
-    try { return createPixPayload({ key: selectedBank.pixKey, amount: settlementAmount, description: `Acerto ${responsibleName}` }) } catch { return '' }
-  }, [selectedBank, settlementAmount, responsibleName])
+    try { return createPixPayload({ key: selectedBank.pixKey, keyType: selectedBank.pixKeyType, amount: settlementAmount, description: periodDescription }) } catch { return '' }
+  }, [selectedBank, settlementAmount, periodDescription])
   const receivableDebits = useMemo(() => debitsList.filter((item) => item.debtDirection !== "i_owe_responsible"), [debitsList])
   const payableDebits = useMemo(() => debitsList.filter((item) => item.debtDirection === "i_owe_responsible"), [debitsList])
 
