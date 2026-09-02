@@ -15,7 +15,7 @@ export type PixKeyType = 'cpf' | 'cnpj' | 'email' | 'phone' | 'random' | null | 
 
 export function normalizePixKey(key: string, keyType?: PixKeyType) {
   const value = key.trim()
-  if (keyType === 'cpf' || keyType === 'cnpj') return value.replace(/[.\-\/\s]/g, '')
+  if (keyType === 'cpf' || keyType === 'cnpj') return value.replace(/[.\-\s/]/g, '')
   if (keyType === 'phone') {
     const digits = value.replace(/\D/g, '')
     const national = digits.startsWith('55') && digits.length > 11 ? digits.slice(2) : digits
