@@ -11,3 +11,12 @@ export async function POST() {
   try { await requestEmailVerification(session.user.id); return NextResponse.json({ message: 'E-mail de confirmação enviado' }) }
   catch { return NextResponse.json({ message: 'Não foi possível enviar o e-mail de confirmação' }, { status: 500 }) }
 }
+
+export async function GET() {
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
+  const { db } = await import('@/app/lib/firebase')
+  const user = await db.collection('users').doc(session.user.id).get()
+  const data = user.data()
+  return NextResponse.json({ verified: Boolean(data?.emailVerified || data?.emailVerifiedAt), email: session.user.email })
+}

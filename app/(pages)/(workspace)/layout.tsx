@@ -14,6 +14,7 @@ import { Suspense, useEffect } from "react"
 import { Loader } from "@/app/components/ui/loader"
 
 import { MobileNav } from "@/app/components/mobile-nav"
+import { EmailVerificationBanner } from "@/app/components/email-verification-banner"
 
 export default function WorkspaceLayout({
   children,
@@ -48,6 +49,7 @@ export default function WorkspaceLayout({
             <WorkspaceProvider>
               <AppSidebar />
               <SidebarInset className="pb-20 lg:my-3 lg:mr-3 lg:ml-0 lg:rounded-2xl lg:border lg:border-border/50 lg:pb-0 lg:shadow-sm">
+                <EmailVerificationBanner />
                 {children}
               </SidebarInset>
               <MobileNav />
