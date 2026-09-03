@@ -25,8 +25,8 @@ export function DeleteGoal({ goalId, goalName = "esta meta" }: DeleteGoalProps) 
         goalId,
         workspaceId: workspaceActive!.id,
       }),
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["goals", workspaceActive?.id] })
+    onSuccess: async (response) => {
+      await queryClient.invalidateQueries({ queryKey: ["goals", workspaceActive?.id] })
       toast.success(response.message || "Meta excluída com sucesso!")
       setOpen(false)
     },

@@ -25,8 +25,8 @@ export function DeleteCategory({ categoryId, categoryName = "esta categoria" }: 
         categoryId,
         workspaceId: workspaceActive!.id,
       }),
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["categories", workspaceActive?.id] })
+    onSuccess: async (response) => {
+      await queryClient.invalidateQueries({ queryKey: ["categories", workspaceActive?.id] })
       toast.success(response.message || "Categoria excluída com sucesso!")
       setOpen(false)
     },

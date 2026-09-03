@@ -61,8 +61,8 @@ export function ResponsibleForm({ mode, responsible }: ResponsibleFormProps) {
   const { mutateAsync: createMutation, isPending: isCreating } = useMutation({
     mutationFn: (data: CreatePersonResponsible) =>
       createResponsible(workspaceActive!.id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["responsibles", workspaceActive?.id] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["responsibles", workspaceActive?.id] })
       toast.success("Responsável cadastrado com sucesso!")
       router.push(`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/manage/responsibles`)
     },
@@ -74,11 +74,13 @@ export function ResponsibleForm({ mode, responsible }: ResponsibleFormProps) {
   const { mutateAsync: updateMutation, isPending: isUpdating } = useMutation({
     mutationFn: (data: CreatePersonResponsible) =>
       updateResponsible(workspaceActive!.id, responsible!.id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["responsibles", workspaceActive?.id] })
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["responsibles", workspaceActive?.id] }),
+        queryClient.invalidateQueries({
         queryKey: ["responsible-details", workspaceActive?.id, responsible?.id],
-      })
+        }),
+      ])
       toast.success("Responsável atualizado com sucesso!")
       router.push(`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/manage/responsibles`)
     },

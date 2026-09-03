@@ -28,8 +28,8 @@ export function DeleteCard({
 
   const { mutateAsync: deleteCardMutation, isPending } = useMutation({
     mutationFn: () => deleteCard(workspaceActive!.id, cardId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cards", workspaceActive?.id] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["cards", workspaceActive?.id] })
       toast.success("Cartão excluído com sucesso!")
       setOpen(false)
     },

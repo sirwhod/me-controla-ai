@@ -28,8 +28,8 @@ export function DeleteResponsible({
 
   const { mutateAsync: deleteResponsibleMutation, isPending } = useMutation({
     mutationFn: () => deleteResponsible(workspaceActive!.id, responsibleId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["responsibles", workspaceActive?.id] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["responsibles", workspaceActive?.id] })
       toast.success("Responsável excluído com sucesso!")
       setOpen(false)
     },

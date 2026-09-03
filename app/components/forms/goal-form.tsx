@@ -76,8 +76,8 @@ export function GoalForm({ mode, goal }: GoalFormProps) {
         workspaceId: workspaceActive!.id,
         ...data,
       }),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["goals", workspaceActive?.id] })
+    onSuccess: async (res) => {
+      await queryClient.invalidateQueries({ queryKey: ["goals", workspaceActive?.id] })
       toast.success(res?.message || "Meta financeira criada com sucesso!")
       router.push(`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/manage/goals`)
     },
@@ -89,9 +89,11 @@ export function GoalForm({ mode, goal }: GoalFormProps) {
   const { mutateAsync: updateMutation, isPending: isUpdating } = useMutation({
     mutationFn: (data: UpdateGoalProps) =>
       updateGoal(workspaceActive!.id, goal!.id, data),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["goals", workspaceActive?.id] })
-      queryClient.invalidateQueries({ queryKey: ["goal", workspaceActive?.id, goal?.id] })
+    onSuccess: async (res) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["goals", workspaceActive?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["goal", workspaceActive?.id, goal?.id] }),
+      ])
       toast.success(res?.message || "Meta financeira atualizada com sucesso!")
       router.push(`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/manage/goals`)
     },

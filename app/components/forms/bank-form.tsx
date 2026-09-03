@@ -71,8 +71,8 @@ export function BankForm({ mode, bank }: BankFormProps) {
         workspaceId: workspaceActive!.id,
         payload,
       }),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["banks", workspaceActive?.id] })
+    onSuccess: async (res) => {
+      await queryClient.invalidateQueries({ queryKey: ["banks", workspaceActive?.id] })
       toast.success(res?.message || "Banco cadastrado com sucesso!")
       router.push(`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/manage/banks`)
     },
@@ -84,9 +84,11 @@ export function BankForm({ mode, bank }: BankFormProps) {
   const { mutateAsync: updateMutation, isPending: isUpdating } = useMutation({
     mutationFn: (data: UpdateBankProps) =>
       updateBank(workspaceActive!.id, bank!.id, data),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["banks", workspaceActive?.id] })
-      queryClient.invalidateQueries({ queryKey: ["bank", workspaceActive?.id, bank?.id] })
+    onSuccess: async (res) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["banks", workspaceActive?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["bank", workspaceActive?.id, bank?.id] }),
+      ])
       toast.success(res?.message || "Banco atualizado com sucesso!")
       router.push(`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/manage/banks`)
     },

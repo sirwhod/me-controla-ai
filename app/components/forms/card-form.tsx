@@ -87,8 +87,8 @@ export function CreditCardForm({ mode, card }: CreditCardFormProps) {
   const { mutateAsync: createMutation, isPending: isCreating } = useMutation({
     mutationFn: (data: CreateCreditCard) =>
       createCard(workspaceActive!.id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cards", workspaceActive?.id] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["cards", workspaceActive?.id] })
       toast.success("Cartão de crédito criado com sucesso!")
       router.push(`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/manage/cards`)
     },
@@ -100,9 +100,11 @@ export function CreditCardForm({ mode, card }: CreditCardFormProps) {
   const { mutateAsync: updateMutation, isPending: isUpdating } = useMutation({
     mutationFn: (data: CreateCreditCard) =>
       updateCard(workspaceActive!.id, card!.id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cards", workspaceActive?.id] })
-      queryClient.invalidateQueries({ queryKey: ["card", workspaceActive?.id, card?.id] })
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["cards", workspaceActive?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["card", workspaceActive?.id, card?.id] }),
+      ])
       toast.success("Cartão de crédito atualizado com sucesso!")
       router.push(`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/manage/cards`)
     },

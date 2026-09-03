@@ -31,8 +31,8 @@ export function DeleteBank({
         bankId,
         workspaceId: workspaceActive!.id,
       }),
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["banks", workspaceActive?.id] })
+    onSuccess: async (response) => {
+      await queryClient.invalidateQueries({ queryKey: ["banks", workspaceActive?.id] })
       toast.success(response.message || "Banco excluído com sucesso!")
       setOpen(false)
     },

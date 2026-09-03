@@ -11,7 +11,9 @@ export default function QueryProvider({ children }: { children: React.ReactNode 
       queries: {
         staleTime: 1000 * 60 * 5,
         gcTime: 1000 * 60 * 30,
-        refetchOnMount: false,
+        // Mutations invalidate queries before navigation. Refetch stale data when
+        // the destination screen mounts so it cannot render an old snapshot.
+        refetchOnMount: true,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
         retry: shouldRetryQuery,

@@ -74,8 +74,8 @@ export function CategoryForm({ mode, category }: CategoryFormProps) {
         icon: data.icon,
         type: data.type || "all",
       }),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["categories", workspaceActive?.id] })
+    onSuccess: async (res) => {
+      await queryClient.invalidateQueries({ queryKey: ["categories", workspaceActive?.id] })
       toast.success(res?.message || "Categoria criada com sucesso!")
       router.push(`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/manage/categories`)
     },
@@ -91,9 +91,11 @@ export function CategoryForm({ mode, category }: CategoryFormProps) {
         icon: data.icon,
         type: data.type || "all",
       }),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["categories", workspaceActive?.id] })
-      queryClient.invalidateQueries({ queryKey: ["category", category?.id] })
+    onSuccess: async (res) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["categories", workspaceActive?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["category", workspaceActive?.id, category?.id] }),
+      ])
       toast.success(res?.message || "Categoria atualizada com sucesso!")
       router.push(`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/manage/categories`)
     },
