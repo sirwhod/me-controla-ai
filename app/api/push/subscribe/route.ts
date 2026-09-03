@@ -1,0 +1,5 @@
+import { NextResponse } from 'next/server'
+import { auth } from '@/app/lib/auth'
+import { savePushSubscription, removePushSubscription } from '@/app/lib/push'
+export async function POST(req: Request) { const session = await auth(); if (!session?.user?.id) return NextResponse.json({ message: 'Não autenticado' }, { status: 401 }); const body = await req.json(); if (!body?.endpoint || !body?.keys?.p256dh || !body?.keys?.auth) return NextResponse.json({ message: 'Subscription inválida' }, { status: 400 }); await savePushSubscription(session.user.id, { endpoint: body.endpoint, keys: body.keys, userAgent: req.headers.get('user-agent') }); return NextResponse.json({ ok: true }) }
+export async function DELETE(req: Request) { const session = await auth(); if (!session?.user?.id) return NextResponse.json({ message: 'Não autenticado' }, { status: 401 }); const body = await req.json(); if (!body?.endpoint) return NextResponse.json({ message: 'Endpoint obrigatório' }, { status: 400 }); await removePushSubscription(session.user.id, body.endpoint); return NextResponse.json({ ok: true }) }

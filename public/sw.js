@@ -1,0 +1,2 @@
+self.addEventListener('push', event => { const data = event.data ? event.data.json() : {}; event.waitUntil(self.registration.showNotification(data.title || 'MeControla.AI', { body: data.body || 'Você tem uma nova notificação.', icon: '/logo.svg', badge: '/logo.svg', data: { url: data.url || '/' } })) })
+self.addEventListener('notificationclick', event => { event.notification.close(); event.waitUntil(self.clients.openWindow(event.notification.data?.url || '/')) })
