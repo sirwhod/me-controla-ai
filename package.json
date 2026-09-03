@@ -14,13 +14,13 @@
     "test:suite": "tsx --env-file=.env.local scripts/test-suite.ts",
     "security:migrate-storage:dry-run": "tsx scripts/migrate-legacy-storage-urls.ts",
     "security:migrate-storage:apply": "tsx scripts/migrate-legacy-storage-urls.ts --apply",
-    "security:test:emulator": "tsx scripts/security-emulator-suite.ts"
-    ,"analytics:backfill:dry-run": "tsx scripts/backfill-financial-periods.ts"
-    ,"analytics:backfill:audit": "tsx scripts/backfill-financial-periods.ts --audit"
-    ,"analytics:backfill:apply": "tsx scripts/backfill-financial-periods.ts --apply"
-    ,"analytics:test:emulator": "tsx scripts/financial-periods-emulator-suite.ts"
-    ,"test:index-rollout": "node --experimental-strip-types scripts/index-rollout-regression-tests.ts"
-    ,"deploy:check-indexes": "node --env-file=.env --experimental-strip-types scripts/check-firestore-indexes.ts"
+    "security:test:emulator": "tsx scripts/security-emulator-suite.ts",
+    "analytics:backfill:dry-run": "tsx scripts/backfill-financial-periods.ts",
+    "analytics:backfill:audit": "tsx scripts/backfill-financial-periods.ts --audit",
+    "analytics:backfill:apply": "tsx scripts/backfill-financial-periods.ts --apply",
+    "analytics:test:emulator": "tsx scripts/financial-periods-emulator-suite.ts",
+    "test:index-rollout": "node --experimental-strip-types scripts/index-rollout-regression-tests.ts",
+    "deploy:check-indexes": "node --env-file=.env --experimental-strip-types scripts/check-firestore-indexes.ts"
   },
   "dependencies": {
     "@auth/firebase-adapter": "^2.11.3",
@@ -60,6 +60,7 @@
     "react-day-picker": "^9.9.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.3",
+    "resend": "^6.25.0",
     "server-only": "^0.0.1",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.2.0",

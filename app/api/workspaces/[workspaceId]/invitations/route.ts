@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { consumeRateLimit } from '@/app/lib/rate-limit'
 import { createHash } from 'node:crypto'
 import { normalizeEmail } from '@/app/lib/email-identity'
+import { enqueueWorkspaceInvitationEmail, processEmailOutbox } from '@/app/lib/email/outbox'
 
 const inviteMemberSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -91,8 +92,25 @@ export async function POST(req: NextRequest, props: RouteParams) {
       })
     })
 
+    try {
+      const jobId = await enqueueWorkspaceInvitationEmail({
+        to: inviteeEmail,
+        inviterName: session.user.name || 'Um usuário',
+        workspaceName: wsData?.name || 'Caixinha Compartilhada',
+        invitationId: inviteId,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      })
+      // O envio é disparado pelo fluxo oficial, mas continua protegido pela
+      // outbox e pode ser reprocessado pelo worker em caso de falha.
+      await processEmailOutbox(1, jobId)
+    } catch (outboxError) {
+      // O convite já foi confirmado; uma indisponibilidade transitória da outbox
+      // não deve desfazer a mutation principal.
+      console.error('Convite criado, mas não foi possível enfileirar o e-mail:', outboxError)
+    }
+
     return NextResponse.json({
-      message: `Convite criado com sucesso para ${inviteeEmail}. O usuário será notificado na plataforma.`,
+      message: `Convite criado com sucesso para ${inviteeEmail}. O e-mail será enviado em breve.`,
       invitationId: inviteId,
     }, { status: 201 })
   } catch (error: unknown) {
