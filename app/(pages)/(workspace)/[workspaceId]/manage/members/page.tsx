@@ -190,7 +190,7 @@ export default function MembersPage() {
                       </h2>
                     </div>
                     <span className="text-xs text-muted-foreground hidden sm:inline">
-                      Aguardando confirmação por e-mail
+                      Aguardando resposta pela plataforma
                     </span>
                   </div>
 

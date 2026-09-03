@@ -96,6 +96,7 @@ export function MonthYearNavigator({
               size="icon"
               className="h-7 w-7"
               onClick={() => setPickerYear((prev) => prev - 1)}
+              aria-label="Ano anterior"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
@@ -110,6 +111,7 @@ export function MonthYearNavigator({
               size="icon"
               className="h-7 w-7"
               onClick={() => setPickerYear((prev) => prev + 1)}
+              aria-label="Próximo ano"
             >
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
@@ -134,6 +136,8 @@ export function MonthYearNavigator({
                     !isSelected && isRealCurrent && "border border-primary/40 text-primary font-semibold",
                     !isSelected && !isRealCurrent && "text-muted-foreground hover:text-foreground"
                   )}
+                  aria-label={`${m.label} de ${pickerYear}`}
+                  aria-current={isSelected ? "date" : undefined}
                 >
                   {m.short.replace(".", "")}
                 </Button>

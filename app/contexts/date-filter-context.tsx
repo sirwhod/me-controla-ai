@@ -77,7 +77,7 @@ export function DateFilterProvider({ children }: { children: React.ReactNode }) 
     let y = defaultYear
     if (currentYearParam) {
       const parsedYear = parseInt(currentYearParam, 10)
-      if (!isNaN(parsedYear) && parsedYear >= 2000 && parsedYear <= 2100) {
+      if (!isNaN(parsedYear) && parsedYear >= 2000 && parsedYear <= 2200) {
         y = parsedYear
       }
     }

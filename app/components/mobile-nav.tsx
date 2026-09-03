@@ -130,6 +130,7 @@ export function MobileNav() {
         {/* 1. Despesas */}
         <Link
           href={`${prefix}/dashboard/debits${queryString}`}
+          aria-current={isDebitsActive ? "page" : undefined}
           className={cn(
             "flex flex-col items-center justify-center gap-1 py-1 px-1 transition-colors rounded-lg",
             isDebitsActive
@@ -154,6 +155,7 @@ export function MobileNav() {
         {/* 2. Receitas */}
         <Link
           href={`${prefix}/dashboard/credits${queryString}`}
+          aria-current={isCreditsActive ? "page" : undefined}
           className={cn(
             "flex flex-col items-center justify-center gap-1 py-1 px-1 transition-colors rounded-lg",
             isCreditsActive
@@ -178,6 +180,7 @@ export function MobileNav() {
         {/* 3. Resumo (Dashboard) */}
         <Link
           href={`${prefix}/dashboard${queryString}`}
+          aria-current={isDashboardActive ? "page" : undefined}
           className={cn(
             "flex flex-col items-center justify-center gap-1 py-1 px-1 transition-colors rounded-lg",
             isDashboardActive

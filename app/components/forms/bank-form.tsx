@@ -108,6 +108,8 @@ export function BankForm({ mode, bank }: BankFormProps) {
       if (data.catalogId) formData.append("catalogId", data.catalogId)
       if (data.pixKey) formData.append("pixKey", data.pixKey)
       if (data.pixKeyType) formData.append("pixKeyType", data.pixKeyType)
+      if (data.invoiceClosingDay) formData.append("invoiceClosingDay", data.invoiceClosingDay)
+      if (data.invoiceDueDate) formData.append("invoiceDueDate", data.invoiceDueDate)
 
       await createMutation(formData)
     }

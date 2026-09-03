@@ -87,7 +87,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar
       variant="inset"
-      collapsible="icon"
+      collapsible="none"
       className="p-3 pr-2"
       {...props}
     >
@@ -96,7 +96,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild className="h-14 px-1 hover:bg-transparent active:bg-transparent">
               <div>
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-primary/45 bg-primary/10 shadow-[0_0_24px_-8px_var(--primary)]">
+                <div className="flex size-10 shrink-0 items-center justify-center">
                   <Logo className="size-7 text-primary" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">

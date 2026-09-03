@@ -92,7 +92,7 @@ export async function POST(req: NextRequest, props: RouteParams) {
     })
 
     return NextResponse.json({
-      message: `Convite enviado com sucesso para ${inviteeEmail}!`,
+      message: `Convite criado com sucesso para ${inviteeEmail}. O usuário será notificado na plataforma.`,
       invitationId: inviteId,
     }, { status: 201 })
   } catch (error: unknown) {

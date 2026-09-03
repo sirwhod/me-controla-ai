@@ -169,7 +169,7 @@ export function GoalContributionDialog({ goal, asDropdownItem = false }: GoalCon
                     <FormControl>
                       <Input
                         type="date"
-                        defaultValue={new Date().toISOString().slice(0, 10)}
+                        value={field.value ? field.value.slice(0, 10) : ""}
                         onChange={(e) => {
                           const val = e.target.value
                           if (val) field.onChange(new Date(val + "T12:00:00Z").toISOString())

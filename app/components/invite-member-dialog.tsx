@@ -96,7 +96,7 @@ export function InviteMemberDialog({
             Convidar Membro para a Caixinha
           </DialogTitle>
           <DialogDescription>
-            Insira o e-mail do usuário para convidá-lo a visualizar e gerenciar esta caixinha com você.
+            Insira o e-mail do usuário para criar um convite. Ele receberá uma notificação na plataforma.
           </DialogDescription>
         </DialogHeader>
 
@@ -136,7 +136,7 @@ export function InviteMemberDialog({
                 ) : (
                   <Mail className="h-4 w-4 mr-2" />
                 )}
-                Enviar Convite
+                Criar Convite
               </Button>
             </DialogFooter>
           </form>

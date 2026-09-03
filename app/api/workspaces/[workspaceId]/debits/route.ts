@@ -209,7 +209,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
     const effectiveFrequency = frequency || 'monthly'
     const idempotencyKey = getIdempotencyKey(req)
 
-    switch (type) {
+    switch (type || 'Comum') {
       case 'Comum': {
         const newDebitRef = db.collection('workspaces').doc(workspaceId).collection('debits').doc()
         const operation = await runIdempotentFinancialWrite(workspaceId, 'create-debit', idempotencyKey, (transaction) => {

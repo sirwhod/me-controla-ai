@@ -42,8 +42,17 @@ export function ExpenseStepper({ currentStep, steps, onStepClick }: ExpenseStepp
                 "flex flex-col items-center gap-1.5 z-10 select-none",
                 isClickable && "cursor-pointer"
               )}
+              role={isClickable ? "button" : undefined}
+              tabIndex={isClickable ? 0 : undefined}
+              aria-label={isClickable ? `Voltar para a etapa ${step.number}: ${step.title}` : undefined}
               onClick={() => {
                 if (isClickable) {
+                  onStepClick(step.number)
+                }
+              }}
+              onKeyDown={(event) => {
+                if (isClickable && (event.key === "Enter" || event.key === " ")) {
+                  event.preventDefault()
                   onStepClick(step.number)
                 }
               }}
