@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   ReceiptText,
   Settings2,
+  Bell,
 } from "lucide-react"
 
 import { NavMain } from "@/app/components/nav-main"
@@ -47,6 +48,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Receitas",
       url: `${prefix}/dashboard/credits${queryString}`,
       icon: CircleDollarSign,
+    },
+    {
+      title: "Notificações",
+      url: `${prefix}/notifications`,
+      icon: Bell,
     },
   ], [prefix, queryString])
 

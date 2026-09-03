@@ -16,6 +16,7 @@ import {
   Settings,
   ChevronRight,
   LogOut,
+  Bell,
 } from "lucide-react"
 import { cn } from "@/app/lib/utils"
 import { useWorkspace } from "@/app/hooks/use-workspace"
@@ -38,6 +39,8 @@ export function MobileNav() {
   const { queryString } = useDateFilter()
   const { data: session } = useSession()
   const [sheetOpen, setSheetOpen] = React.useState(false)
+  const [unreadCount, setUnreadCount] = React.useState(0)
+  React.useEffect(() => { fetch('/api/notifications/unread-count').then(r => r.ok ? r.json() : null).then(data => setUnreadCount(data?.count || 0)).catch(() => undefined) }, [pathname])
 
   const user = session?.user
   const userInitials = user?.name
@@ -126,7 +129,7 @@ export function MobileNav() {
       aria-label="Navegação móvel"
       className="fixed bottom-0 left-0 right-0 z-40 block min-[1024px]:hidden border-t border-border/70 bg-background/95 backdrop-blur-md shadow-lg pb-[env(safe-area-inset-bottom,0px)]"
     >
-      <div className="grid grid-cols-4 h-16 items-center px-1">
+      <div className="grid grid-cols-5 h-16 items-center px-1">
         {/* 1. Despesas */}
         <Link
           href={`${prefix}/dashboard/debits${queryString}`}
@@ -200,6 +203,11 @@ export function MobileNav() {
             )}
           </div>
           <span className="text-[11px] leading-none tracking-tight">Resumo</span>
+        </Link>
+
+        <Link href={`${prefix}/notifications`} aria-current={pathname.endsWith('/notifications') ? 'page' : undefined} className={cn("relative flex flex-col items-center justify-center gap-1 py-1 px-1 transition-colors rounded-lg", pathname.endsWith('/notifications') ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground")}>
+          <div className="relative"><Bell className="h-5 w-5" />{unreadCount > 0 && <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-primary px-1 text-center text-[9px] font-bold text-primary-foreground">{unreadCount > 9 ? '9+' : unreadCount}</span>}</div>
+          <span className="text-[11px] leading-none tracking-tight">Avisos</span>
         </Link>
 
         {/* 4. Mais (Sheet de Gestão) */}

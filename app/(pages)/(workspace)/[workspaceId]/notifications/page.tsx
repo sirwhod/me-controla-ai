@@ -1,0 +1,19 @@
+"use client"
+import * as React from "react"
+import { Bell, CheckCheck, Archive, ArrowLeft } from "lucide-react"
+import Link from "@/app/components/context-link"
+import { Button } from "@/app/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
+import { cn } from "@/app/lib/utils"
+
+type Notification = { id: string; title: string; body: string; category: string; actionUrl?: string; readAt?: string | null; createdAt?: string | null }
+export default function NotificationsPage() {
+  const [items, setItems] = React.useState<Notification[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const load = React.useCallback(async () => { setLoading(true); const response = await fetch('/api/notifications?limit=50', { cache: 'no-store' }); if (response.ok) setItems((await response.json()).items || []); setLoading(false) }, [])
+  React.useEffect(() => { load() }, [load])
+  const markRead = async (id: string) => { await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' }); setItems(current => current.map(item => item.id === id ? { ...item, readAt: new Date().toISOString() } : item)) }
+  const markAll = async () => { await fetch('/api/notifications/read-all', { method: 'POST' }); setItems(current => current.map(item => ({ ...item, readAt: new Date().toISOString() }))) }
+  const archive = async (id: string) => { await fetch(`/api/notifications/${id}`, { method: 'DELETE' }); setItems(current => current.filter(item => item.id !== id)) }
+  return <main className="min-h-screen p-4 pb-24 md:p-8 md:pb-8"><div className="mx-auto max-w-3xl space-y-6"><div className="flex items-center justify-between gap-4"><div><div className="flex items-center gap-2"><Bell className="h-5 w-5 text-primary" /><h1 className="text-2xl font-bold tracking-tight">Notificações</h1></div><p className="mt-1 text-sm text-muted-foreground">Acompanhe as novidades e ações importantes da sua caixinha.</p></div>{items.some(item => !item.readAt) && <Button variant="outline" size="sm" onClick={markAll}><CheckCheck className="mr-2 h-4 w-4" />Marcar todas como lidas</Button>}</div><Card><CardHeader><CardTitle className="text-base">Sua central de avisos</CardTitle></CardHeader><CardContent className="space-y-2">{loading ? <p className="py-8 text-center text-sm text-muted-foreground">Carregando notificações...</p> : items.length === 0 ? <div className="py-12 text-center"><Bell className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" /><p className="font-medium">Tudo em dia</p><p className="mt-1 text-sm text-muted-foreground">Você não tem novas notificações.</p></div> : items.map(item => <div key={item.id} className={cn("flex gap-3 rounded-xl border p-4 transition-colors", !item.readAt && "border-primary/30 bg-primary/5")}><div className="mt-1 rounded-full bg-primary/10 p-2 text-primary"><Bell className="h-4 w-4" /></div><div className="min-w-0 flex-1"><p className="font-semibold">{item.title}</p><p className="mt-1 text-sm text-muted-foreground">{item.body}</p><div className="mt-3 flex flex-wrap gap-2">{item.actionUrl && <Link href={item.actionUrl} onClick={() => !item.readAt && markRead(item.id)}><Button size="sm">Ver detalhes</Button></Link>}{!item.readAt && <Button variant="ghost" size="sm" onClick={() => markRead(item.id)}>Marcar como lida</Button>}<Button variant="ghost" size="sm" onClick={() => archive(item.id)}><Archive className="mr-1 h-4 w-4" />Arquivar</Button></div></div></div>)}</CardContent></Card><Link href="/dashboard" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="mr-2 h-4 w-4" />Voltar ao resumo</Link></div></main>
+}
