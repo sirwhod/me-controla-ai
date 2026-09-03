@@ -1,0 +1,2 @@
+import { NextResponse } from 'next/server'; import { auth } from '@/app/lib/auth'; import { db } from '@/app/lib/firebase'
+export async function PATCH(_:Request,{params}:{params:Promise<{notificationId:string}>}){const s=await auth();if(!s?.user?.id)return NextResponse.json({message:'Não autenticado'},{status:401});const {notificationId}=await params;await db.collection('users').doc(s.user.id).collection('notifications').doc(notificationId).update({readAt:new Date()});return NextResponse.json({ok:true})}

@@ -1,0 +1,2 @@
+import { NextResponse } from 'next/server'; import { auth } from '@/app/lib/auth'; import { db } from '@/app/lib/firebase'
+export async function GET(){const s=await auth();if(!s?.user?.id)return NextResponse.json({message:'Não autenticado'},{status:401});const snap=await db.collection('users').doc(s.user.id).collection('notifications').where('readAt','==',null).where('archivedAt','==',null).count().get();return NextResponse.json({count:snap.data().count},{headers:{'Cache-Control':'private, no-store'}})}

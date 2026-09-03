@@ -1,0 +1,2 @@
+import { NextResponse } from 'next/server'; import { auth } from '@/app/lib/auth'; import { db } from '@/app/lib/firebase'
+export async function POST(){const s=await auth();if(!s?.user?.id)return NextResponse.json({message:'Não autenticado'},{status:401});const ref=db.collection('users').doc(s.user.id).collection('notifications');const snap=await ref.where('readAt','==',null).limit(50).get();const batch=db.batch();snap.docs.forEach(d=>batch.update(d.ref,{readAt:new Date()}));await batch.commit();return NextResponse.json({updated:snap.size})}
