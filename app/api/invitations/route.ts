@@ -4,6 +4,7 @@ import { db } from '@/app/lib/firebase'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { InvitationError, processInvitationAction } from '@/app/lib/invitations'
 import { normalizeEmail } from '@/app/lib/email-identity'
+import { createNotification } from '@/app/lib/notifications'
 
 export async function GET() {
   try {
@@ -64,6 +65,10 @@ export async function POST(req: NextRequest) {
       action,
       userId: session.user.id,
     })
+
+    if (action === 'accept' && result.workspaceId) {
+      await createNotification({ userId: session.user.id, type: 'workspace.invitation_accepted', category: 'workspace', title: 'Convite aceito', body: `Você agora participa da caixinha "${result.workspaceName}".`, workspaceId: result.workspaceId, actionUrl: `/${result.workspaceId}/dashboard`, dedupeKey: `invitation-accepted:${invitationId}` })
+    }
 
     if (action === 'accept') {
 

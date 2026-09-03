@@ -6,6 +6,7 @@ import { consumeRateLimit } from '@/app/lib/rate-limit'
 import { createHash } from 'node:crypto'
 import { normalizeEmail } from '@/app/lib/email-identity'
 import { enqueueWorkspaceInvitationEmail, processEmailOutbox } from '@/app/lib/email/outbox'
+import { createNotification } from '@/app/lib/notifications'
 
 const inviteMemberSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -91,6 +92,10 @@ export async function POST(req: NextRequest, props: RouteParams) {
         updatedAt: new Date(),
       })
     })
+
+    if (!userSnap.empty) {
+      await createNotification({ userId: userSnap.docs[0].id, type: 'workspace.invitation_created', category: 'workspace', title: 'Novo convite para uma caixinha', body: `${session.user.name || 'Um usuário'} convidou você para participar de "${wsData?.name || 'Caixinha Compartilhada'}".`, workspaceId, actionUrl: '/dashboard', dedupeKey: `invitation-created:${inviteId}` })
+    }
 
     try {
       const jobId = await enqueueWorkspaceInvitationEmail({
