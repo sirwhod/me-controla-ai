@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import { PageHeader } from "@/app/components/page-header"
 import { useContextualRouter as useRouter } from "@/app/hooks/use-contextual-router"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -104,10 +105,7 @@ export function ResponsibleForm({ mode, responsible }: ResponsibleFormProps) {
   return (
     <div className="bg-card border border-border/80 rounded-2xl p-4 sm:p-7 shadow-xs">
       <div className="mb-6 pb-4 border-b border-border/60">
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          <Users className="h-5 w-5 text-primary" />
-          {isEdit ? "Editar Responsável" : "Novo Responsável"}
-        </h1>
+        <PageHeader title={isEdit ? "Editar Responsável" : "Novo Responsável"} icon={<Users className="size-5 text-primary" aria-hidden="true" />} />
         <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
           {isEdit
             ? "Atualize o nome e e-mail vinculado a esta pessoa."

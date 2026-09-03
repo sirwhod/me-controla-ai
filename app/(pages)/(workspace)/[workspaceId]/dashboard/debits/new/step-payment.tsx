@@ -137,30 +137,6 @@ export function StepPayment({
           )}
         />
 
-        {responsibleId && (
-          <FormField
-            control={form.control}
-            name="debtDirection"
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel className="text-xs font-semibold">Direção da dívida</FormLabel>
-                <Select value={field.value || "responsible_owes_me"} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a direção" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="responsible_owes_me">O responsável deve a mim</SelectItem>
-                    <SelectItem value="i_owe_responsible">Eu devo ao responsável</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-
         {/* Categoria e Cartão/Banco em Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField
@@ -262,6 +238,30 @@ export function StepPayment({
             </FormItem>
           )}
         />
+
+        {responsibleId && (
+          <FormField
+            control={form.control}
+            name="debtDirection"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel className="text-xs font-semibold">Quem deve reembolsar?</FormLabel>
+                <Select value={field.value || "responsible_owes_me"} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione quem deve reembolsar" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="responsible_owes_me">A pessoa deve me reembolsar</SelectItem>
+                    <SelectItem value="i_owe_responsible">Eu devo reembolsar a pessoa</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
       </div>
     </div>
   )

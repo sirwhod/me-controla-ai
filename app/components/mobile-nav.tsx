@@ -51,7 +51,8 @@ export function MobileNav() {
     : "U"
 
   const wsId = activeWorkspaceId || workspaceActive?.id || ""
-  const prefix = wsId ? `/${wsId}` : ""
+  // Prevent transient workspace-less URLs while the active workspace loads.
+  const prefix = wsId ? `/${wsId}` : "#"
 
   const isDebitsActive = pathname.includes("/dashboard/debits")
   const isCreditsActive = pathname.includes("/dashboard/credits")

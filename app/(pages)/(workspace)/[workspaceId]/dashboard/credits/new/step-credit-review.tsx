@@ -53,7 +53,7 @@ export function StepCreditReview({
         {/* Top Header do Card com Tipo e Valor */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-border/60">
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 font-semibold px-2.5 py-0.5">
+            <Badge variant="outline" className="bg-success/10 text-success border-success/20 font-semibold px-2.5 py-0.5">
               {creditType}
             </Badge>
             {isFixo && (
@@ -67,7 +67,7 @@ export function StepCreditReview({
             <span className="text-xs text-muted-foreground">
               {isFixo ? "Valor Mensal da Entrada" : "Valor do Lançamento"}
             </span>
-            <span className="text-2xl font-bold text-emerald-500 tracking-tight">
+              <span className="text-2xl font-bold text-success tracking-tight">
               + {formatCurrency(totalValue)}
             </span>
           </div>

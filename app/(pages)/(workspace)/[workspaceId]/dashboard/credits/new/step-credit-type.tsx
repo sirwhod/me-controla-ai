@@ -23,15 +23,15 @@ const TYPE_OPTIONS: TypeOption[] = [
     type: "Comum",
     title: "Comum",
     description: "Receita única ou pontual (ex: freelas, vendas, acertos).",
-    icon: <Banknote className="h-6 w-6 text-emerald-500" />,
-    iconBg: "bg-emerald-500/10 text-emerald-500",
+    icon: <Banknote className="h-6 w-6 text-success" />,
+    iconBg: "bg-success/10 text-success",
   },
   {
     type: "Fixo",
     title: "Fixo",
     description: "Receita recorrente todo mês (ex: salário, pró-labore, aluguel).",
-    icon: <Pin className="h-6 w-6 text-amber-500" />,
-    iconBg: "bg-amber-500/10 text-amber-500",
+    icon: <Pin className="h-6 w-6 text-warning" />,
+    iconBg: "bg-warning/10 text-warning",
   },
 ]
 

@@ -42,6 +42,7 @@ import { BottomSheetFilters } from "@/app/components/ui/bottom-sheet-filters"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
 import { EmptyState } from "@/app/components/states/empty-state"
+import { PageHeader } from "@/app/components/page-header"
 import { isFinancialIconName } from "@/app/lib/icons-catalog"
 import { queryKeys } from "@/app/lib/query-keys"
 
@@ -222,15 +223,7 @@ export default function Page() {
         {/* ========================================================================= */}
         <div className="flex w-full flex-col gap-3 lg:hidden">
           {/* Título da Página */}
-          <div className="flex flex-col">
-            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <HandCoins className="h-5 w-5 text-emerald-500" />
-              Receitas
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Acompanhe e gerencie todas as entradas e receitas desta caixinha.
-            </p>
-          </div>
+          <PageHeader title="Receitas" description="Acompanhe e gerencie todas as entradas e receitas desta caixinha." icon={<HandCoins className="size-5 shrink-0 text-success" aria-hidden="true" />} />
 
           {/* Seletor de Período em Largura Confortável */}
           <MonthYearNavigator
@@ -281,15 +274,7 @@ export default function Page() {
         {/* ========================================================================= */}
         <div className="hidden w-full flex-col gap-4 lg:flex">
           <div className="flex items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                <HandCoins className="h-6 w-6 text-emerald-500" />
-                Receitas
-              </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Acompanhe e gerencie todas as entradas financeiras desta caixinha.
-              </p>
-            </div>
+            <PageHeader title="Receitas" description="Acompanhe e gerencie todas as entradas financeiras desta caixinha." icon={<HandCoins className="size-5 shrink-0 text-success md:size-6" aria-hidden="true" />} />
 
             <CreateCredit />
           </div>

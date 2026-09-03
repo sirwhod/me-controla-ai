@@ -101,7 +101,7 @@ export function WorkspaceForm({isDialog = false}: WorkspaceFormProps) {
                         value="shared"
                         id="shared"
                         className="peer sr-only"
-                        aria-label="Workspace compartilhad"
+                        aria-label="Workspace compartilhado"
                       />
                       <Label
                         htmlFor="shared"

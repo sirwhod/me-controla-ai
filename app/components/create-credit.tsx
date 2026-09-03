@@ -18,8 +18,10 @@ export function CreateCredit({ className, fullWidth, label = "Nova Receita" }: C
 
   return (
     <Link
-      href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/dashboard/credits/new`}
-      className={cn(fullWidth && "w-full inline-block")}
+      href={workspaceActive?.id ? `/${workspaceActive.id}/dashboard/credits/new` : "#"}
+      aria-disabled={!workspaceActive?.id}
+      tabIndex={workspaceActive?.id ? undefined : -1}
+      className={cn(fullWidth && "w-full inline-block", !workspaceActive?.id && "pointer-events-none opacity-60")}
     >
       <Button
         variant="default"

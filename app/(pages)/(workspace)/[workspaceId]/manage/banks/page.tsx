@@ -25,6 +25,7 @@ import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
 import { CreateBank } from "@/app/components/create-bank"
 import { EmptyState } from "@/app/components/states/empty-state"
+import { PageHeader } from "@/app/components/page-header"
 
 export default function Page() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
@@ -113,37 +114,12 @@ export default function Page() {
         {/* ========================================================================= */}
         {/* 1. ESTRUTURA MOBILE (< 768px): Header + CTA Full Width                    */}
         {/* ========================================================================= */}
-        <div className="flex flex-col gap-3 md:hidden w-full">
-          <div className="flex flex-col">
-            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Landmark className="h-5 w-5 text-primary" />
-              Bancos e Contas
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Cadastre contas bancárias e chaves PIX para recebimentos.
-            </p>
-          </div>
-
-          {/* CTA Principal Full Width */}
-          <CreateBank fullWidth className="h-10 font-semibold shadow-xs" />
-        </div>
-
-        {/* ========================================================================= */}
-        {/* 2. ESTRUTURA DESKTOP (>= 768px): Header Amplo com CTA à Direita           */}
-        {/* ========================================================================= */}
-        <div className="hidden md:flex items-center justify-between gap-3 w-full">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Landmark className="h-6 w-6 text-primary" />
-              Bancos e Contas
-            </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Gerencie suas instituições financeiras, contas e chaves PIX de recebimento.
-            </p>
-          </div>
-
-          <CreateBank />
-        </div>
+        <PageHeader
+          title="Bancos e Contas"
+          description="Gerencie suas instituições financeiras, contas e chaves PIX de recebimento."
+          icon={<Landmark className="size-5 shrink-0 text-primary md:size-6" aria-hidden="true" />}
+          action={<CreateBank className="h-10 w-full font-semibold shadow-xs md:h-9 md:w-auto" />}
+        />
 
         {/* ========================================================================= */}
         {/* 3. LISTAGEM DE DADOS (MOBILE: BankList / DESKTOP: DataTable)              */}

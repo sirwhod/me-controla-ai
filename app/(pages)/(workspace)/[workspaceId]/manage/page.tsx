@@ -28,6 +28,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import Link from "@/app/components/context-link"
+import { PageHeader } from "@/app/components/page-header"
 
 export default function ManageHubPage() {
   const { workspaceActive, isLoading: isWorkspaceLoading } = useWorkspace()
@@ -51,7 +52,7 @@ export default function ManageHubPage() {
           description: "Pessoas vinculadas a despesas com geração de cobrança PIX.",
           href: `${prefix}/manage/responsibles`,
           icon: UserCheck,
-          color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
+          color: "text-warning bg-warning/10 border-warning/20",
         },
       ],
     },
@@ -85,7 +86,7 @@ export default function ManageHubPage() {
           description: "Objetivos financeiros com valor alvo e acompanhamento de progresso.",
           href: `${prefix}/manage/goals`,
           icon: Target,
-          color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+          color: "text-success bg-success/10 border-success/20",
         },
       ],
     },
@@ -133,16 +134,11 @@ export default function ManageHubPage() {
       </header>
 
       <div className="mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col gap-5 p-3 pt-3 pb-20 md:p-6 md:pt-3 lg:pb-6">
-        {/* Cabeçalho */}
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-            <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            Gestão da Caixinha
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Gerencie acessos, parâmetros financeiros, contas e metas da caixinha ativa.
-          </p>
-        </div>
+        <PageHeader
+          title="Gestão da Caixinha"
+          description="Gerencie acessos, parâmetros financeiros, contas e metas da caixinha ativa."
+          icon={<Settings className="size-5 shrink-0 text-primary md:size-6" aria-hidden="true" />}
+        />
 
         {/* Card de Identificação da Caixinha Ativa */}
         <Card className="border-border/70 bg-card/80 backdrop-blur-xs p-4 shadow-xs">
@@ -161,7 +157,7 @@ export default function ManageHubPage() {
                   </Badge>
                 </div>
                 <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 inline" />
+                  <ShieldCheck className="h-3.5 w-3.5 text-success inline" />
                   Workspace ativo e protegido
                 </span>
               </div>

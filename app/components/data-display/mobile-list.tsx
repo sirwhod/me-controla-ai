@@ -48,9 +48,9 @@ export function MobileListItem({
 }: MobileListItemProps) {
   const valueColorClass = {
     default: "text-foreground",
-    positive: "text-emerald-500 font-bold",
-    negative: "text-rose-500 font-bold",
-    warning: "text-amber-500 font-bold",
+    positive: "text-success font-bold",
+    negative: "text-destructive font-bold",
+    warning: "text-warning font-bold",
     muted: "text-muted-foreground",
   }[valueColor]
 

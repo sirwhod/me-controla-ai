@@ -18,8 +18,10 @@ export function CreateDebit({ className, fullWidth, label = "Nova Despesa" }: Cr
 
   return (
     <Link
-      href={`${workspaceActive?.id ? `/${workspaceActive.id}` : ""}/dashboard/debits/new`}
-      className={cn(fullWidth && "w-full inline-block")}
+      href={workspaceActive?.id ? `/${workspaceActive.id}/dashboard/debits/new` : "#"}
+      aria-disabled={!workspaceActive?.id}
+      tabIndex={workspaceActive?.id ? undefined : -1}
+      className={cn(fullWidth && "w-full inline-block", !workspaceActive?.id && "pointer-events-none opacity-60")}
     >
       <Button
         variant="default"

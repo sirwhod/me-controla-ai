@@ -42,6 +42,7 @@ import { BottomSheetFilters } from "@/app/components/ui/bottom-sheet-filters"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
 import { EmptyState } from "@/app/components/states/empty-state"
+import { PageHeader } from "@/app/components/page-header"
 import { isFinancialIconName } from "@/app/lib/icons-catalog"
 import { queryKeys } from "@/app/lib/query-keys"
 
@@ -218,15 +219,7 @@ export default function Page() {
         {/* ========================================================================= */}
         <div className="flex w-full flex-col gap-3 lg:hidden">
           {/* Título da Página */}
-          <div className="flex flex-col">
-            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-rose-500" />
-              Despesas
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Acompanhe e gerencie todos os gastos desta caixinha.
-            </p>
-          </div>
+          <PageHeader title="Despesas" description="Acompanhe e gerencie todos os gastos desta caixinha." icon={<Receipt className="size-5 shrink-0 text-destructive" aria-hidden="true" />} />
 
           {/* Seletor de Período em Largura Confortável */}
           <MonthYearNavigator
@@ -277,15 +270,7 @@ export default function Page() {
         {/* ========================================================================= */}
         <div className="hidden w-full flex-col gap-4 lg:flex">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                <Receipt className="h-6 w-6 text-rose-500" />
-                Despesas
-              </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Gerencie lançamentos de despesas, compras no crédito, assinaturas e parcelamentos.
-              </p>
-            </div>
+            <PageHeader title="Despesas" description="Gerencie lançamentos de despesas, compras no crédito, assinaturas e parcelamentos." icon={<Receipt className="size-5 shrink-0 text-destructive md:size-6" aria-hidden="true" />} />
 
             <CreateDebit />
           </div>

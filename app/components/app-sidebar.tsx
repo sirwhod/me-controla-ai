@@ -28,7 +28,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { workspaceActive, activeWorkspaceId, isLoading } = useWorkspace()
   const { queryString } = useDateFilter()
   const wsId = activeWorkspaceId || workspaceActive?.id || ""
-  const prefix = wsId ? `/${wsId}` : ""
+  // Never expose workspace routes without an id during the initial hydration.
+  const prefix = wsId ? `/${wsId}` : "#"
 
   const navMain = React.useMemo(() => [
     {

@@ -28,6 +28,7 @@ import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
 import { CreateResponsible } from "@/app/components/create-responsible"
 import { EmptyState } from "@/app/components/states/empty-state"
+import { PageHeader } from "@/app/components/page-header"
 
 export default function ResponsiblesPage() {
   const params = useParams()
@@ -106,15 +107,11 @@ export default function ResponsiblesPage() {
         {/* 1. ESTRUTURA MOBILE (< 768px): Header + Período + CTA                     */}
         {/* ========================================================================= */}
         <div className="flex flex-col gap-3 md:hidden w-full">
-          <div className="flex flex-col">
-            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              Responsáveis
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Acompanhe gastos vinculados a pessoas e gere cobranças PIX.
-            </p>
-          </div>
+          <PageHeader
+            title="Responsáveis"
+            description="Acompanhe gastos vinculados a pessoas e gere cobranças PIX."
+            icon={<Users className="size-5 shrink-0 text-primary" aria-hidden="true" />}
+          />
 
           {/* Período de Apuração */}
           <MonthYearNavigator
@@ -122,7 +119,6 @@ export default function ResponsiblesPage() {
             className="w-full justify-between bg-card/80 border-border/70 h-10 shadow-xs text-xs font-semibold"
           />
 
-          {/* CTA Principal Full Width */}
           <CreateResponsible fullWidth className="h-10 font-semibold shadow-xs" />
         </div>
 
@@ -130,19 +126,12 @@ export default function ResponsiblesPage() {
         {/* 2. ESTRUTURA DESKTOP (>= 768px): Header + Período Horizontal              */}
         {/* ========================================================================= */}
         <div className="hidden md:flex flex-col gap-4 w-full">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                <Users className="h-6 w-6 text-primary" />
-                Responsáveis
-              </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Cadastre pessoas, vincule a despesas compartilhadas e acompanhe saldos em aberto.
-              </p>
-            </div>
-
-            <CreateResponsible />
-          </div>
+          <PageHeader
+            title="Responsáveis"
+            description="Cadastre pessoas, vincule a despesas compartilhadas e acompanhe saldos em aberto."
+            icon={<Users className="size-5 shrink-0 text-primary md:size-6" aria-hidden="true" />}
+            action={<CreateResponsible className="h-10 w-full font-semibold shadow-xs md:h-9 md:w-auto" />}
+          />
 
           <div className="flex items-center justify-between gap-3 bg-card/60 p-3 rounded-xl border border-border/60">
             <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground">

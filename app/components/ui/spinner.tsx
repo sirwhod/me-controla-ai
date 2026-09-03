@@ -57,7 +57,7 @@ const strokeClasses = {
 
 export const Spinner = ({ size = "md", color = "slate" }: SpinnerProps) => {
   return (
-    <div aria-label="Loading..." role="status">
+    <div aria-label="Carregando" role="status" aria-live="polite">
       <Loader
         className={cn(
           "animate-spin",
@@ -74,7 +74,7 @@ export const RoundSpinner = ({
   color = "slate",
 }: SpinnerProps) => {
   return (
-    <div aria-label="Loading..." role="status">
+    <div aria-label="Carregando" role="status" aria-live="polite">
       <svg
         className={cn(
           "animate-spin",
@@ -82,6 +82,7 @@ export const RoundSpinner = ({
           fillClasses[color as keyof FillProps],
         )}
         viewBox="3 3 18 18"
+        aria-hidden="true"
       >
         <path
           className="opacity-20"

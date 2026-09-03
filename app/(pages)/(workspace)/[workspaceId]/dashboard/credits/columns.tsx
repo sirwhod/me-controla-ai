@@ -71,7 +71,7 @@ export const columns: ColumnDef<Credit>[] = [
               <TooltipTrigger>
                 <DynamicIcon
                   name={categoryIcon as IconName}
-                  className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0"
+                  className="w-4 h-4 text-success shrink-0"
                 />
               </TooltipTrigger>
               <TooltipContent>
@@ -95,7 +95,7 @@ export const columns: ColumnDef<Credit>[] = [
       }).format(value)
 
       return (
-        <div className="font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+        <div className="font-semibold text-success whitespace-nowrap">
           + {formatted}
         </div>
       )
@@ -136,7 +136,7 @@ export const columns: ColumnDef<Credit>[] = [
             {bankImageUrl ? (
               <Image src={bankImageUrl} alt={bankName || ""} width={18} height={18} className="h-4.5 w-4.5 rounded-sm object-cover" />
             ) : (
-              <div className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-0.5 rounded-xs">
+              <div className="bg-success/10 text-success p-0.5 rounded-xs">
                 <Landmark className="h-3.5 w-3.5" />
               </div>
             )}

@@ -138,7 +138,7 @@ export const columns: ColumnDef<Debit>[] = [
       }).format(value)
 
       return (
-        <div className="font-semibold text-rose-600 dark:text-rose-400 whitespace-nowrap">
+        <div className="font-semibold text-destructive whitespace-nowrap">
           - {formatted}
         </div>
       )

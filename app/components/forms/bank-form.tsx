@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import Image from "next/image"
 import { useContextualRouter as useRouter } from "@/app/hooks/use-contextual-router"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -35,6 +36,7 @@ import {
   UpdateBank as UpdateBankProps,
 } from "@/app/types/financial"
 import { brazilianBankCatalog } from "@/app/lib/bank-catalog"
+import { PageHeader } from "@/app/components/page-header"
 
 interface BankFormProps {
   mode: "create" | "edit"
@@ -116,18 +118,15 @@ export function BankForm({ mode, bank }: BankFormProps) {
   }
 
   return (
-    <div className="bg-card border border-border/80 rounded-2xl p-4 sm:p-7 shadow-xs">
-      <div className="mb-6 pb-4 border-b border-border/60">
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          <Landmark className="h-5 w-5 text-primary" />
-          {isEdit ? "Editar Instituição Bancária" : "Nova Instituição Bancária"}
-        </h1>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-          {isEdit
-            ? "Atualize as configurações, chave PIX e logo desta conta bancária."
-            : "Cadastre um banco ou conta para vincular suas despesas, receitas e transferências."}
-        </p>
-      </div>
+    <div className="w-full space-y-6">
+      <PageHeader
+        className="border-b-0 pb-0"
+        title={isEdit ? "Editar Instituição Bancária" : "Nova Instituição Bancária"}
+        description={isEdit
+          ? "Atualize as configurações, chave PIX e logo desta conta bancária."
+          : "Cadastre um banco ou conta para vincular suas despesas, receitas e transferências."}
+        icon={<Landmark className="size-5 shrink-0 text-primary md:size-6" aria-hidden="true" />}
+      />
 
       <div className="mb-6 grid grid-cols-3 gap-2" aria-label="Etapas do cadastro">
         {["Instituição", "Chave Pix", "Revisão"].map((label, index) => {
@@ -136,6 +135,7 @@ export function BankForm({ mode, bank }: BankFormProps) {
         })}
       </div>
 
+      <div className="rounded-2xl border border-border/70 bg-card/40 p-4 shadow-xs sm:p-7">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* Seção 1: Identificação */}
@@ -152,7 +152,7 @@ export function BankForm({ mode, bank }: BankFormProps) {
                     <button type="button" onClick={() => field.onChange(null)} className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm hover:bg-muted ${!field.value ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}>Cadastro manual / banco não encontrado</button>
                     {brazilianBankCatalog.filter((item) => `${item.code} ${item.name}`.toLowerCase().includes(bankSearch.toLowerCase())).map((item) => (
                       <button type="button" key={item.id} onClick={() => { field.onChange(item.id); form.setValue("name", item.name, { shouldValidate: true }); form.setValue("code", item.code, { shouldValidate: true }) }} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted ${field.value === item.id ? "bg-primary/10 text-primary" : "text-foreground"}`}>
-                        <img src={item.iconPath} alt="" className="h-8 w-8 shrink-0 rounded-md object-contain" /><span><strong>{item.name}</strong><small className="ml-2 text-muted-foreground">{item.code}</small></span>
+                        <Image src={item.iconPath} alt="" width={32} height={32} className="h-8 w-8 shrink-0 rounded-md object-contain" /><span><strong>{item.name}</strong><small className="ml-2 text-muted-foreground">{item.code}</small></span>
                       </button>
                     ))}
                     {!brazilianBankCatalog.some((item) => `${item.code} ${item.name}`.toLowerCase().includes(bankSearch.toLowerCase())) && <p className="px-3 py-3 text-xs text-muted-foreground">Nenhum banco encontrado. Use o cadastro manual.</p>}
@@ -162,7 +162,7 @@ export function BankForm({ mode, bank }: BankFormProps) {
                   const selected = brazilianBankCatalog.find((item) => item.id === field.value)
                   return selected ? (
                     <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/30 p-3">
-                      <img src={selected.iconPath} alt={`Logo ${selected.name}`} className="h-12 w-12 rounded-lg object-contain" />
+                      <Image src={selected.iconPath} alt={`Logo ${selected.name}`} width={48} height={48} className="h-12 w-12 rounded-lg object-contain" />
                       <div><p className="text-sm font-semibold">{selected.name}</p><p className="text-xs text-muted-foreground">Código COMPE {selected.code} · logo do catálogo</p></div>
                     </div>
                   ) : null
@@ -307,6 +307,7 @@ export function BankForm({ mode, bank }: BankFormProps) {
           </div>
         </form>
       </Form>
+      </div>
     </div>
   )
 }

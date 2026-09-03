@@ -59,7 +59,7 @@ export function StepReview({
         {/* Top Header do Card com Tipo e Valor */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-border/60">
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-rose-500/10 text-rose-500 border-rose-500/20 font-semibold px-2.5 py-0.5">
+            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 font-semibold px-2.5 py-0.5">
               {debitType}
             </Badge>
             {isParcelado && (
@@ -73,7 +73,7 @@ export function StepReview({
             <span className="text-xs text-muted-foreground">
               {isParcelado ? "Valor Total" : "Valor do Lançamento"}
             </span>
-            <span className="text-2xl font-bold text-rose-500 tracking-tight">
+            <span className="text-2xl font-bold text-destructive tracking-tight">
               {formatCurrency(totalValue)}
             </span>
             {isParcelado && (

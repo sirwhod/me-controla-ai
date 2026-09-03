@@ -32,6 +32,7 @@ import { ConfirmationDialog } from "@/app/components/ui/confirmation-dialog"
 import { useState } from "react"
 import { MemberList, MemberListItem, PendingInviteItem } from "./member-list"
 import { EmptyState } from "@/app/components/states/empty-state"
+import { PageHeader } from "@/app/components/page-header"
 
 export default function MembersPage() {
   const { workspaceActive, isLoading: isWorkspaceLoading, error: workspaceError } = useWorkspace()
@@ -120,41 +121,14 @@ export default function MembersPage() {
         {/* ========================================================================= */}
         {/* 1. ESTRUTURA MOBILE (< 768px): Header + CTA Full Width                    */}
         {/* ========================================================================= */}
-        <div className="flex flex-col gap-3 md:hidden w-full">
-          <div className="flex flex-col">
-            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              Membros & Acesso
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              {data?.workspace?.name
-                ? `Gerencie os acessos e permissões da caixinha "${data.workspace.name}".`
-                : "Gerencie os membros com acesso a esta caixinha."}
-            </p>
-          </div>
-
-          {/* CTA Principal Full Width */}
-          <InviteMemberDialog fullWidth className="h-10 font-semibold shadow-xs" label="Convidar Membro" />
-        </div>
-
-        {/* ========================================================================= */}
-        {/* 2. ESTRUTURA DESKTOP (>= 768px): Header Amplo com CTA à Direita           */}
-        {/* ========================================================================= */}
-        <div className="hidden md:flex items-center justify-between gap-3 w-full">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Users className="h-6 w-6 text-primary" />
-              Membros com Acesso à Caixinha
-            </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              {data?.workspace?.name
-                ? `Gerencie quem pode visualizar e lançar despesas na caixinha "${data.workspace.name}".`
-                : "Gerencie os membros e convites desta caixinha."}
-            </p>
-          </div>
-
-          <InviteMemberDialog label="Convidar Membro" />
-        </div>
+        <PageHeader
+          title="Membros com Acesso à Caixinha"
+          description={data?.workspace?.name
+            ? `Gerencie quem pode visualizar e lançar despesas na caixinha "${data.workspace.name}".`
+            : "Gerencie os membros e convites desta caixinha."}
+          icon={<Users className="size-5 shrink-0 text-primary md:size-6" aria-hidden="true" />}
+          action={<InviteMemberDialog label="Convidar Membro" className="h-10 w-full font-semibold shadow-xs md:h-9 md:w-auto" />}
+        />
 
         {/* ========================================================================= */}
         {/* 3. CONTEÚDO PRINCIPAL: MEMBROS ATIVOS E CONVITES PENDENTES               */}
