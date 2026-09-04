@@ -59,6 +59,8 @@ export async function POST(req: NextRequest) {
     if (!invitationId || !['accept', 'reject'].includes(action)) {
       return NextResponse.json({ message: 'Ação ou ID inválido' }, { status: 400 })
     }
+    const invitationSnapshot = await db.collection('invitations').doc(invitationId).get()
+    const invitationData = invitationSnapshot.data()
 
     const result = await processInvitationAction({
       invitationId,
@@ -77,6 +79,7 @@ export async function POST(req: NextRequest) {
         workspaceId: result.workspaceId,
       }, { status: 200 })
     } else {
+      if (invitationData?.inviterId) await createNotification({ userId: String(invitationData.inviterId), type: 'workspace.invitation_rejected', category: 'workspace', title: 'Convite recusado', body: `${session.user.name || 'O convidado'} recusou o convite para a caixinha "${invitationData.workspaceName || 'Caixinha'}".`, workspaceId: String(invitationData.workspaceId), actionUrl: `/${invitationData.workspaceId}/manage/members`, dedupeKey: `invitation-rejected:${invitationId}` })
       return NextResponse.json({ message: 'Convite recusado com sucesso.' }, { status: 200 })
     }
   } catch (error: unknown) {

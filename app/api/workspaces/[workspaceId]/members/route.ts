@@ -4,6 +4,7 @@ import { db } from '@/app/lib/firebase'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { FieldValue } from 'firebase-admin/firestore'
+import { createNotification } from '@/app/lib/notifications'
 
 interface RouteParams {
   params: Promise<{ workspaceId: string }>
@@ -147,6 +148,7 @@ export async function DELETE(req: NextRequest, props: RouteParams) {
         })
       }
     })
+    await createNotification({ userId: memberId, type: 'workspace.member_removed', category: 'workspace', title: 'Acesso removido', body: `Seu acesso à caixinha "${wsData?.name || 'Caixinha'}" foi removido.`, workspaceId, actionUrl: '/', dedupeKey: `member-removed:${workspaceId}:${memberId}:${Date.now()}` })
 
     return NextResponse.json({ message: 'Membro removido com sucesso!' }, { status: 200 })
   } catch (error: unknown) {
