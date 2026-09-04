@@ -1,6 +1,6 @@
 {
   "crons": [
-    { "path": "/api/internal/push-worker", "schedule": "*/5 * * * *" },
-    { "path": "/api/internal/email-worker", "schedule": "*/5 * * * *" }
+    { "path": "/api/internal/push-worker", "schedule": "0 3 * * *" },
+    { "path": "/api/internal/email-worker", "schedule": "0 3 * * *" }
   ]
 }
