@@ -2,7 +2,7 @@ import 'server-only'
 import { db } from './firebase'
 import { FieldValue } from 'firebase-admin/firestore'
 import { serializeFirestoreDate } from './date-utils'
-import { sendPushNotification } from './push'
+import { enqueuePushNotification } from './push'
 
 export type NotificationType = 'workspace.invitation_created' | 'workspace.invitation_accepted' | 'workspace.invitation_rejected' | 'workspace.invitation_cancelled' | 'workspace.member_removed' | 'workspace.financial_entry_changed' | 'account.email_verified'
 export async function createNotification(input: { userId: string; type: NotificationType; category: 'account'|'security'|'workspace'|'financial'|'goals'; title: string; body: string; workspaceId?: string; actionUrl?: string; dedupeKey: string }) {
@@ -15,7 +15,7 @@ export async function createNotification(input: { userId: string; type: Notifica
     return true
   })
   if (created) {
-    try { await sendPushNotification(input.userId, { title: input.title, body: input.body, url: input.actionUrl, notificationId: id }) }
+    try { await enqueuePushNotification(input.userId, { title: input.title, body: input.body, url: input.actionUrl, notificationId: id }) }
     catch (error) { console.error('Notificação criada, mas o push falhou:', error) }
   }
   return { id, created }
