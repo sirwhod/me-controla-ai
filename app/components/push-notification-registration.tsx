@@ -8,20 +8,29 @@ import { getFirebaseMessaging } from '@/app/lib/firebase-client'
 export function PushNotificationRegistration() {
   const [status, setStatus] = useState<'loading' | 'enabled' | 'disabled' | 'unsupported'>('loading')
   const [busy, setBusy] = useState(false)
-  useEffect(() => { if (!('serviceWorker' in navigator) || !('Notification' in window)) return setStatus('unsupported'); fetch('/api/push/fcm').then(r => r.ok ? r.json() : null).then(data => setStatus(data?.devices?.length ? 'enabled' : 'disabled')).catch(() => setStatus('disabled')) }, [])
+  useEffect(() => { if (!('serviceWorker' in navigator) || !('Notification' in window)) return setStatus('unsupported'); setStatus(localStorage.getItem('mecontrola-push-enabled') === 'true' ? 'enabled' : 'disabled') }, [])
+  function tokenId(token: string) { return btoa(token).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '').slice(0, 120) }
+  async function currentToken() {
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+    const messaging = await getFirebaseMessaging(); if (!messaging) throw new Error('FCM não suportado')
+    return getToken(messaging, { vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY, serviceWorkerRegistration: registration })
+  }
   async function toggle() {
     if (busy || status === 'unsupported') return
     setBusy(true)
     try {
-      const current = await fetch('/api/push/fcm').then(r => r.json())
-      if (current.devices?.length) { await fetch('/api/push/fcm', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: current.devices[0].id }) }); setStatus('disabled'); return }
+      if (status === 'enabled') {
+        const token = await currentToken()
+        if (token) await fetch('/api/push/fcm', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: tokenId(token) }) })
+        localStorage.setItem('mecontrola-push-enabled', 'false'); setStatus('disabled'); return
+      }
       const permission = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission
       if (permission !== 'granted') return setStatus('disabled')
-      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
-      const messaging = await getFirebaseMessaging(); if (!messaging) throw new Error('FCM não suportado')
-      const token = await getToken(messaging, { vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY, serviceWorkerRegistration: registration })
+      const token = await currentToken()
+      if (!token) throw new Error('Token FCM não disponível')
       const response = await fetch('/api/push/fcm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) })
       if (!response.ok) throw new Error('Falha ao registrar dispositivo')
+      localStorage.setItem('mecontrola-push-enabled', 'true')
       setStatus('enabled')
     } catch { setStatus('disabled') } finally { setBusy(false) }
   }
