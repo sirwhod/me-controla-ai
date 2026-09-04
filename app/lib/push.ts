@@ -1,6 +1,7 @@
 import 'server-only'
 import webpush from 'web-push'
 import { db } from '@/app/lib/firebase'
+import { sendFcmNotification } from './fcm'
 
 const publicKey = process.env.WEB_PUSH_PUBLIC_KEY
 const privateKey = process.env.WEB_PUSH_PRIVATE_KEY
@@ -23,7 +24,6 @@ export async function enqueuePushNotification(userId: string, payload: { title: 
 }
 
 export async function processPushOutbox(limit = 20) {
-  if (!publicKey || !privateKey) return []
   const snapshot = await db.collection('_pushOutbox').where('status', '==', 'pending').limit(limit).get()
   const results = []
   for (const doc of snapshot.docs) {
@@ -36,7 +36,7 @@ export async function processPushOutbox(limit = 20) {
 }
 
 export async function sendPushNotification(userId: string, payload: { title: string; body: string; url?: string; notificationId?: string }) {
-  if (!publicKey || !privateKey) return { sent: 0, skipped: true }
+  const fcm = await sendFcmNotification(userId, payload)
   const userSnapshot = await db.doc(`users/${userId}`).get()
   if (userSnapshot.data()?.notificationPreferences?.pushEnabled === false) return { sent: 0, skipped: true }
   const snap = await db.collection(`users/${userId}/pushSubscriptions`).get()
@@ -49,5 +49,5 @@ export async function sendPushNotification(userId: string, payload: { title: str
       if (statusCode === 404 || statusCode === 410) await doc.ref.delete()
     }
   }
-  return { sent, skipped: false }
+  return { sent: fcm.sent + sent, fcmSent: fcm.sent, legacySent: sent, skipped: fcm.skipped && !publicKey }
 }

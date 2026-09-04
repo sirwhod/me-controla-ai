@@ -26,14 +26,21 @@ function getPrivateKey(): string | undefined {
 }
 
 const isFirestoreEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST)
-const firebaseProjectId = process.env.FIREBASE_PROJECT_ID || (isFirestoreEmulator ? 'demo-me-controla-ai' : undefined)
+const usesApplicationDefault = Boolean(process.env.GOOGLE_APPLICATION_CREDENTIALS)
+function getServiceAccount() {
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT
+  if (!raw) return undefined
+  try { return JSON.parse(raw) as { project_id?: string; client_email?: string; private_key?: string } } catch { throw new Error('FIREBASE_SERVICE_ACCOUNT contém JSON inválido') }
+}
+const serviceAccount = getServiceAccount()
+const firebaseProjectId = serviceAccount?.project_id || process.env.FIREBASE_PROJECT_ID || (isFirestoreEmulator ? 'demo-me-controla-ai' : undefined)
 
-export const firebaseCert = isFirestoreEmulator
+export const firebaseCert = isFirestoreEmulator || usesApplicationDefault
   ? applicationDefault()
   : cert({
       projectId: firebaseProjectId,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: getPrivateKey(),
+      clientEmail: serviceAccount?.client_email || process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: serviceAccount?.private_key?.replace(/\\n/g, "\n") || getPrivateKey(),
     })
 
 // Instancia do app
