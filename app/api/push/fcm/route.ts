@@ -5,7 +5,7 @@ import { db } from '@/app/lib/firebase'
 export async function GET() {
   const session = await auth(); if (!session?.user?.id) return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
   const snapshot = await db.collection(`users/${session.user.id}/pushDevices`).get()
-  return NextResponse.json({ devices: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), token: undefined })) })
+  return NextResponse.json({ devices: snapshot.docs.map(doc => { const data = doc.data(); return { id: doc.id, platform: data.platform || 'web', browser: data.browser || null, userAgent: data.userAgent || null, enabled: data.enabled !== false, updatedAt: data.updatedAt?.toDate?.()?.toISOString?.() || null, lastSeenAt: data.lastSeenAt?.toDate?.()?.toISOString?.() || null } }) })
 }
 export async function POST(req: Request) {
   const session = await auth(); if (!session?.user?.id) return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
