@@ -18,6 +18,8 @@ export async function removePushSubscription(userId: string, endpoint: string) {
 }
 export async function sendPushNotification(userId: string, payload: { title: string; body: string; url?: string; notificationId?: string }) {
   if (!publicKey || !privateKey) return { sent: 0, skipped: true }
+  const userSnapshot = await db.doc(`users/${userId}`).get()
+  if (userSnapshot.data()?.notificationPreferences?.pushEnabled === false) return { sent: 0, skipped: true }
   const snap = await db.collection(`users/${userId}/pushSubscriptions`).get()
   let sent = 0
   for (const doc of snap.docs) {

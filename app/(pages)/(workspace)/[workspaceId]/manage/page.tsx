@@ -29,7 +29,7 @@ import {
 } from "lucide-react"
 import Link from "@/app/components/context-link"
 import { PageHeader } from "@/app/components/page-header"
-import { PushNotificationRegistration } from "@/app/components/push-notification-registration"
+import { NotificationPreferences } from "@/app/components/notification-preferences"
 
 export default function ManageHubPage() {
   const { workspaceActive, isLoading: isWorkspaceLoading } = useWorkspace()
@@ -172,7 +172,7 @@ export default function ManageHubPage() {
               <h2 className="font-semibold">Notificações neste dispositivo</h2>
               <p className="text-xs text-muted-foreground">Receba avisos importantes da sua caixinha mesmo quando o aplicativo estiver fechado.</p>
             </div>
-            <PushNotificationRegistration />
+            <NotificationPreferences />
           </div>
         </Card>
 
