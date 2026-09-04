@@ -14,3 +14,9 @@ export async function POST(request: NextRequest) {
   }
   return NextResponse.json({ results: await processEmailOutbox(10, jobId) })
 }
+
+export async function GET(request: NextRequest) {
+  const secret = process.env.CRON_SECRET
+  if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) return NextResponse.json({ message: 'Não autorizado' }, { status: 401 })
+  return NextResponse.json({ results: await processEmailOutbox(10) })
+}

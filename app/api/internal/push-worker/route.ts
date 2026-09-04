@@ -7,3 +7,9 @@ export async function POST(request: Request) {
   const limit = Math.min(Math.max(Number(new URL(request.url).searchParams.get('limit') || 20), 1), 50)
   return NextResponse.json({ results: await processPushOutbox(limit) })
 }
+
+export async function GET(request: Request) {
+  const secret = process.env.CRON_SECRET
+  if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) return NextResponse.json({ message: 'Não autorizado' }, { status: 401 })
+  return NextResponse.json({ results: await processPushOutbox(20) })
+}
