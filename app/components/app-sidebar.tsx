@@ -29,6 +29,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { workspaceActive, activeWorkspaceId, isLoading } = useWorkspace()
   const { queryString } = useDateFilter()
   const wsId = activeWorkspaceId || workspaceActive?.id || ""
+  const [unreadCount, setUnreadCount] = React.useState(0)
+  React.useEffect(() => {
+    fetch('/api/notifications/unread-count')
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => setUnreadCount(data?.count || 0))
+      .catch(() => undefined)
+  }, [])
   // Never expose workspace routes without an id during the initial hydration.
   const prefix = wsId ? `/${wsId}` : "#"
 
@@ -121,7 +128,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="px-1">
-        <NavMain items={navMain} />
+        <NavMain items={navMain.map((item) => item.title === "Notificações"
+          ? { ...item, badge: unreadCount > 0 ? (unreadCount > 9 ? "9+" : String(unreadCount)) : undefined }
+          : item)} />
         <SidebarSeparator className="my-1" />
         <NavMain items={settingsItems} showLabel={false} />
       </SidebarContent>

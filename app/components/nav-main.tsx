@@ -25,6 +25,7 @@ export function NavMain({
     icon: LucideIcon
     isActive?: boolean
     exact?: boolean
+    badge?: string
     items?: {
       title: string
       url: string
@@ -51,6 +52,7 @@ export function NavMain({
                 <Link href={item.url}>
                   <item.icon />
                   <span>{item.title}</span>
+                  {item.badge ? <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-primary-foreground group-data-[collapsible=icon]:hidden">{item.badge}</span> : null}
                 </Link>
               </SidebarMenuButton>
               {item.items?.length ? (
