@@ -6,5 +6,8 @@ export async function notifyWorkspaceFinancialEvent(input: { workspaceId: string
   const workspace = await db.collection('workspaces').doc(input.workspaceId).get()
   const memberIds = Array.from(new Set([workspace.data()?.ownerId, ...(workspace.data()?.members || [])])).filter((id): id is string => Boolean(id) && id !== input.actorUserId)
   const action = input.kind === 'created' ? 'adicionou' : input.kind === 'updated' ? 'alterou' : 'excluiu'
-  await Promise.all(memberIds.map(userId => createNotification({ userId, type: 'workspace.financial_entry_changed', category: 'financial', title: `${input.entryType[0].toUpperCase()}${input.entryType.slice(1)} ${input.kind === 'created' ? 'adicionada' : input.kind === 'updated' ? 'alterada' : 'excluída'}`, body: `${input.actorUserId === userId ? 'Você' : 'Um membro'} ${action} uma ${input.entryType}${input.description ? `: ${input.description}` : ''}.`, workspaceId: input.workspaceId, actionUrl: `/${input.workspaceId}/dashboard`, dedupeKey: `financial:${input.workspaceId}:${input.entryType}:${input.kind}:${input.entryId || Date.now()}:${userId}` })))
+  await Promise.all(memberIds.map(async userId => {
+    try { await createNotification({ userId, type: 'workspace.financial_entry_changed', category: 'financial', title: `${input.entryType[0].toUpperCase()}${input.entryType.slice(1)} ${input.kind === 'created' ? 'adicionada' : input.kind === 'updated' ? 'alterada' : 'excluída'}`, body: `${input.actorUserId === userId ? 'Você' : 'Um membro'} ${action} uma ${input.entryType}${input.description ? `: ${input.description}` : ''}.`, workspaceId: input.workspaceId, actionUrl: `/${input.workspaceId}/dashboard`, dedupeKey: `financial:${input.workspaceId}:${input.entryType}:${input.kind}:${input.entryId || Date.now()}:${userId}` }) }
+    catch (error) { console.error('Falha ao criar notificação financeira:', error) }
+  }))
 }
