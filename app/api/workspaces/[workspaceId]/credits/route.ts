@@ -9,6 +9,7 @@ import { calculateEntryDeltas, writeFinancialPeriodDeltas } from '@/app/lib/fina
 import { InvalidWorkspaceReferenceError, validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
 import { getIdempotencyKey, runIdempotentFinancialWrite } from '@/app/lib/idempotent-financial-write'
 import { FinancialIndexNotReadyError, getFinancialListPage } from '@/app/lib/financial-list-query'
+import { notifyWorkspaceFinancialEvent } from '@/app/lib/financial-notifications'
 
 interface CreditsRouteParams {
   workspaceId: string;
@@ -214,6 +215,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('credit', null, baseCreditData))
       return { message: 'Receita criada com sucesso!', creditId: newCreditRef.id }
     })
+    if (!operation.replayed) await notifyWorkspaceFinancialEvent({ workspaceId, actorUserId: session.user.id, kind: 'created', entryType: 'receita', description, entryId: operation.result.creditId as string })
     return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
 
   } catch (error) {

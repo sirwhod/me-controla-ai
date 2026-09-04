@@ -10,6 +10,7 @@ import { calculateEntryDeltas, writeFinancialPeriodDeltas } from '@/app/lib/fina
 import { InvalidWorkspaceReferenceError, validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
 import { getIdempotencyKey, runIdempotentFinancialWrite } from '@/app/lib/idempotent-financial-write'
 import { FinancialIndexNotReadyError, getFinancialListPage } from '@/app/lib/financial-list-query'
+import { notifyWorkspaceFinancialEvent } from '@/app/lib/financial-notifications'
 
 interface DebitsRouteParams {
   workspaceId: string
@@ -217,6 +218,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
           writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('debit', null, newDebitData))
           return { message: 'Débito criado com sucesso!', debitId: newDebitRef.id }
         })
+        if (!operation.replayed) await notifyWorkspaceFinancialEvent({ workspaceId, actorUserId: session.user.id, kind: 'created', entryType: 'despesa', description, entryId: 'debit' })
         return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
       }
 

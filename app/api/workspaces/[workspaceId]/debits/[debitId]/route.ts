@@ -6,6 +6,7 @@ import { serializeFirestoreDate } from '@/app/lib/date-utils';
 import { NextRequest, NextResponse } from 'next/server'
 import { calculateEntryDeltas, writeFinancialPeriodDeltas } from '@/app/lib/financial-periods'
 import { validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
+import { notifyWorkspaceFinancialEvent } from '@/app/lib/financial-notifications'
 
 interface CreditsRouteParams {
   workspaceId: string;
@@ -192,6 +193,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
       transaction.update(debitRef, dataToUpdate as FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData>)
       writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('debit', previous, { ...previous, ...dataToUpdate }))
     })
+    await notifyWorkspaceFinancialEvent({ workspaceId, actorUserId: session.user.id, kind: 'updated', entryType: 'despesa', description: String(dataToUpdate.description || debitDoc.data()?.description || ''), entryId: debitId })
 
     return NextResponse.json({ message: 'Débito atualizado com sucesso!' }, { status: 200 })
 
@@ -236,6 +238,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Cre
       transaction.delete(debitRef)
       writeFinancialPeriodDeltas(transaction, workspaceId, calculateEntryDeltas('debit', current.data(), null))
     })
+    await notifyWorkspaceFinancialEvent({ workspaceId, actorUserId: session.user.id, kind: 'deleted', entryType: 'despesa', description: String(debitDoc.data()?.description || ''), entryId: debitId })
 
     return NextResponse.json({ message: 'Débito excluído com sucesso!' }, { status: 200 })
 
