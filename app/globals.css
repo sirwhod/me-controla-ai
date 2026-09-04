@@ -1,6 +1,17 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* No mobile, o header global substitui os headers intermediários com breadcrumb. */
+@media (max-width: 767px) {
+  header:has([data-slot="breadcrumb"]) {
+    display: none;
+  }
+
+  main > div.border-b:first-child {
+    display: none;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

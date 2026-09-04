@@ -28,30 +28,30 @@ export default function WorkspaceSelector() {
   return (
     <Dialog>
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-semibold hover:text-primary transition-colors cursor-pointer outline-hidden">
+        <DropdownMenuTrigger className="flex w-full items-center justify-between gap-2 border-b border-border/60 px-1 pb-3 text-left text-sm font-semibold hover:text-primary transition-colors cursor-pointer outline-hidden">
           {workspaceActive?.type && workspaceActive.type === "personal" ? (
-            <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
+            <User className="w-4 h-4 text-primary shrink-0" />
           ) : (
-            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
+            <Users className="w-4 h-4 text-primary shrink-0" />
           )}
-          <span className="truncate max-w-[130px] sm:max-w-[200px] md:max-w-none">
+          <span className="truncate max-w-[200px]">
             {workspaceActive?.name ?? 'Selecione um Workspace'}
           </span>
-          <ChevronsUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <ChevronsUpDown className="w-4 h-4 text-muted-foreground shrink-0" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuLabel>Caixinha</DropdownMenuLabel>
+        <DropdownMenuContent className="min-w-[240px] rounded-xl border-border/70 bg-card p-1.5">
+          <DropdownMenuLabel className="px-3 py-2 text-xs uppercase tracking-wider text-primary">Caixinhas</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {workspaces.length > 0 ? (
             <ul className="space-y-2">
               {workspaces?.map((workspace) => (
                 <li key={workspace.id}>
                   <DropdownMenuItem
-                    className="w-full justify-start"
+                    className="w-full justify-start gap-3 rounded-lg px-3 py-2.5"
                     onClick={() => setActiveWorkspaceId(workspace.id)}
                   >
-                    {workspace.type === "personal" ? <User /> : <Users />}
-                    {workspace.name} 
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground">{workspace.type === "personal" ? <User className="h-4 w-4" /> : <Users className="h-4 w-4" />}</span>
+                    <span className="truncate">{workspace.name}</span>
                   </DropdownMenuItem>
                 </li>
               ))}
