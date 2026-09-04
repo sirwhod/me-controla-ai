@@ -99,6 +99,7 @@ export async function POST(req: NextRequest, props: RouteParams) {
 
     try {
       const jobId = await enqueueWorkspaceInvitationEmail({
+        userId: userSnap.empty ? undefined : userSnap.docs[0].id,
         to: inviteeEmail,
         inviterName: session.user.name || 'Um usuário',
         workspaceName: wsData?.name || 'Caixinha Compartilhada',

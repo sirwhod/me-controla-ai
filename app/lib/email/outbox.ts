@@ -17,7 +17,7 @@ export async function enqueueVerificationEmail(input: { to: string; name: string
   return jobId
 }
 
-export async function enqueueWorkspaceInvitationEmail(input: Parameters<typeof workspaceInvitationEmail>[0]) {
+export async function enqueueWorkspaceInvitationEmail(input: Parameters<typeof workspaceInvitationEmail>[0] & { userId?: string }) {
   const jobId = `workspace-invitation:${input.invitationId}`
   await db.collection('_emailOutbox').doc(jobId).set({
     type: 'workspace.invitation_created',
@@ -40,6 +40,14 @@ export async function processEmailOutbox(limit = 10, onlyJobId?: string) {
     if (data.status !== 'pending' && !(onlyJobId && data.status === 'failed')) {
       results.push({ id: doc.id, status: data.status })
       continue
+    }
+    if (data.type === 'workspace.invitation_created' && data.templateData?.userId) {
+      const userSnapshot = await db.doc(`users/${data.templateData.userId}`).get()
+      if (userSnapshot.data()?.notificationPreferences?.emailEnabled === false) {
+        await doc.ref.update({ status: 'skipped', lastError: 'E-mail desabilitado pelo usuário', updatedAt: new Date() })
+        results.push({ id: doc.id, status: 'skipped' })
+        continue
+      }
     }
     await doc.ref.update({ status: 'processing', updatedAt: new Date(), attempts: (data.attempts || 0) + 1 })
     try {
