@@ -206,6 +206,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
         writeFinancialPeriodDeltas(transaction, workspaceId, creditsToCreate.flatMap((credit) => calculateEntryDeltas('credit', null, credit)))
         return { message: 'Receitas fixas criadas com sucesso!', count: creditsToCreate.length }
       })
+      if (!operation.replayed) await notifyWorkspaceFinancialEvent({ workspaceId, actorUserId: session.user.id, kind: 'created', entryType: 'receita', description, entryId: 'fixed' })
       return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
     }
 

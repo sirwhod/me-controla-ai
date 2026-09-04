@@ -251,6 +251,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
           writeFinancialPeriodDeltas(transaction, workspaceId, debitsToCreate.flatMap((debit) => calculateEntryDeltas('debit', null, debit)))
           return { message: 'Débitos fixos criados com sucesso!', count: debitsToCreate.length }
         })
+        if (!operation.replayed) await notifyWorkspaceFinancialEvent({ workspaceId, actorUserId: session.user.id, kind: 'created', entryType: 'despesa', description, entryId: 'subscription' })
         return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
       }
 
@@ -286,6 +287,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
           writeFinancialPeriodDeltas(transaction, workspaceId, assinaturaDebitsToCreate.flatMap((debit) => calculateEntryDeltas('debit', null, debit)))
           return { message: 'Assinatura criada com sucesso!', count: assinaturaDebitsToCreate.length }
         })
+        if (!operation.replayed) await notifyWorkspaceFinancialEvent({ workspaceId, actorUserId: session.user.id, kind: 'created', entryType: 'despesa', description, entryId: 'subscription' })
         return NextResponse.json(operation.result, { status: operation.replayed ? 200 : 201 })
       }
 
