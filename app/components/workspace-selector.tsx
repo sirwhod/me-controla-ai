@@ -28,16 +28,17 @@ export default function WorkspaceSelector() {
   return (
     <Dialog>
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex w-full items-center justify-between gap-2 border-b border-border/60 px-1 pb-3 text-left text-sm font-semibold hover:text-primary transition-colors cursor-pointer outline-hidden">
-          {workspaceActive?.type && workspaceActive.type === "personal" ? (
-            <User className="w-4 h-4 text-primary shrink-0" />
-          ) : (
-            <Users className="w-4 h-4 text-primary shrink-0" />
-          )}
-          <span className="truncate max-w-[200px]">
-            {workspaceActive?.name ?? 'Selecione um Workspace'}
+        <DropdownMenuTrigger className="flex w-full items-center justify-between gap-3 rounded-xl border border-border/70 bg-card px-3 py-2.5 text-left transition-all hover:bg-accent cursor-pointer outline-hidden">
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
+              {workspaceActive?.type === "personal" ? <User className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+            </span>
+            <span className="flex min-w-0 flex-col text-left">
+              <span className="truncate text-sm font-semibold text-foreground">{workspaceActive?.name ?? "Selecione uma caixinha"}</span>
+              <span className="text-xs text-muted-foreground">Selecione uma caixinha</span>
+            </span>
           </span>
-          <ChevronsUpDown className="w-4 h-4 text-muted-foreground shrink-0" />
+          <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         </DropdownMenuTrigger>
         <DropdownMenuContent className="min-w-[240px] rounded-xl border-border/70 bg-card p-1.5">
           <DropdownMenuLabel className="px-3 py-2 text-xs uppercase tracking-wider text-primary">Caixinhas</DropdownMenuLabel>
