@@ -8,6 +8,7 @@ import { getFirebaseMessaging } from '@/app/lib/firebase-client'
 export function PushNotificationRegistration() {
   const [status, setStatus] = useState<'loading' | 'enabled' | 'disabled' | 'unsupported'>('loading')
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   useEffect(() => { if (!('serviceWorker' in navigator) || !('Notification' in window)) return setStatus('unsupported'); setStatus(localStorage.getItem('mecontrola-push-enabled') === 'true' ? 'enabled' : 'disabled') }, [])
   function tokenId(token: string) { return btoa(token).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '').slice(0, 120) }
   async function currentToken() {
@@ -18,6 +19,7 @@ export function PushNotificationRegistration() {
   async function toggle() {
     if (busy || status === 'unsupported') return
     setBusy(true)
+    setError(null)
     try {
       if (status === 'enabled') {
         const token = await currentToken()
@@ -25,15 +27,15 @@ export function PushNotificationRegistration() {
         localStorage.setItem('mecontrola-push-enabled', 'false'); setStatus('disabled'); return
       }
       const permission = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission
-      if (permission !== 'granted') return setStatus('disabled')
+      if (permission !== 'granted') { setStatus('disabled'); setError('Permissão de notificações não concedida neste navegador.'); return }
       const token = await currentToken()
-      if (!token) throw new Error('Token FCM não disponível')
+      if (!token) throw new Error('O Firebase não forneceu um token para este dispositivo.')
       const response = await fetch('/api/push/fcm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) })
       if (!response.ok) throw new Error('Falha ao registrar dispositivo')
       localStorage.setItem('mecontrola-push-enabled', 'true')
       setStatus('enabled')
-    } catch { setStatus('disabled') } finally { setBusy(false) }
+    } catch (cause) { console.error('Falha ao configurar notificações push', cause); setStatus('disabled'); setError(cause instanceof Error ? cause.message : 'Não foi possível ativar as notificações.') } finally { setBusy(false) }
   }
   if (status === 'loading') return null
-  return <Button variant={status === 'enabled' ? 'outline' : 'default'} size="sm" onClick={toggle} disabled={busy || status === 'unsupported'}><span className="mr-2">{status === 'enabled' ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}</span>{status === 'unsupported' ? 'Não compatível' : status === 'enabled' ? 'Desativar neste dispositivo' : 'Ativar notificações'}</Button>
+  return <div className="w-full space-y-2"><Button type="button" className="w-full" variant={status === 'enabled' ? 'outline' : 'default'} size="sm" onClick={toggle} disabled={busy || status === 'unsupported'}><span className="mr-2">{status === 'enabled' ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}</span>{busy ? 'Configurando...' : status === 'unsupported' ? 'Não compatível' : status === 'enabled' ? 'Desativar neste dispositivo' : 'Ativar notificações'}</Button>{error && <p role="status" className="text-xs text-destructive">{error}</p>}</div>
 }
