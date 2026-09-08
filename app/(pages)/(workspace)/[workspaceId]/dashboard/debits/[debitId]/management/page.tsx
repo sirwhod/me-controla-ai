@@ -7,13 +7,15 @@ import { api } from "@/app/lib/axios"
 import { formatCurrency } from "@/app/lib/utils"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { ArrowLeft, CheckCircle2, CircleDollarSign, Clock3, ReceiptText } from "lucide-react"
+import { ArrowLeft, CheckCircle2, CircleDollarSign, Clock3, ReceiptText, Settings } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Badge } from "@/app/components/ui/badge"
 import { toast } from "sonner"
+import { EditDebit } from "@/app/components/edit-debit"
+import type { Debit } from "@/app/types/financial"
 
 type Entry = { id: string; value: number; date: string; status: string; description: string; currentInstallment?: number; totalInstallments?: number }
 type Management = { type: string; description: string; entries: Entry[]; totals: { total: number; paid: number; remaining: number } }
@@ -34,6 +36,7 @@ export default function DebitManagementPage() {
   const paid = data?.totals.paid || 0
   const remaining = data?.totals.remaining || 0
   const paidPercent = total ? Math.round((paid / total) * 100) : 0
+  const currentDebit = current as unknown as Debit | undefined
 
   async function updateFutureValues() {
     const parsed = Number(value.replace(',', '.'))
@@ -60,14 +63,16 @@ export default function DebitManagementPage() {
         <ArrowLeft className="h-4 w-4" /> Voltar para despesas
       </Link>
       <header>
-        <p className="text-sm text-muted-foreground">Gestão da despesa {data.type}</p>
-        <h1 className="text-2xl font-bold tracking-tight">{data.description}</h1>
+        <div className="flex items-start justify-between gap-3">
+          <div><p className="text-sm text-muted-foreground">Gestão da despesa {data.type}</p><h1 className="text-2xl font-bold tracking-tight">{data.description}</h1></div>
+          {currentDebit && <EditDebit debit={currentDebit} trigger={<Button variant="outline" size="icon" aria-label="Editar despesa"><Settings data-icon="inline-start" /></Button>} />}
+        </div>
       </header>
 
       <section className="grid gap-4 md:grid-cols-[1fr_300px]">
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><ReceiptText className="h-5 w-5 text-primary" /> Histórico de pagamentos</CardTitle></CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="max-h-[19rem] space-y-2 overflow-y-auto pr-2">
             {data.entries.map((entry, index) => {
               const isCurrent = index === currentIndex
               const isPaid = entry.status === "paid"

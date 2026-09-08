@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { type ReactNode, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -45,9 +45,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface EditDebitProps {
   debit: Debit
   asDropdownItem?: boolean
+  trigger?: ReactNode
 }
 
-export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
+export function EditDebit({ debit, asDropdownItem = false, trigger }: EditDebitProps) {
   const [open, setOpen] = useState(false)
   const { workspaceActive } = useWorkspace()
   const queryClient = useQueryClient()
@@ -155,7 +156,9 @@ export function EditDebit({ debit, asDropdownItem = false }: EditDebitProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {asDropdownItem ? (
+        {trigger ? (
+          <DialogTrigger asChild>{trigger}</DialogTrigger>
+        ) : asDropdownItem ? (
           <DropdownMenuItem
             onSelect={(e) => {
               e.preventDefault()

@@ -223,7 +223,7 @@ export const columns: ColumnDef<Debit>[] = [
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {debit.id && ["Fixo", "Assinatura", "Parcelamento"].includes(debit.type) && <DropdownMenuItem asChild><Link href={`/${debit.workspaceId}/dashboard/debits/${debit.id}/management`}>Gerenciar despesa</Link></DropdownMenuItem>}
-              <EditDebit debit={debit} asDropdownItem />
+              {!["Fixo", "Assinatura", "Parcelamento"].includes(debit.type) && <EditDebit debit={debit} asDropdownItem />}
               {debit.id && <DeleteDebit debitId={debit.id} asDropdownItem />}
             </DropdownMenuContent>
           </DropdownMenu>
