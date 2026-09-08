@@ -14,7 +14,7 @@ import {
   Tag,
   User,
   Landmark,
-  Calendar,
+  Calendar, Settings,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -143,7 +143,7 @@ export function ExpenseListItem({ debit }: ExpenseListItemProps) {
               Copiar ID do débito
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            {debit.id && ["Fixo", "Assinatura", "Parcelamento"].includes(debit.type) && <DropdownMenuItem asChild><Link href={`/${debit.workspaceId}/dashboard/debits/${debit.id}/management`}>Gerenciar despesa</Link></DropdownMenuItem>}
+            {debit.id && ["Fixo", "Assinatura", "Parcelamento"].includes(debit.type) && <DropdownMenuItem asChild><Link href={`/${debit.workspaceId}/dashboard/debits/${debit.id}/management`}><Settings data-icon="inline-start" />Gerenciar despesa</Link></DropdownMenuItem>}
             {!["Fixo", "Assinatura", "Parcelamento"].includes(debit.type) && <EditDebit debit={debit} asDropdownItem />}
             {debit.id && <DeleteDebit debitId={debit.id} asDropdownItem />}
           </DropdownMenuContent>

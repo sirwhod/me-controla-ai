@@ -3,7 +3,7 @@
 import { DataTableColumnHeader } from "@/app/components/table/column-header"
 import { Debit } from "@/app/types/financial"
 import { ColumnDef } from "@tanstack/react-table"
-import { Banknote, BanknoteArrowDown, CalendarSync, CreditCard, Landmark, MoreHorizontal, Pin, User } from "lucide-react"
+import { Banknote, BanknoteArrowDown, CalendarSync, CreditCard, Landmark, MoreHorizontal, Pin, Settings, User } from "lucide-react"
 import { format } from 'date-fns'
 import Image from "next/image"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/app/components/ui/tooltip"
@@ -222,7 +222,7 @@ export const columns: ColumnDef<Debit>[] = [
                 Copiar ID do débito
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              {debit.id && ["Fixo", "Assinatura", "Parcelamento"].includes(debit.type) && <DropdownMenuItem asChild><Link href={`/${debit.workspaceId}/dashboard/debits/${debit.id}/management`}>Gerenciar despesa</Link></DropdownMenuItem>}
+              {debit.id && ["Fixo", "Assinatura", "Parcelamento"].includes(debit.type) && <DropdownMenuItem asChild><Link href={`/${debit.workspaceId}/dashboard/debits/${debit.id}/management`}><Settings data-icon="inline-start" />Gerenciar despesa</Link></DropdownMenuItem>}
               {!["Fixo", "Assinatura", "Parcelamento"].includes(debit.type) && <EditDebit debit={debit} asDropdownItem />}
               {debit.id && <DeleteDebit debitId={debit.id} asDropdownItem />}
             </DropdownMenuContent>

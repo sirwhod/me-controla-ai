@@ -76,11 +76,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
   if (!(await checkIsWorkspaceMember({ workspaceId, workspaceIds: session.user.workspaceIds, userId: session.user.id }))) {
     return NextResponse.json({ message: 'Acesso negado ao workspace' }, { status: 403 })
   }
+  const collection = db.collection('workspaces').doc(workspaceId).collection('debits')
   const body = await req.json().catch(() => ({}))
+  if (body.status === 'paid') {
+    const sourceRef = collection.doc(debitId)
+    const sourceDoc = await sourceRef.get()
+    if (!sourceDoc.exists) return NextResponse.json({ message: 'Despesa não encontrada' }, { status: 404 })
+    const source = sourceDoc.data() || {}
+    const now = new Date()
+    const currentMonth = now.getFullYear() * 12 + now.getMonth()
+    const monthIndex = FINANCIAL_MONTHS.indexOf(String(source.month || '').toLowerCase() as typeof FINANCIAL_MONTHS[number])
+    const period = Number(source.year) * 12 + monthIndex
+    if (monthIndex < 0 || period >= currentMonth) return NextResponse.json({ message: 'Somente despesas de meses anteriores podem ser marcadas como pagas.' }, { status: 400 })
+    await sourceRef.update({ status: 'paid', updatedAt: new Date() })
+    return NextResponse.json({ message: 'Despesa marcada como paga.' })
+  }
   const value = Number(body.value)
   if (!Number.isFinite(value) || value <= 0) return NextResponse.json({ message: 'Informe um valor de parcela válido.' }, { status: 400 })
 
-  const collection = db.collection('workspaces').doc(workspaceId).collection('debits')
   const sourceRef = collection.doc(debitId)
   const sourceDoc = await sourceRef.get()
   if (!sourceDoc.exists) return NextResponse.json({ message: 'Despesa não encontrada' }, { status: 404 })
