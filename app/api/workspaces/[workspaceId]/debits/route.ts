@@ -11,6 +11,8 @@ import { InvalidWorkspaceReferenceError, validateWorkspaceReferences } from '@/a
 import { getIdempotencyKey, runIdempotentFinancialWrite } from '@/app/lib/idempotent-financial-write'
 import { FinancialIndexNotReadyError, getFinancialListPage } from '@/app/lib/financial-list-query'
 import { notifyWorkspaceFinancialEvent } from '@/app/lib/financial-notifications'
+import { getDebitFinancialDate } from '@/app/lib/debit-financial-date'
+import { FINANCIAL_MONTHS } from '@/app/lib/financial-period'
 
 interface DebitsRouteParams {
   workspaceId: string
@@ -167,19 +169,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
     // Regra de Fechamento de Fatura de Cartão de Crédito
     const closingDayRaw = cardDocData?.closingDay
     const getInvoiceDate = (baseDate: Date) => {
-      if (paymentMethod === 'Crédito' && closingDayRaw !== undefined && closingDayRaw !== null) {
-        const closingDay = typeof closingDayRaw === 'number' ? closingDayRaw : parseInt(String(closingDayRaw), 10)
-        if (!isNaN(closingDay) && closingDay > 0 && baseDate.getDate() > closingDay) {
-          // Compra após o fechamento: entra na fatura do mês subsequente
-          return new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 1)
-        }
-      }
-      return baseDate
+      const result = getDebitFinancialDate(baseDate, paymentMethod, closingDayRaw)
+      return new Date(result.year, FINANCIAL_MONTHS.indexOf(result.month), 1)
     }
 
-    const invoiceDate = getInvoiceDate(dateObj)
-    const month = invoiceDate.toLocaleString('pt-BR', { month: 'long' })
-    const year = invoiceDate.getFullYear()
+    const financialDate = getDebitFinancialDate(dateObj, paymentMethod, closingDayRaw)
+    const month = financialDate.month
+    const year = financialDate.year
 
     const newDebitData: Debit = {
       description: description.trim(),
@@ -224,7 +220,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
 
       case 'Fixo': {
         const effStartDate = startDateObj
+        const recurrenceId = crypto.randomUUID()
         newDebitData.isTemplate = true
+        newDebitData.recurrenceId = recurrenceId
         newDebitData.frequency = effectiveFrequency
         newDebitData.startDate = effStartDate
         newDebitData.endDate = endDateObj
@@ -257,7 +255,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
 
       case 'Assinatura': {
         const effStartDate = startDateObj
+        const recurrenceId = crypto.randomUUID()
         newDebitData.isTemplate = true
+        newDebitData.recurrenceId = recurrenceId
         newDebitData.frequency = effectiveFrequency
         newDebitData.startDate = effStartDate
         newDebitData.endDate = endDateObj

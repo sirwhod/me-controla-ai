@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Button } from "@/app/components/ui/button"
 import { EditDebit } from "@/app/components/edit-debit"
 import { DeleteDebit } from "@/app/components/delete-debit"
+import Link from "@/app/components/context-link"
 
 export const columns: ColumnDef<Debit>[] = [
   {
@@ -221,6 +222,7 @@ export const columns: ColumnDef<Debit>[] = [
                 Copiar ID do débito
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              {debit.id && ["Fixo", "Assinatura", "Parcelamento"].includes(debit.type) && <DropdownMenuItem asChild><Link href={`/${debit.workspaceId}/dashboard/debits/${debit.id}/management`}>Gerenciar despesa</Link></DropdownMenuItem>}
               <EditDebit debit={debit} asDropdownItem />
               {debit.id && <DeleteDebit debitId={debit.id} asDropdownItem />}
             </DropdownMenuContent>

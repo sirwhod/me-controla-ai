@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { calculateEntryDeltas, writeFinancialPeriodDeltas } from '@/app/lib/financial-periods'
 import { validateWorkspaceReferences } from '@/app/api/utils/validate-workspace-references'
 import { notifyWorkspaceFinancialEvent } from '@/app/lib/financial-notifications'
+import { getDebitFinancialDate } from '@/app/lib/debit-financial-date'
 
 interface CreditsRouteParams {
   workspaceId: string;
@@ -169,11 +170,27 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
       return NextResponse.json({ message: 'Selecione um responsável para informar a direção da dívida' }, { status: 400 })
     }
 
+    const effectivePaymentMethod = updateData.paymentMethod ?? debitDoc.data()?.paymentMethod
+    const effectiveCardId = updateData.creditCardId !== undefined ? updateData.creditCardId : debitDoc.data()?.creditCardId
+    let effectiveClosingDay: unknown = null
+    if (effectivePaymentMethod === 'Crédito' && effectiveCardId) {
+      const cardDoc = await db.collection('workspaces').doc(workspaceId).collection('cards').doc(String(effectiveCardId)).get()
+      effectiveClosingDay = cardDoc.data()?.closingDay
+    }
+
     if (updateData.date) {
       const dateObj = new Date(updateData.date)
+      const financialDate = getDebitFinancialDate(dateObj, effectivePaymentMethod, effectiveClosingDay)
       dataToUpdate.date = dateObj
-      dataToUpdate.month = dateObj.toLocaleString('pt-BR', { month: 'long' })
-      dataToUpdate.year = dateObj.getFullYear()
+      dataToUpdate.month = financialDate.month
+      dataToUpdate.year = financialDate.year
+    } else if (updateData.paymentMethod !== undefined || updateData.creditCardId !== undefined) {
+      const existingDate = debitDoc.data()?.date?.toDate?.() ?? new Date(debitDoc.data()?.date)
+      if (!Number.isNaN(existingDate.getTime())) {
+        const financialDate = getDebitFinancialDate(existingDate, effectivePaymentMethod, effectiveClosingDay)
+        dataToUpdate.month = financialDate.month
+        dataToUpdate.year = financialDate.year
+      }
     }
 
     if (updateData.startDate) {

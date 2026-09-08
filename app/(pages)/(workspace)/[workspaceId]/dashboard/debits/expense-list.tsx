@@ -28,6 +28,7 @@ import { Button } from "@/app/components/ui/button"
 import { EditDebit } from "@/app/components/edit-debit"
 import { DeleteDebit } from "@/app/components/delete-debit"
 import { Badge } from "@/app/components/ui/badge"
+import Link from "@/app/components/context-link"
 
 interface ExpenseListProps {
   children: React.ReactNode
@@ -142,6 +143,7 @@ export function ExpenseListItem({ debit }: ExpenseListItemProps) {
               Copiar ID do débito
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            {debit.id && ["Fixo", "Assinatura", "Parcelamento"].includes(debit.type) && <DropdownMenuItem asChild><Link href={`/${debit.workspaceId}/dashboard/debits/${debit.id}/management`}>Gerenciar despesa</Link></DropdownMenuItem>}
             <EditDebit debit={debit} asDropdownItem />
             {debit.id && <DeleteDebit debitId={debit.id} asDropdownItem />}
           </DropdownMenuContent>
