@@ -1,0 +1,17 @@
+{
+  "name": "me-controla-ai-functions",
+  "private": true,
+  "engines": { "node": "22" },
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "deploy": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.3.0",
+    "firebase-functions": "^7.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
