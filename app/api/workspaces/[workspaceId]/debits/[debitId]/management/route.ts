@@ -87,7 +87,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
     const currentMonth = now.getFullYear() * 12 + now.getMonth()
     const monthIndex = FINANCIAL_MONTHS.indexOf(String(source.month || '').toLowerCase() as typeof FINANCIAL_MONTHS[number])
     const period = Number(source.year) * 12 + monthIndex
-    if (monthIndex < 0 || period >= currentMonth) return NextResponse.json({ message: 'Somente despesas de meses anteriores podem ser marcadas como pagas.' }, { status: 400 })
+    if (monthIndex < 0 || period > currentMonth) return NextResponse.json({ message: 'Somente despesas atuais ou de meses anteriores podem ser marcadas como pagas.' }, { status: 400 })
     await sourceRef.update({ status: 'paid', updatedAt: new Date() })
     return NextResponse.json({ message: 'Despesa marcada como paga.' })
   }

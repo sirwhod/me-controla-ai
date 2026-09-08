@@ -7,7 +7,7 @@ import { api } from "@/app/lib/axios"
 import { formatCurrency } from "@/app/lib/utils"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { ArrowLeft, Check, CheckCircle2, CircleDollarSign, Clock3, ReceiptText, Settings } from "lucide-react"
+import { ArrowLeft, CheckCheck, CheckCircle2, CircleDollarSign, Clock3, ReceiptText, Settings } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
@@ -89,12 +89,12 @@ export default function DebitManagementPage() {
             {data.entries.map((entry, index) => {
               const isCurrent = index === currentIndex
               const isPaid = entry.status === "paid"
-              const isPast = new Date(entry.date).getTime() < new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime()
+              const isCurrentOrPast = new Date(entry.date).getTime() < new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).getTime()
               return <div key={entry.id} className={`flex items-center justify-between rounded-lg border p-3 ${isCurrent ? "border-primary bg-primary/5" : "border-border/60"}`}>
                 <div className="flex items-center gap-3">
                   {isPaid ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : isCurrent ? <Clock3 className="h-5 w-5 text-primary" /> : <CircleDollarSign className="h-5 w-5 text-muted-foreground" />}
                   <div><p className="font-medium">{entry.currentInstallment && entry.totalInstallments ? `${entry.currentInstallment}/${entry.totalInstallments}` : format(new Date(entry.date), "MMM/yyyy", { locale: ptBR })} {isCurrent && <Badge className="ml-2">Atual</Badge>}</p><p className="text-xs text-muted-foreground">{format(new Date(entry.date), "dd/MM/yyyy")} · {isPaid ? "Pago" : isCurrent ? "Parcela atual" : "Próximo"}</p></div>
-                </div><div className="flex items-center gap-3"><span className="font-semibold">{formatCurrency(Number(entry.value))}</span>{isPast && !isPaid && <Button type="button" size="sm" variant="outline" onClick={() => markAsPaid(entry.id)}><Check data-icon="inline-start" />Marcar paga</Button>}</div>
+                </div><div className="flex items-center gap-3"><span className="font-semibold">{formatCurrency(Number(entry.value))}</span>{isCurrentOrPast && !isPaid && <Button type="button" size="icon" variant="ghost" className="text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-600" aria-label="Marcar despesa como paga" title="Marcar como paga" onClick={() => markAsPaid(entry.id)}><CheckCheck data-icon="inline-start" /></Button>}</div>
               </div>
             })}
           </CardContent>
