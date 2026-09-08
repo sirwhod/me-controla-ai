@@ -38,9 +38,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<Param
       : (await collection.where('type', '==', source.type).get()).docs.filter((doc) => {
           const data = doc.data() || {}
           const sameDescription = data.description === source.description
+          const sameResponsible = (data.responsibleId || null) === (source.responsibleId || null)
           const sourceStart = source.startDate ? asDate(source.startDate).getTime() : null
           const candidateStart = data.startDate ? asDate(data.startDate).getTime() : null
-          return sameDescription && (sourceStart === null || candidateStart === sourceStart)
+          return sameDescription && sameResponsible && (sourceStart === null || candidateStart === sourceStart)
         })
   if (!docs.some((doc) => doc.id === debitId)) docs = [sourceDoc, ...docs]
 
@@ -117,9 +118,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
       : (await collection.where('type', '==', source.type).get()).docs.filter((doc) => {
           const data = doc.data() || {}
           const sameDescription = data.description === source.description
+          const sameResponsible = (data.responsibleId || null) === (source.responsibleId || null)
           const sourceStart = source.startDate ? asDate(source.startDate).getTime() : null
           const candidateStart = data.startDate ? asDate(data.startDate).getTime() : null
-          return sameDescription && (sourceStart === null || candidateStart === sourceStart)
+          return sameDescription && sameResponsible && (sourceStart === null || candidateStart === sourceStart)
         })
   const currentDate = asDate(sourceDoc.data()?.date).getTime()
   const targetDocs = groupDocs.filter((doc) => {
