@@ -329,6 +329,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
             baseDay
           )
           const invoiceDate = getInvoiceDate(installmentDate)
+          const nowMonth = new Date().getFullYear() * 12 + new Date().getMonth()
+          const invoiceMonth = invoiceDate.getFullYear() * 12 + invoiceDate.getMonth()
+          const installmentIsPast = i < currInstallment || invoiceMonth < nowMonth
 
           const parcelaData: Debit & { ref: DocumentReference } = {
             ...newDebitData,
@@ -341,7 +344,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
             createdAt: new Date(),
             updatedAt: new Date(),
             originalDebitId: firstRef.id,
-            status: status || 'pending',
+            status: installmentIsPast ? 'paid' : (status || 'pending'),
             ref,
           }
           parcelasToCreate.push(parcelaData)

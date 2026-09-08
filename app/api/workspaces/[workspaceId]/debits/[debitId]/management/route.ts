@@ -2,6 +2,7 @@ import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-membe
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { calculateEntryDeltas, writeFinancialPeriodDeltas } from '@/app/lib/financial-periods'
+import { FINANCIAL_MONTHS } from '@/app/lib/financial-period'
 import { NextRequest, NextResponse } from 'next/server'
 
 type Params = { workspaceId: string; debitId: string }
@@ -35,9 +36,32 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<Param
     : [sourceDoc]
   if (!docs.some((doc) => doc.id === debitId)) docs = [sourceDoc, ...docs]
 
+  const autoPaidIds = new Set<string>()
+  if (source.type === 'Parcelamento') {
+    const now = new Date()
+    const currentMonth = now.getFullYear() * 12 + now.getMonth()
+    const toMarkPaid = docs.filter((doc) => {
+      const data = doc.data() || {}
+      const month = FINANCIAL_MONTHS.indexOf(String(data.month || '').toLowerCase() as typeof FINANCIAL_MONTHS[number])
+      const period = Number(data.year) * 12 + month
+      return data.status !== 'paid' && month >= 0 && period < currentMonth
+    })
+    if (toMarkPaid.length) {
+      await db.runTransaction(async (transaction) => {
+        const snapshots = []
+        for (const doc of toMarkPaid) {
+          const current = await transaction.get(doc.ref)
+          if (current.exists) snapshots.push(doc.ref)
+        }
+        for (const ref of snapshots) transaction.update(ref, { status: 'paid', updatedAt: new Date() })
+      })
+      for (const doc of toMarkPaid) autoPaidIds.add(doc.id)
+    }
+  }
+
   const entries: Array<Record<string, unknown> & { id: string; date: string; status: string }> = docs.map((doc) => {
     const data = (doc.data() || {}) as Record<string, unknown>
-    return { ...data, id: doc.id, date: asDate(data.date).toISOString(), status: String(data.status || 'pending') }
+    return { ...data, id: doc.id, date: asDate(data.date).toISOString(), status: autoPaidIds.has(doc.id) ? 'paid' : String(data.status || 'pending') }
   }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
   const total = entries.reduce((sum, entry) => sum + Number(entry.value || 0), 0)
