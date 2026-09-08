@@ -94,9 +94,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
     const source = sourceDoc.data() || {}
     const now = new Date()
     const currentMonth = now.getFullYear() * 12 + now.getMonth()
-    const monthIndex = FINANCIAL_MONTHS.indexOf(String(source.month || '').toLowerCase() as typeof FINANCIAL_MONTHS[number])
-    const period = Number(source.year) * 12 + monthIndex
-    if (monthIndex < 0 || period > currentMonth) return NextResponse.json({ message: 'Somente despesas atuais ou de meses anteriores podem ser marcadas como pagas.' }, { status: 400 })
+    const actualDate = asDate(source.date)
+    const actualPeriod = actualDate.getFullYear() * 12 + actualDate.getMonth()
+    if (Number.isNaN(actualDate.getTime()) || actualPeriod > currentMonth) return NextResponse.json({ message: 'Somente despesas atuais ou de meses anteriores podem ser marcadas como pagas.' }, { status: 400 })
     await sourceRef.update({ status: 'paid', updatedAt: new Date() })
     return NextResponse.json({ message: 'Despesa marcada como paga.' })
   }
