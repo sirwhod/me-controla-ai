@@ -496,7 +496,11 @@ export default function Page() {
               </CardHeader>
               <CardContent>
                 {isLoading || isCardsLoading ? <Skeleton className="h-40 w-full" /> : cardBalances.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhum cartão cadastrado.</p>
+                  <div className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border/70 bg-muted/10 p-4 text-center">
+                    <CreditCard className="h-7 w-7 text-muted-foreground/70" aria-hidden="true" />
+                    <p className="text-sm text-muted-foreground">Nenhum cartão cadastrado nesta caixinha.</p>
+                    <Link href={`${prefix}/manage/cards/new`}><Button variant="outline" size="sm">Cadastrar cartão</Button></Link>
+                  </div>
                 ) : (
                   <div className="flex flex-col gap-3">
                     <div className="relative aspect-[1.586/1] w-full overflow-hidden rounded-xl p-4 text-white shadow-sm" style={{ backgroundColor: selectedCard.card.color || "#6366f1" }}>
@@ -663,7 +667,11 @@ export default function Page() {
               {isLoading || isCardsLoading ? (
                 <Skeleton className="h-36 w-full" />
               ) : cardBalances.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Nenhum cartão cadastrado.</p>
+                <div className="flex min-h-36 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border/70 bg-muted/10 p-3 text-center">
+                  <CreditCard className="h-6 w-6 text-muted-foreground/70" aria-hidden="true" />
+                  <p className="text-xs text-muted-foreground">Nenhum cartão cadastrado nesta caixinha.</p>
+                  <Link href={`${prefix}/manage/cards/new`}><Button variant="outline" size="sm" className="h-7 text-xs">Cadastrar cartão</Button></Link>
+                </div>
               ) : (
                 <>
                   <div className="flex flex-col gap-2">
@@ -693,7 +701,7 @@ export default function Page() {
           <Card className="shadow-xs border-border/70 bg-card/70">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Taxa Poupança
+                Taxa de poupança
               </CardTitle>
               <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500">
                 <Target className="h-4 w-4" />
@@ -906,7 +914,7 @@ export default function Page() {
                   </p>
                 ) : expensesByCategory.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-3">
-                    Sem despesas registradas no período.
+                    Nenhuma despesa registrada no período.
                   </p>
                 ) : (
                   <div className="space-y-2.5">
@@ -953,7 +961,9 @@ export default function Page() {
                     Detalhamento indisponível para períodos com mais de 100 despesas.
                   </p>
                 ) : totalDebits === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-2">Sem dados no período.</p>
+                  <div className="rounded-lg border border-dashed border-border/70 bg-muted/10 p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Nenhuma forma de pagamento usada no período.</p>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     <div className="p-2 rounded-lg border border-border/40 bg-muted/20 flex flex-col">
