@@ -12,6 +12,13 @@
   }
 }
 
+/* O workspace vive no sidebar no desktop; no mobile, permanece no menu móvel. */
+@media (min-width: 768px) {
+  header [data-workspace-selector] {
+    display: none;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

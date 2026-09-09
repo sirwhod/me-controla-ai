@@ -32,7 +32,7 @@ export default function WorkspaceSelector({ variant = "default" }: WorkspaceSele
   return (
     <Dialog>
       <DropdownMenu>
-        <DropdownMenuTrigger className={variant === "sidebar"
+        <DropdownMenuTrigger data-workspace-selector className={variant === "sidebar"
           ? "group flex w-full items-center gap-2.5 rounded-xl border border-sidebar-border/70 bg-sidebar-accent/45 px-2.5 py-2 text-left transition-colors hover:bg-sidebar-accent cursor-pointer outline-hidden"
           : "flex w-full items-center justify-between gap-3 rounded-xl border border-border/70 bg-card px-3 py-2.5 text-left transition-all hover:bg-accent cursor-pointer outline-hidden"}>
           <span className="flex min-w-0 items-center gap-3">
