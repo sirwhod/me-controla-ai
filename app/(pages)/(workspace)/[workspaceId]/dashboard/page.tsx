@@ -407,6 +407,23 @@ export default function Page() {
           </div>
         </div>
 
+        {filteredDebits.length === 0 && filteredCredits.length === 0 && (
+          <Card className="hidden lg:block border-primary/25 bg-primary/[0.035]">
+            <CardContent className="flex items-center justify-between gap-6 p-5">
+              <div className="min-w-0">
+                <CardTitle className="text-base">Sua visão financeira começa aqui</CardTitle>
+                <CardDescription className="mt-1 max-w-2xl text-sm">
+                  Registre uma receita ou despesa para acompanhar seu saldo, categorias e evolução ao longo do tempo.
+                </CardDescription>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <CreateCredit label="Adicionar receita" className="bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border/60" />
+                <CreateDebit label="Adicionar despesa" />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* ========================================================================= */}
         {/* 3. RESUMO FINANCEIRO PRINCIPAL (PRIMEIRA DOBRA)                           */}
         {/* ========================================================================= */}
@@ -887,7 +904,7 @@ export default function Page() {
               <CardHeader className="p-3.5 sm:p-5 pb-2 sm:pb-3">
                 <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                   <PieChart className="h-4 w-4 text-primary" />
-                  Gastos por Categoria
+                  Gastos por categoria
                 </CardTitle>
                 <CardDescription className="text-xs">
                   Distribuição de despesas no período
@@ -942,7 +959,7 @@ export default function Page() {
               <CardHeader className="p-3.5 sm:p-5 pb-2 sm:pb-3">
                 <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-violet-500" />
-                  Formas de Pagamento
+                  Formas de pagamento
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-3.5 sm:p-5 pt-0 sm:pt-0">
@@ -1003,7 +1020,7 @@ export default function Page() {
               <CardHeader className="p-3.5 sm:p-5 flex flex-row items-center justify-between pb-2 sm:pb-3">
                 <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                   <Target className="h-4 w-4 text-emerald-500" />
-                  Metas em Andamento
+                  Metas ativas
                 </CardTitle>
                 <Link href={`${prefix}/manage/goals`}>
                   <Button variant="ghost" size="sm" className="h-7 text-xs px-2">
