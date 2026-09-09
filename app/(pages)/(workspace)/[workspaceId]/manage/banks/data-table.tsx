@@ -24,7 +24,7 @@ import { useState } from "react"
 import { Input } from "@/app/components/ui/input"
 import { DataTablePagination } from "@/app/components/table/pagination"
 import { CreateBank } from "@/app/components/create-bank"
-import { EmptyState } from "@/app/components/states/empty-state"
+import { ConfigEmptyState } from "@/app/components/states/config-empty-state"
 import { Bank } from "@/app/types/financial"
 import { Landmark, RotateCcw, Search } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
@@ -93,7 +93,7 @@ export function DataTable<TData extends Bank, TValue>({
             ))}
           </BankList>
         ) : isFiltering ? (
-          <EmptyState
+          <ConfigEmptyState
             icon={Landmark}
             title="Nenhum banco encontrado"
             description="Não encontramos bancos ou contas correspondentes à busca."
@@ -111,7 +111,7 @@ export function DataTable<TData extends Bank, TValue>({
             }
           />
         ) : (
-          <EmptyState
+          <ConfigEmptyState
             icon={Landmark}
             title="Nenhum banco cadastrado"
             description="Cadastre sua primeira conta corrente ou banco para organizar despesas e receitas."
@@ -163,7 +163,7 @@ export function DataTable<TData extends Bank, TValue>({
                   className="h-32 text-center"
                 >
                   {isFiltering ? (
-                    <EmptyState
+                    <ConfigEmptyState
                       icon={Landmark}
                       title="Nenhum banco encontrado"
                       description="Não há bancos ou contas correspondentes à sua pesquisa."
@@ -181,7 +181,7 @@ export function DataTable<TData extends Bank, TValue>({
                       }
                     />
                   ) : (
-                    <EmptyState
+                    <ConfigEmptyState
                       icon={Landmark}
                       title="Nenhum banco cadastrado"
                       description="Crie seu primeiro banco ou conta para começar."

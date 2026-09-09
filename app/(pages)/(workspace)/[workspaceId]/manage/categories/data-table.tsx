@@ -24,7 +24,7 @@ import { useState } from "react"
 import { Input } from "@/app/components/ui/input"
 import { DataTablePagination } from "@/app/components/table/pagination"
 import { CreateCategory } from "@/app/components/create-category"
-import { EmptyState } from "@/app/components/states/empty-state"
+import { ConfigEmptyState } from "@/app/components/states/config-empty-state"
 import { Category } from "@/app/types/financial"
 import { RotateCcw, Search, Tags } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
@@ -96,7 +96,7 @@ export function DataTable<TData extends Category, TValue>({
             ))}
           </CategoryList>
         ) : isFiltering ? (
-          <EmptyState
+          <ConfigEmptyState
             icon={Tags}
             title="Nenhuma categoria encontrada"
             description="Não encontramos categorias correspondentes à busca."
@@ -114,7 +114,7 @@ export function DataTable<TData extends Category, TValue>({
             }
           />
         ) : (
-          <EmptyState
+          <ConfigEmptyState
             icon={Tags}
             title="Nenhuma categoria cadastrada"
             description="Cadastre suas categorias personalizadas para organizar receitas e despesas."
@@ -166,7 +166,7 @@ export function DataTable<TData extends Category, TValue>({
                   className="h-32 text-center"
                 >
                   {isFiltering ? (
-                    <EmptyState
+                    <ConfigEmptyState
                       icon={Tags}
                       title="Nenhuma categoria encontrada"
                       description="Não há categorias correspondentes aos filtros selecionados."
@@ -184,7 +184,7 @@ export function DataTable<TData extends Category, TValue>({
                       }
                     />
                   ) : (
-                    <EmptyState
+                    <ConfigEmptyState
                       icon={Tags}
                       title="Nenhuma categoria cadastrada"
                       description="Crie sua primeira categoria para organizar despesas e receitas."

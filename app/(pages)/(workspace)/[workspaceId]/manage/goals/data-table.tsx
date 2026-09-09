@@ -22,7 +22,7 @@ import {
 } from "@/app/components/ui/table"
 import { useState } from "react"
 import { DataTablePagination } from "@/app/components/table/pagination"
-import { EmptyState } from "@/app/components/states/empty-state"
+import { ConfigEmptyState } from "@/app/components/states/config-empty-state"
 import { Goal } from "@/app/types/financial"
 import { RotateCcw, Search, Target } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
@@ -96,7 +96,7 @@ export function DataTable<TData extends Goal, TValue>({
             ))}
           </GoalList>
         ) : isFiltering ? (
-          <EmptyState
+          <ConfigEmptyState
             icon={Target}
             title="Nenhuma meta encontrada"
             description="Não encontramos metas correspondentes à busca."
@@ -114,7 +114,7 @@ export function DataTable<TData extends Goal, TValue>({
             }
           />
         ) : (
-          <EmptyState
+          <ConfigEmptyState
             icon={Target}
             title="Nenhuma meta cadastrada"
             description="Defina metas financeiras e acompanhe o progresso de economia da sua caixinha."
@@ -166,7 +166,7 @@ export function DataTable<TData extends Goal, TValue>({
                   className="h-32 text-center"
                 >
                   {isFiltering ? (
-                    <EmptyState
+                    <ConfigEmptyState
                       icon={Target}
                       title="Nenhuma meta encontrada"
                       description="Não há metas correspondentes aos filtros selecionados."
@@ -184,7 +184,7 @@ export function DataTable<TData extends Goal, TValue>({
                       }
                     />
                   ) : (
-                    <EmptyState
+                    <ConfigEmptyState
                       icon={Target}
                       title="Nenhuma meta financeira cadastrada"
                       description="Crie seu primeiro objetivo financeiro para acompanhar os aportes."

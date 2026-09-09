@@ -24,7 +24,7 @@ import { useState } from "react"
 import { Input } from "@/app/components/ui/input"
 import { DataTablePagination } from "@/app/components/table/pagination"
 import { CreateCard } from "@/app/components/create-card"
-import { EmptyState } from "@/app/components/states/empty-state"
+import { ConfigEmptyState } from "@/app/components/states/config-empty-state"
 import { CreditCard } from "@/app/types/financial"
 import { CreditCard as CardIcon, RotateCcw, Search } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
@@ -96,7 +96,7 @@ export function DataTable<TData extends CreditCard, TValue>({
             ))}
           </CreditCardList>
         ) : isFiltering ? (
-          <EmptyState
+          <ConfigEmptyState
             icon={CardIcon}
             title="Nenhum cartão encontrado"
             description="Não encontramos cartões de crédito correspondentes à busca."
@@ -114,7 +114,7 @@ export function DataTable<TData extends CreditCard, TValue>({
             }
           />
         ) : (
-          <EmptyState
+          <ConfigEmptyState
             icon={CardIcon}
             title="Nenhum cartão de crédito cadastrado"
             description="Cadastre seu primeiro cartão para acompanhar faturas, compras no crédito e limites."
@@ -166,7 +166,7 @@ export function DataTable<TData extends CreditCard, TValue>({
                   className="h-32 text-center"
                 >
                   {isFiltering ? (
-                    <EmptyState
+                    <ConfigEmptyState
                       icon={CardIcon}
                       title="Nenhum cartão encontrado"
                       description="Não há cartões de crédito correspondentes aos filtros selecionados."
@@ -184,7 +184,7 @@ export function DataTable<TData extends CreditCard, TValue>({
                       }
                     />
                   ) : (
-                    <EmptyState
+                    <ConfigEmptyState
                       icon={CardIcon}
                       title="Nenhum cartão de crédito cadastrado"
                       description="Cadastre seu primeiro cartão para organizar despesas no crédito."

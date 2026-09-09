@@ -24,7 +24,7 @@ import { useMemo, useState } from "react"
 import { Input } from "@/app/components/ui/input"
 import { DataTablePagination } from "@/app/components/table/pagination"
 import { CreateResponsible } from "@/app/components/create-responsible"
-import { EmptyState } from "@/app/components/states/empty-state"
+import { ConfigEmptyState } from "@/app/components/states/config-empty-state"
 import { PersonResponsible } from "@/app/types/financial"
 import { RotateCcw, Search, Users } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
@@ -154,7 +154,7 @@ export function DataTable<
             ))}
           </ResponsibleList>
         ) : isFiltering ? (
-          <EmptyState
+          <ConfigEmptyState
             icon={Users}
             title="Nenhum responsável encontrado"
             description="Não encontramos responsáveis com os filtros de busca ou saldo aplicados."
@@ -172,7 +172,7 @@ export function DataTable<
             }
           />
         ) : (
-          <EmptyState
+          <ConfigEmptyState
             icon={Users}
             title="Nenhum responsável cadastrado"
             description="Cadastre pessoas para vincular a despesas compartilhadas e gerar cobranças automáticas via PIX."
@@ -224,7 +224,7 @@ export function DataTable<
                   className="h-32 text-center"
                 >
                   {isFiltering ? (
-                    <EmptyState
+                    <ConfigEmptyState
                       icon={Users}
                       title="Nenhum responsável encontrado"
                       description="Não há responsáveis correspondentes à busca ou ao filtro de saldo."
@@ -242,7 +242,7 @@ export function DataTable<
                       }
                     />
                   ) : (
-                    <EmptyState
+                    <ConfigEmptyState
                       icon={Users}
                       title="Nenhum responsável cadastrado"
                       description="Cadastre o primeiro responsável para começar a acompanhar despesas e saldos."
