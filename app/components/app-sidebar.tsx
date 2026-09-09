@@ -24,6 +24,7 @@ import {
 import { useWorkspace } from "../hooks/use-workspace"
 import { useDateFilter } from "../contexts/date-filter-context"
 import { Logo } from "./logo"
+import WorkspaceSelector from "./workspace-selector"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { workspaceActive, activeWorkspaceId, isLoading } = useWorkspace()
@@ -127,6 +128,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+      <div className="px-3 pb-4">
+        <WorkspaceSelector variant="sidebar" />
+      </div>
       <SidebarContent className="px-1">
         <NavMain items={navMain.map((item) => item.title === "Notificações"
           ? { ...item, badge: unreadCount > 0 ? (unreadCount > 9 ? "9+" : String(unreadCount)) : undefined }

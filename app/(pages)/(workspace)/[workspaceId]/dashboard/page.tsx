@@ -5,13 +5,11 @@ import {
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
 } from "@/app/components/ui/breadcrumb"
 import { Separator } from "@/app/components/ui/separator"
 import { SidebarTrigger } from "@/app/components/ui/sidebar"
 import { Skeleton } from "@/app/components/ui/skeleton"
 import { Logo } from "@/app/components/logo"
-import WorkspaceSelector from "@/app/components/workspace-selector"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { useQuery } from "@tanstack/react-query"
 import { getDebitsPage } from "@/app/http/debits/get-debits"
@@ -331,16 +329,6 @@ export default function Page() {
           <Separator orientation="vertical" className="mr-1 md:mr-2 h-4" />
           <Breadcrumb>
             <BreadcrumbList className="text-xs sm:text-sm">
-              <BreadcrumbItem>
-                <BreadcrumbPage>
-                  {isWorkspaceLoading || !workspaceActive ? (
-                    <Skeleton className="h-5 w-32 md:w-48" />
-                  ) : (
-                    <WorkspaceSelector />
-                  )}
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbPage className="font-semibold text-foreground">Dashboard</BreadcrumbPage>
               </BreadcrumbItem>
