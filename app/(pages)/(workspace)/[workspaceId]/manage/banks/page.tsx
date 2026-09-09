@@ -138,7 +138,6 @@ export default function Page() {
               icon={Landmark}
               title="Nenhum banco cadastrado"
               description="Cadastre uma instituição financeira para vincular receitas, despesas e cartões."
-              action={<CreateBank />}
             />
           ) : (
             <DataTable columns={columns} data={banks || []} />

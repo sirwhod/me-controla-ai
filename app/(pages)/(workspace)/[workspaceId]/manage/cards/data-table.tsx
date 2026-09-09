@@ -23,7 +23,6 @@ import {
 import { useState } from "react"
 import { Input } from "@/app/components/ui/input"
 import { DataTablePagination } from "@/app/components/table/pagination"
-import { CreateCard } from "@/app/components/create-card"
 import { ConfigEmptyState } from "@/app/components/states/config-empty-state"
 import { CreditCard } from "@/app/types/financial"
 import { CreditCard as CardIcon, RotateCcw, Search } from "lucide-react"
@@ -82,9 +81,6 @@ export function DataTable<TData extends CreditCard, TValue>({
           />
         </div>
 
-        <div className="hidden sm:block">
-          <CreateCard />
-        </div>
       </div>
 
       {/* 1. VISÃO MOBILE (< 768px): CreditCardList com Cards Estruturados */}
@@ -118,7 +114,6 @@ export function DataTable<TData extends CreditCard, TValue>({
             icon={CardIcon}
             title="Nenhum cartão de crédito cadastrado"
             description="Cadastre seu primeiro cartão para acompanhar faturas, compras no crédito e limites."
-            action={<CreateCard />}
           />
         )}
       </div>
@@ -188,7 +183,6 @@ export function DataTable<TData extends CreditCard, TValue>({
                       icon={CardIcon}
                       title="Nenhum cartão de crédito cadastrado"
                       description="Cadastre seu primeiro cartão para organizar despesas no crédito."
-                      action={<CreateCard />}
                     />
                   )}
                 </TableCell>

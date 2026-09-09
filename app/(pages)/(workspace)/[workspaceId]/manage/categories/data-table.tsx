@@ -23,7 +23,6 @@ import {
 import { useState } from "react"
 import { Input } from "@/app/components/ui/input"
 import { DataTablePagination } from "@/app/components/table/pagination"
-import { CreateCategory } from "@/app/components/create-category"
 import { ConfigEmptyState } from "@/app/components/states/config-empty-state"
 import { Category } from "@/app/types/financial"
 import { RotateCcw, Search, Tags } from "lucide-react"
@@ -82,9 +81,6 @@ export function DataTable<TData extends Category, TValue>({
           />
         </div>
 
-        <div className="hidden sm:block">
-          <CreateCategory />
-        </div>
       </div>
 
       {/* 1. VISÃO MOBILE (< 768px): CategoryList com Items Compactos */}
@@ -118,7 +114,6 @@ export function DataTable<TData extends Category, TValue>({
             icon={Tags}
             title="Nenhuma categoria cadastrada"
             description="Cadastre suas categorias personalizadas para organizar receitas e despesas."
-            action={<CreateCategory />}
           />
         )}
       </div>
@@ -188,7 +183,6 @@ export function DataTable<TData extends Category, TValue>({
                       icon={Tags}
                       title="Nenhuma categoria cadastrada"
                       description="Crie sua primeira categoria para organizar despesas e receitas."
-                      action={<CreateCategory />}
                     />
                   )}
                 </TableCell>

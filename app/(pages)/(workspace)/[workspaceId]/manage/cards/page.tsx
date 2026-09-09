@@ -138,7 +138,6 @@ export default function CardsPage() {
               icon={CardIcon}
               title="Nenhum cartão cadastrado"
               description="Cadastre um cartão para acompanhar limites, compras e datas da fatura."
-              action={<CreateCard />}
             />
           ) : (
             <DataTable columns={columns} data={cards || []} />

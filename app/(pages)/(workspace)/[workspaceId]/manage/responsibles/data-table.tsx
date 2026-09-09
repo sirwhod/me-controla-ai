@@ -23,7 +23,6 @@ import {
 import { useMemo, useState } from "react"
 import { Input } from "@/app/components/ui/input"
 import { DataTablePagination } from "@/app/components/table/pagination"
-import { CreateResponsible } from "@/app/components/create-responsible"
 import { ConfigEmptyState } from "@/app/components/states/config-empty-state"
 import { PersonResponsible } from "@/app/types/financial"
 import { RotateCcw, Search, Users } from "lucide-react"
@@ -135,7 +134,6 @@ export function DataTable<
           </div>
 
           <div className="hidden sm:block">
-            <CreateResponsible />
           </div>
         </div>
       </div>
@@ -176,7 +174,6 @@ export function DataTable<
             icon={Users}
             title="Nenhum responsável cadastrado"
             description="Cadastre pessoas para vincular a despesas compartilhadas e gerar cobranças automáticas via PIX."
-            action={<CreateResponsible />}
           />
         )}
       </div>
@@ -246,7 +243,6 @@ export function DataTable<
                       icon={Users}
                       title="Nenhum responsável cadastrado"
                       description="Cadastre o primeiro responsável para começar a acompanhar despesas e saldos."
-                      action={<CreateResponsible />}
                     />
                   )}
                 </TableCell>

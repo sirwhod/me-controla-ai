@@ -160,7 +160,6 @@ export default function ResponsiblesPage() {
               icon={Users}
               title="Nenhum responsável cadastrado"
               description="Cadastre uma pessoa para dividir despesas e acompanhar valores em aberto."
-              action={<CreateResponsible />}
             />
           ) : (
             <DataTable

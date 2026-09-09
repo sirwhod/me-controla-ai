@@ -113,7 +113,6 @@ export default function Page() {
               icon={Tags}
               title="Nenhuma categoria cadastrada"
               description="Crie categorias para organizar e filtrar suas receitas e despesas."
-              action={<CreateCategory label="Nova Categoria" />}
             />
           ) : (
             <DataTable columns={columns} data={categories || []} />

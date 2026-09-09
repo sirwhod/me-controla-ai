@@ -27,7 +27,6 @@ import { Goal } from "@/app/types/financial"
 import { RotateCcw, Search, Target } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
-import { CreateGoal } from "@/app/components/create-goal"
 import { GoalList, GoalListItem } from "./goal-list"
 
 interface DataTableProps<TData, TValue> {
@@ -83,7 +82,6 @@ export function DataTable<TData extends Goal, TValue>({
         </div>
 
         <div className="hidden sm:block">
-          <CreateGoal />
         </div>
       </div>
 
@@ -118,7 +116,6 @@ export function DataTable<TData extends Goal, TValue>({
             icon={Target}
             title="Nenhuma meta cadastrada"
             description="Defina metas financeiras e acompanhe o progresso de economia da sua caixinha."
-            action={<CreateGoal />}
           />
         )}
       </div>
@@ -188,7 +185,6 @@ export function DataTable<TData extends Goal, TValue>({
                       icon={Target}
                       title="Nenhuma meta financeira cadastrada"
                       description="Crie seu primeiro objetivo financeiro para acompanhar os aportes."
-                      action={<CreateGoal />}
                     />
                   )}
                 </TableCell>

@@ -113,7 +113,6 @@ export default function Page() {
               icon={Target}
               title="Nenhuma meta financeira"
               description="Crie uma meta para acompanhar aportes e a evolução de um objetivo."
-              action={<CreateGoal label="Nova Meta" />}
             />
           ) : (
             <DataTable columns={columns} data={goals || []} />

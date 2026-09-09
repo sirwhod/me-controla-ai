@@ -23,7 +23,6 @@ import {
 import { useState } from "react"
 import { Input } from "@/app/components/ui/input"
 import { DataTablePagination } from "@/app/components/table/pagination"
-import { CreateBank } from "@/app/components/create-bank"
 import { ConfigEmptyState } from "@/app/components/states/config-empty-state"
 import { Bank } from "@/app/types/financial"
 import { Landmark, RotateCcw, Search } from "lucide-react"
@@ -115,7 +114,6 @@ export function DataTable<TData extends Bank, TValue>({
             icon={Landmark}
             title="Nenhum banco cadastrado"
             description="Cadastre sua primeira conta corrente ou banco para organizar despesas e receitas."
-            action={<CreateBank />}
           />
         )}
       </div>
@@ -185,7 +183,6 @@ export function DataTable<TData extends Bank, TValue>({
                       icon={Landmark}
                       title="Nenhum banco cadastrado"
                       description="Crie seu primeiro banco ou conta para começar."
-                      action={<CreateBank />}
                     />
                   )}
                 </TableCell>
