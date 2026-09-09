@@ -61,7 +61,7 @@ export function NewDebitForm() {
       value: undefined,
       date: new Date().toISOString(),
       startDate: new Date().toISOString(),
-      dueDate: undefined,
+      dueDay: undefined,
       frequency: "monthly",
       totalInstallments: undefined,
       currentInstallment: undefined,
@@ -190,7 +190,7 @@ export function NewDebitForm() {
       } else {
         fieldsToValidate.push("date")
       }
-      if (isFixo) fieldsToValidate.push("dueDate")
+      if (isFixo) fieldsToValidate.push("dueDay")
 
       const isValid = await form.trigger(fieldsToValidate)
       if (!isValid) {
@@ -284,7 +284,7 @@ export function NewDebitForm() {
         frequency: data.frequency || "monthly",
         startDate: data.startDate || data.date || new Date().toISOString(),
         date: data.date || data.startDate || new Date().toISOString(),
-        dueDate: data.type === "Fixo" ? data.dueDate : undefined,
+        dueDay: data.type === "Fixo" ? data.dueDay : undefined,
         // Limpar campos residuais se não for parcelamento
         totalInstallments: isParcelamento ? data.totalInstallments : undefined,
         currentInstallment: isParcelamento ? data.currentInstallment : undefined,

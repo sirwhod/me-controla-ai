@@ -54,7 +54,7 @@ export function EditDebit({ debit, asDropdownItem = false, trigger }: EditDebitP
   const queryClient = useQueryClient()
 
   const debitDateString = debit.date ? new Date(debit.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
-  const debitDueDateString = debit.dueDate ? new Date(debit.dueDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
+  const debitDueDay = debit.dueDay ?? (debit.dueDate ? new Date(debit.dueDate).getDate() : undefined)
 
   const form = useForm<UpdateDebitProps>({
     resolver: zodResolver(updateDebitSchema),
@@ -62,7 +62,7 @@ export function EditDebit({ debit, asDropdownItem = false, trigger }: EditDebitP
       description: debit.description || "",
       value: debit.value || 0,
       date: debit.date ? new Date(debit.date).toISOString() : new Date().toISOString(),
-      dueDate: debit.dueDate ? new Date(debit.dueDate).toISOString() : undefined,
+      dueDay: debitDueDay,
       bankId: debit.bankId || null,
       creditCardId: debit.creditCardId || null,
       categoryId: debit.categoryId || null,
@@ -238,12 +238,12 @@ export function EditDebit({ debit, asDropdownItem = false, trigger }: EditDebitP
               {debit.type === "Fixo" && (
                 <FormField
                   control={form.control}
-                  name="dueDate"
+                  name="dueDay"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Vencimento</FormLabel>
+                      <FormLabel>Dia de Vencimento</FormLabel>
                       <FormControl>
-                        <Input type="date" defaultValue={debitDueDateString} onChange={(e) => e.target.value && field.onChange(new Date(`${e.target.value}T12:00:00Z`).toISOString())} />
+                        <Input type="number" min={1} max={31} placeholder="Ex: 10" value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -99,28 +99,14 @@ export function StepDetails({ form }: StepDetailsProps) {
         {isFixo && (
           <FormField
             control={form.control}
-            name="dueDate"
+            name="dueDay"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel className="text-xs font-semibold">Data de Vencimento</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button variant="outline" className={cn("w-full pl-3 text-left font-normal h-10 bg-card/60 border-border/80", !field.value && "text-muted-foreground")}>
-                        {field.value ? format(new Date(field.value), "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value ? new Date(field.value) : undefined}
-                      onSelect={(date) => date && field.onChange(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12).toISOString())}
-                      captionLayout="dropdown"
-                    />
-                  </PopoverContent>
-                </Popover>
+                <FormLabel className="text-xs font-semibold">Dia de Vencimento</FormLabel>
+                <FormControl>
+                  <Input type="number" min={1} max={31} placeholder="Ex: 10" className="h-10 bg-card/60 border-border/80" value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)} />
+                </FormControl>
+                <span className="text-xs text-muted-foreground">Informe somente o dia do mês.</span>
                 <FormMessage />
               </FormItem>
             )}

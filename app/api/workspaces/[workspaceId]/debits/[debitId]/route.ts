@@ -50,7 +50,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
       createdAt: serializeFirestoreDate(debitData?.createdAt),
       updatedAt: serializeFirestoreDate(debitData?.updatedAt),
       startDate: serializeFirestoreDate(debitData?.startDate), 
-      dueDate: serializeFirestoreDate(debitData?.dueDate),
       endDate: serializeFirestoreDate(debitData?.endDate),     
     }
 
@@ -179,12 +178,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
       effectiveClosingDay = cardDoc.data()?.closingDay
     }
 
-    if (updateData.dueDate) dataToUpdate.dueDate = new Date(updateData.dueDate)
-    if (updateData.dueDate === null) dataToUpdate.dueDate = null
-    if (updateData.type && updateData.type !== 'Fixo') dataToUpdate.dueDate = null
+    if (updateData.type && updateData.type !== 'Fixo') dataToUpdate.dueDay = null
 
-    if (updateData.dueDate && debitDoc.data()?.type === 'Fixo') {
-      const sourceDate = new Date(updateData.dueDate)
+    if (updateData.dueDay && debitDoc.data()?.type === 'Fixo') {
       const source = debitDoc.data() || {}
       const recurrenceId = source.recurrenceId
       const groupDocs = recurrenceId
@@ -205,13 +201,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
         for (const { doc, current } of snapshots) {
           const occurrence = occurrenceDate(current.data()?.date)
           const lastDay = new Date(occurrence.getFullYear(), occurrence.getMonth() + 1, 0).getDate()
-          const due = new Date(occurrence.getFullYear(), occurrence.getMonth(), Math.min(sourceDate.getDate(), lastDay), 12)
-          const update = doc.id === debitId ? { ...dataToUpdate, dueDate: due } : { dueDate: due, updatedAt: new Date() }
+          const due = Math.min(Number(updateData.dueDay), lastDay)
+          const update = doc.id === debitId ? { ...dataToUpdate, dueDay: due } : { dueDay: due, updatedAt: new Date() }
           transaction.update(doc.ref, update as FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData>)
         }
       })
       await notifyWorkspaceFinancialEvent({ workspaceId, actorUserId: session.user.id, kind: 'updated', entryType: 'despesa', description: String(dataToUpdate.description || debitDoc.data()?.description || ''), entryId: debitId })
-      return NextResponse.json({ message: 'Data de vencimento atualizada na ocorrência atual e nas próximas.', updatedCount: targetDocs.length }, { status: 200 })
+      return NextResponse.json({ message: 'Dia de vencimento atualizado na ocorrência atual e nas próximas.', updatedCount: targetDocs.length }, { status: 200 })
     }
 
     if (updateData.date) {

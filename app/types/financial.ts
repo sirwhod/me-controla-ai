@@ -14,7 +14,8 @@ export interface Debit {
   description: string;
   value: number;
   date: Date | null; // Convertido de Timestamp para Date na API
-  dueDate?: Date | null; // Data de vencimento para despesas fixas
+  dueDay?: number | null; // Dia de vencimento para despesas fixas
+  dueDate?: Date | null; // Compatibilidade com registros legados
   month: string; // Ex: "junho"
   year: number; // Ex: 2025
   type: 'Comum' | 'Fixo' | 'Assinatura' | 'Parcelamento'; // Tipos de débito
@@ -54,7 +55,7 @@ export const createDebitSchema = z.object({
   description: z.string().trim().min(1, { message: 'A descrição do débito é obrigatória.' }).max(255, { message: 'Descrição não pode exceder 255 caracteres.' }),
   value: z.number().positive({ message: 'O valor do débito deve ser positivo.' }).max(1_000_000_000, { message: 'Valor excede o limite máximo.' }),
   date: z.string().optional().or(z.literal('')).nullable(),
-  dueDate: z.string().optional().or(z.literal('')).nullable(),
+  dueDay: z.number().int().min(1).max(31, { message: 'O dia de vencimento deve ser entre 1 e 31.' }).optional().nullable(),
   type: z.enum(['Comum', 'Fixo', 'Assinatura', 'Parcelamento'], {
     errorMap: () => ({ message: 'Tipo de débito inválido.' }),
   }).optional(),
@@ -73,8 +74,8 @@ export const createDebitSchema = z.object({
   totalInstallments: z.number().int().min(2, { message: 'Mínimo de 2 parcelas.' }).max(120, { message: 'Máximo de 120 parcelas permitido.' }).optional(),
   currentInstallment: z.number().int().min(1, { message: 'Número da parcela atual deve ser 1 ou maior.' }).optional(),
 }).superRefine((data, ctx) => {
-  if (data.type === 'Fixo' && !data.dueDate) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['dueDate'], message: 'A data de vencimento é obrigatória para despesas fixas.' })
+  if (data.type === 'Fixo' && !data.dueDay) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['dueDay'], message: 'O dia de vencimento é obrigatório para despesas fixas.' })
   }
 })
 
@@ -85,7 +86,7 @@ export const updateDebitSchema = z.object({
   description: z.string().trim().min(1, { message: 'A descrição não pode ser vazia.' }).max(255, { message: 'Descrição não pode exceder 255 caracteres.' }).optional(),
   value: z.number().positive({ message: 'O valor deve ser positivo.' }).max(1_000_000_000, { message: 'Valor excede o limite máximo.' }).optional(),
   date: z.string().datetime({ message: 'Data inválida.' }).optional(),
-  dueDate: z.string().datetime({ message: 'Data de vencimento inválida.' }).optional().nullable(),
+  dueDay: z.number().int().min(1).max(31, { message: 'O dia de vencimento deve ser entre 1 e 31.' }).optional().nullable(),
   bankId: z.string().optional().nullable(),
   creditCardId: z.string().optional().nullable(),
   paymentMethod: z.enum(['Crédito', 'Débito', 'Pix', 'Conta'], {
