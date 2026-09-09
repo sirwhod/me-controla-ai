@@ -50,6 +50,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
       createdAt: serializeFirestoreDate(debitData?.createdAt),
       updatedAt: serializeFirestoreDate(debitData?.updatedAt),
       startDate: serializeFirestoreDate(debitData?.startDate), 
+      dueDate: serializeFirestoreDate(debitData?.dueDate),
       endDate: serializeFirestoreDate(debitData?.endDate),     
     }
 
@@ -176,6 +177,41 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
     if (effectivePaymentMethod === 'Crédito' && effectiveCardId) {
       const cardDoc = await db.collection('workspaces').doc(workspaceId).collection('cards').doc(String(effectiveCardId)).get()
       effectiveClosingDay = cardDoc.data()?.closingDay
+    }
+
+    if (updateData.dueDate) dataToUpdate.dueDate = new Date(updateData.dueDate)
+    if (updateData.dueDate === null) dataToUpdate.dueDate = null
+    if (updateData.type && updateData.type !== 'Fixo') dataToUpdate.dueDate = null
+
+    if (updateData.dueDate && debitDoc.data()?.type === 'Fixo') {
+      const sourceDate = new Date(updateData.dueDate)
+      const source = debitDoc.data() || {}
+      const recurrenceId = source.recurrenceId
+      const groupDocs = recurrenceId
+        ? (await db.collection('workspaces').doc(workspaceId).collection('debits').where('recurrenceId', '==', recurrenceId).get()).docs
+        : [debitDoc]
+      const occurrenceDate = (value: unknown) => value && typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function' ? value.toDate() as Date : new Date(String(value))
+      const currentTime = occurrenceDate(source.date).getTime()
+      const targetDocs = groupDocs.filter((doc) => {
+        const data = doc.data() || {}
+        return occurrenceDate(data.date).getTime() >= currentTime && data.status !== 'paid'
+      })
+      await db.runTransaction(async (transaction) => {
+        const snapshots = []
+        for (const doc of targetDocs) {
+          const current = await transaction.get(doc.ref)
+          if (current.exists) snapshots.push({ doc, current })
+        }
+        for (const { doc, current } of snapshots) {
+          const occurrence = occurrenceDate(current.data()?.date)
+          const lastDay = new Date(occurrence.getFullYear(), occurrence.getMonth() + 1, 0).getDate()
+          const due = new Date(occurrence.getFullYear(), occurrence.getMonth(), Math.min(sourceDate.getDate(), lastDay), 12)
+          const update = doc.id === debitId ? { ...dataToUpdate, dueDate: due } : { dueDate: due, updatedAt: new Date() }
+          transaction.update(doc.ref, update as FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData>)
+        }
+      })
+      await notifyWorkspaceFinancialEvent({ workspaceId, actorUserId: session.user.id, kind: 'updated', entryType: 'despesa', description: String(dataToUpdate.description || debitDoc.data()?.description || ''), entryId: debitId })
+      return NextResponse.json({ message: 'Data de vencimento atualizada na ocorrência atual e nas próximas.', updatedCount: targetDocs.length }, { status: 200 })
     }
 
     if (updateData.date) {

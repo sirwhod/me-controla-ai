@@ -21,6 +21,7 @@ export function StepDetails({ form }: StepDetailsProps) {
   const debitType = form.watch("type")
   const isParcelado = debitType === "Parcelamento"
   const isFixoOuAssinatura = debitType === "Fixo" || debitType === "Assinatura"
+  const isFixo = debitType === "Fixo"
 
   const totalValue = form.watch("value") || 0
   const totalInstallments = form.watch("totalInstallments") || 2
@@ -94,6 +95,37 @@ export function StepDetails({ form }: StepDetailsProps) {
             </FormItem>
           )}
         />
+
+        {isFixo && (
+          <FormField
+            control={form.control}
+            name="dueDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel className="text-xs font-semibold">Data de Vencimento</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button variant="outline" className={cn("w-full pl-3 text-left font-normal h-10 bg-card/60 border-border/80", !field.value && "text-muted-foreground")}>
+                        {field.value ? format(new Date(field.value), "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value ? new Date(field.value) : undefined}
+                      onSelect={(date) => date && field.onChange(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12).toISOString())}
+                      captionLayout="dropdown"
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         {/* Campos exclusivos de Parcelamento */}
         {isParcelado && (

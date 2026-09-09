@@ -121,6 +121,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       description,
       value,
       date,
+      dueDate,
       type = 'Comum',
       bankId,
       creditCardId,
@@ -150,6 +151,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
     const startDateObj = parseSafeDate(startDate || date, now)
     const dateObj = parseSafeDate(date || startDate, now)
     const endDateObj = endDate && typeof endDate === 'string' && endDate.trim() !== '' ? parseSafeDate(endDate, now) : null
+    const dueDateObj = type === 'Fixo' && dueDate ? parseSafeDate(dueDate, now) : null
 
     const references = await validateWorkspaceReferences(workspaceId, [
       { collection: 'banks', id: bankId, field: 'bankId' },
@@ -181,6 +183,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       description: description.trim(),
       value,
       date: dateObj,
+      dueDate: dueDateObj,
       month,
       year,
       type: (type || 'Comum') as TypeDebit,
@@ -235,6 +238,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
           const debitForMonth = {
             ...newDebitData,
             date: new Date(current),
+            dueDate: new Date(current.getFullYear(), current.getMonth(), Math.min(dueDateObj?.getDate() || current.getDate(), new Date(current.getFullYear(), current.getMonth() + 1, 0).getDate()), 12),
             month: current.toLocaleString('pt-BR', { month: 'long' }),
             year: current.getFullYear(),
             createdAt: now,

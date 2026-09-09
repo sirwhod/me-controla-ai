@@ -61,6 +61,7 @@ export function NewDebitForm() {
       value: undefined,
       date: new Date().toISOString(),
       startDate: new Date().toISOString(),
+      dueDate: undefined,
       frequency: "monthly",
       totalInstallments: undefined,
       currentInstallment: undefined,
@@ -181,6 +182,7 @@ export function NewDebitForm() {
     if (currentStep === 2) {
       const type = form.getValues("type")
       const isParcelado = type === "Parcelamento"
+      const isFixo = type === "Fixo"
 
       const fieldsToValidate: Array<keyof CreateDebitProps> = ["description", "value"]
       if (isParcelado) {
@@ -188,6 +190,7 @@ export function NewDebitForm() {
       } else {
         fieldsToValidate.push("date")
       }
+      if (isFixo) fieldsToValidate.push("dueDate")
 
       const isValid = await form.trigger(fieldsToValidate)
       if (!isValid) {
@@ -281,6 +284,7 @@ export function NewDebitForm() {
         frequency: data.frequency || "monthly",
         startDate: data.startDate || data.date || new Date().toISOString(),
         date: data.date || data.startDate || new Date().toISOString(),
+        dueDate: data.type === "Fixo" ? data.dueDate : undefined,
         // Limpar campos residuais se não for parcelamento
         totalInstallments: isParcelamento ? data.totalInstallments : undefined,
         currentInstallment: isParcelamento ? data.currentInstallment : undefined,
