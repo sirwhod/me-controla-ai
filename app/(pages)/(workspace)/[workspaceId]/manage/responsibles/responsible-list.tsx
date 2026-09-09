@@ -56,7 +56,7 @@ export function ResponsibleListItem({ resp, month, year }: ResponsibleListItemPr
     .toUpperCase()
 
   return (
-    <div className="flex flex-col p-3.5 rounded-xl border border-border/60 bg-card/60 hover:bg-card/90 transition-all shadow-xs gap-3">
+    <div className="flex flex-col p-3.5 rounded-xl border border-border/60 bg-card/60 hover:bg-card/90 transition-colors shadow-xs gap-3">
       {/* 1. Identificação + Informações de Contato + Menu de Ações */}
       <div className="flex items-start justify-between gap-3 w-full">
         <div className="flex items-center gap-3 min-w-0 flex-1">

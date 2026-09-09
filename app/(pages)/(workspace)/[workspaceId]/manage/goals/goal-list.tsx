@@ -48,7 +48,7 @@ export function GoalListItem({ goal }: GoalListItemProps) {
     : "Sem prazo"
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/70 backdrop-blur-xs p-3.5 sm:p-4 shadow-xs flex flex-col gap-3 hover:bg-card/90 transition-all">
+    <div className="rounded-xl border border-border/60 bg-card/70 backdrop-blur-xs p-3.5 sm:p-4 shadow-xs flex flex-col gap-3 hover:bg-card/90 transition-colors">
       {/* 1. Header do Card: Ícone, Nome, Status e Menu de Ações */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -144,7 +144,7 @@ export function GoalListItem({ goal }: GoalListItemProps) {
           aria-valuemax={100}
         >
           <div
-            className={`h-full transition-all duration-500 rounded-full ${
+              className={`h-full transition-[width,background-color] duration-500 rounded-full ${
               isCompleted ? "bg-emerald-500" : "bg-primary"
             }`}
             style={{ width: `${percentage}%` }}

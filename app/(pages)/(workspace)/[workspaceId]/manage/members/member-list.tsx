@@ -39,7 +39,7 @@ export function MemberListItem({ member, isOwner, onRemove }: MemberListItemProp
   const canRemove = isOwner && !isSelfOrOwnerRole
 
   return (
-    <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-card/60 hover:bg-card/90 transition-all shadow-xs gap-3">
+    <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-card/60 hover:bg-card/90 transition-colors shadow-xs gap-3">
       {/* Identidade + Papel + E-mail */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <Avatar className="h-10 w-10 shrink-0 border border-border/50 shadow-2xs">
@@ -118,7 +118,7 @@ interface PendingInviteItemProps {
 
 export function PendingInviteItem({ invite, isOwner, onCancel }: PendingInviteItemProps) {
   return (
-    <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-card/60 hover:bg-card/90 transition-all shadow-xs gap-3">
+    <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-card/60 hover:bg-card/90 transition-colors shadow-xs gap-3">
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0 border border-amber-500/20">
           <Mail className="h-5 w-5" />

@@ -48,7 +48,7 @@ export function BankListItem({ bank }: BankListItemProps) {
   }
 
   return (
-    <div className="flex flex-col p-3.5 rounded-xl border border-border/60 bg-card/60 hover:bg-card/90 transition-all shadow-xs gap-3">
+    <div className="flex flex-col p-3.5 rounded-xl border border-border/60 bg-card/60 hover:bg-card/90 transition-colors shadow-xs gap-3">
       {/* 1. Instituição / Banco + Informações da Conta / Cartões + Menu de Ações */}
       <div className="flex items-start justify-between gap-3 w-full">
         <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -135,7 +135,7 @@ export function BankListItem({ bank }: BankListItemProps) {
         <button
           type="button"
           onClick={handleCopyPix}
-          className="flex items-center justify-between p-2.5 rounded-lg bg-background/70 border border-border/50 hover:bg-accent/50 transition-all text-left cursor-pointer gap-2"
+          className="flex items-center justify-between p-2.5 rounded-lg bg-background/70 border border-border/50 hover:bg-accent/50 transition-colors text-left cursor-pointer gap-2"
         >
           <div className="flex items-center gap-2 min-w-0">
             <div className="p-1 rounded-sm bg-emerald-500/10 text-emerald-500 shrink-0">

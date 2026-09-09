@@ -98,7 +98,7 @@ export function DataTable<
 
         <div className="flex items-center gap-2 justify-between sm:justify-end w-full sm:w-auto">
           {/* Quick Filter Tabs */}
-          <div className="inline-flex rounded-lg border border-border/70 p-0.5 bg-card/60 w-full sm:w-auto justify-between sm:justify-start">
+          <div className="inline-flex rounded-lg border border-border/70 p-0.5 bg-card/60 w-full sm:w-auto justify-between sm:justify-start" role="group" aria-label="Filtrar responsáveis por saldo">
             <button
               type="button"
               onClick={() => setBalanceStatusFilter("all")}

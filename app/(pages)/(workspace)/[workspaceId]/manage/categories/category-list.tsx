@@ -67,7 +67,7 @@ export function CategoryListItem({ category }: CategoryListItemProps) {
   }
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-card/60 hover:bg-card/90 transition-all shadow-xs gap-3">
+    <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-card/60 hover:bg-card/90 transition-colors shadow-xs gap-3">
       {/* Ícone + Nome + Badge de Tipo */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20 shadow-2xs">
