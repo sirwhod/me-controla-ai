@@ -72,7 +72,8 @@ export function DataTable<TData extends Bank, TValue>({
         <div className="relative flex-1 w-full sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar banco ou conta..."
+            aria-label="Buscar bancos e contas"
+            placeholder="Buscar bancos e contas…"
             value={searchValue}
             onChange={(event) =>
               table.getColumn("name")?.setFilterValue(event.target.value)
