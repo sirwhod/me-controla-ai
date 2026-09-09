@@ -555,13 +555,13 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Desktop: 5 cards em grid equilibrado */}
-        <div className="hidden min-w-0 lg:grid gap-3 grid-cols-5">
+        {/* Desktop: saldo em destaque, indicadores secundários compactos */}
+        <div className="hidden min-w-0 lg:grid gap-3 grid-cols-4">
           {/* 1. Saldo / Balanço */}
-          <Card className="shadow-xs border-border/70 bg-card/70">
+          <Card className="col-span-2 shadow-xs border-primary/25 bg-primary/[0.035]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Balanço
+                Saldo do período
               </CardTitle>
               <div
                 className={`p-1.5 rounded-lg ${
@@ -587,12 +587,12 @@ export default function Page() {
                     {balance >= 0 ? (
                       <>
                         <TrendingUp className="h-3.5 w-3.5 text-emerald-500 inline" />
-                        <span className="text-emerald-500 font-medium">Superávit</span>
+                        <span className="text-emerald-500 font-medium">Saldo positivo</span>
                       </>
                     ) : (
                       <>
                         <TrendingDown className="h-3.5 w-3.5 text-rose-500 inline" />
-                        <span className="text-rose-500 font-medium">Déficit</span>
+                        <span className="text-rose-500 font-medium">Saldo negativo</span>
                       </>
                     )}
                   </p>
@@ -653,11 +653,11 @@ export default function Page() {
             </CardContent>
           </Card>
 
-          {/* 4. Fatura por cartão */}
+          {/* 4. Gastos no cartão */}
           <Card className="shadow-xs border-border/70 bg-card/70">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Cartão no período
+                Gastos no cartão
               </CardTitle>
               <div className="p-1.5 rounded-lg bg-violet-500/10 text-violet-500">
                 <CreditCard className="h-4 w-4" />
@@ -665,28 +665,20 @@ export default function Page() {
             </CardHeader>
             <CardContent>
               {isLoading || isCardsLoading ? (
-                <Skeleton className="h-36 w-full" />
+                <Skeleton className="h-14 w-full" />
               ) : cardBalances.length === 0 ? (
-                <div className="flex min-h-36 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border/70 bg-muted/10 p-3 text-center">
-                  <CreditCard className="h-6 w-6 text-muted-foreground/70" aria-hidden="true" />
-                  <p className="text-xs text-muted-foreground">Nenhum cartão cadastrado nesta caixinha.</p>
-                  <Link href={`${prefix}/manage/cards/new`}><Button variant="outline" size="sm" className="h-7 text-xs">Cadastrar cartão</Button></Link>
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed border-border/70 bg-muted/10 p-2.5">
+                  <p className="text-xs text-muted-foreground">Nenhum cartão cadastrado.</p>
+                  <Link href={`${prefix}/manage/cards/new`}><Button variant="outline" size="sm" className="h-7 text-xs">Cadastrar</Button></Link>
                 </div>
               ) : (
                 <>
-                  <div className="flex flex-col gap-2">
-                    <div className="relative aspect-[1.586/1] w-full overflow-hidden rounded-xl p-3 text-white shadow-sm" style={{ backgroundColor: selectedCard.card.color || "#6366f1" }}>
-                      <div className="pointer-events-none absolute -right-8 -bottom-8 size-28 rounded-full bg-white/10 blur-xl" />
-                      <div className="relative flex h-full flex-col justify-between">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0"><p className="truncate text-[10px] font-semibold uppercase tracking-wider text-white/80">{selectedCard.card.bankName || "Banco emissor"}</p><p className="truncate text-sm font-bold">{selectedCard.card.name}</p></div>
-                          <CreditCard className="shrink-0 text-white/90" />
-                        </div>
-                        <div className="size-7 rounded-md border border-amber-400/50 bg-amber-300/80 shadow-inner" />
-                        <div className="flex items-end justify-between gap-2"><p className="font-mono text-[10px] tracking-wide">•••• {selectedCard.card.last4Digits || "••••"}</p><p className="text-right text-sm font-bold">{formatCurrency(selectedCard.total)}</p></div>
-                      </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium text-muted-foreground">{selectedCard.card.name}</p>
+                      <p className="mt-1 text-lg font-bold text-violet-500">{formatCurrency(creditCardTotal)}</p>
                     </div>
-                    <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center gap-1">
                       <Button variant="ghost" size="icon" aria-label="Cartão anterior" onClick={() => setSelectedCardIndex((index) => (index - 1 + cardBalances.length) % cardBalances.length)}><ChevronLeft /></Button>
                       <span className="text-xs text-muted-foreground">{selectedCardIndex + 1}/{cardBalances.length}</span>
                       <Button variant="ghost" size="icon" aria-label="Próximo cartão" onClick={() => setSelectedCardIndex((index) => (index + 1) % cardBalances.length)}><ChevronRight /></Button>
@@ -697,11 +689,11 @@ export default function Page() {
             </CardContent>
           </Card>
 
-          {/* 5. Taxa de Economia */}
+          {/* 5. Taxa de sobra */}
           <Card className="shadow-xs border-border/70 bg-card/70">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Taxa de poupança
+                Taxa de sobra
               </CardTitle>
               <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500">
                 <Target className="h-4 w-4" />
@@ -716,7 +708,7 @@ export default function Page() {
                     {savingsRate > 0 ? `${savingsRate}%` : "0%"}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {savingsRate > 0 ? "Guardado da renda" : "Sem sobra no período"}
+                    {savingsRate > 0 ? "Da renda disponível" : "Sem sobra no período"}
                   </p>
                 </>
               )}
@@ -733,10 +725,10 @@ export default function Page() {
               <div>
                 <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-primary" />
-                  Evolução Financeira Mensal ({yearFilter || anoAtual})
+                  Evolução do ano de {yearFilter || anoAtual}
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Comparativo de receitas (verde) vs despesas (vermelho)
+                  Comparativo anual; os indicadores acima consideram o período selecionado.
                 </CardDescription>
               </div>
               <div className="flex items-center gap-3 text-xs">
