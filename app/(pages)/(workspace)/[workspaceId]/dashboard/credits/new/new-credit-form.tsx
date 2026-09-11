@@ -154,6 +154,18 @@ export function NewCreditForm() {
     mutationFn: createCredit,
   })
 
+  useEffect(() => {
+    if (!form.formState.isDirty || isSubmitting) return
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ""
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [form.formState.isDirty, isSubmitting])
+
   // Validação por etapa para avançar
   const handleNextStep = async () => {
     if (currentStep === 1) {
