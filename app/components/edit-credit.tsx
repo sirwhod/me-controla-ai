@@ -40,6 +40,7 @@ import { createBank } from "@/app/http/banks/create-bank"
 import { getResponsibles, createResponsible } from "@/app/http/responsibles"
 import { PersonResponsible } from "@/app/types/financial"
 import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
+import { useUnsavedChangesGuard } from "@/app/hooks/use-unsaved-changes-guard"
 
 interface EditCreditProps {
   credit: Credit
@@ -100,6 +101,8 @@ export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) 
       toast.error(err.message || "Erro ao atualizar receita.")
     },
   })
+
+  useUnsavedChangesGuard(form.formState.isDirty, isPending)
 
   const onSubmit = async (data: UpdateCreditProps) => {
     if (!workspaceActive) return
@@ -171,7 +174,7 @@ export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) 
                 <FormItem>
                   <FormLabel>Descrição</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Salário, Venda, Freelance..." {...field} />
+                    <Input placeholder="Ex.: Salário, venda, freelance…" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

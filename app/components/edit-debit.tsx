@@ -41,6 +41,7 @@ import { DynamicIcon, type IconName } from "lucide-react/dynamic"
 import { createCategory } from "@/app/http/categories/create-category"
 import { createBank } from "@/app/http/banks/create-bank"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
+import { useUnsavedChangesGuard } from "@/app/hooks/use-unsaved-changes-guard"
 
 interface EditDebitProps {
   debit: Debit
@@ -113,6 +114,8 @@ export function EditDebit({ debit, asDropdownItem = false, trigger }: EditDebitP
       toast.error(err.message || "Erro ao atualizar despesa.")
     },
   })
+
+  useUnsavedChangesGuard(form.formState.isDirty, isPending)
 
   const onSubmit = async (data: UpdateDebitProps) => {
     if (!workspaceActive) return
@@ -208,7 +211,7 @@ export function EditDebit({ debit, asDropdownItem = false, trigger }: EditDebitP
                 <FormItem>
                   <FormLabel>Descrição</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Supermercado..." {...field} />
+                    <Input placeholder="Ex.: Supermercado, aluguel, farmácia…" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

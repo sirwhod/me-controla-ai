@@ -48,6 +48,7 @@ import {
 } from "@/app/types/financial"
 import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
 import { cn } from "@/app/lib/utils"
+import { useUnsavedChangesGuard } from "@/app/hooks/use-unsaved-changes-guard"
 
 interface EditCreditFormProps {
   credit: Credit
@@ -114,6 +115,8 @@ export function EditCreditForm({ credit }: EditCreditFormProps) {
       toast.error(err.message || "Erro ao salvar alterações da receita.")
     },
   })
+
+  useUnsavedChangesGuard(form.formState.isDirty, isPending)
 
   const handleCurrencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/\D/g, "")
