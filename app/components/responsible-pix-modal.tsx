@@ -27,6 +27,7 @@ import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queri
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import Link from "@/app/components/context-link"
 import { createPixPayload } from "@/app/lib/pix"
+import { dateForFinancialPeriod } from "@/app/lib/financial-period"
 
 interface ResponsiblePixModalProps {
   responsibleId: string
@@ -93,6 +94,7 @@ export function ResponsiblePixModal({
   const payable = details?.payable ?? 0
   const netBalance = details?.netBalance ?? outstandingReceivable - payable
   const settlementAmount = Math.max(netBalance, 0)
+  const settlementDate = useMemo(() => dateForFinancialPeriod(month, year), [month, year])
   const periodDescription = `Acerto ${month && month !== 'todos' ? month : new Date().toLocaleString('pt-BR', { month: 'long' })} ${year && year !== 'todos' ? year : new Date().getFullYear()}`
   const pixPayload = useMemo(() => {
     if (!selectedBank?.pixKey || settlementAmount <= 0) return ''
@@ -156,7 +158,7 @@ export function ResponsiblePixModal({
         workspaceId: workspaceActive.id,
         description: `Acerto ${month && month !== 'todos' ? month : new Date().toLocaleString('pt-BR', { month: 'long' })} ${year && year !== 'todos' ? year : new Date().getFullYear()}`,
         value: settlementAmount,
-        date: new Date().toISOString(),
+        date: settlementDate.toISOString(),
         paymentMethod: "Pix",
         bankId: selectedBankId || null,
         responsibleId: responsibleId,
