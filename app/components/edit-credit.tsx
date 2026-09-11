@@ -291,7 +291,7 @@ export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) 
                       }))}
                       value={field.value}
                       onChange={field.onChange}
-                      placeholder="Selecione responsável..."
+                      placeholder="Selecione responsável…"
                       searchPlaceholder="Buscar ou criar responsável..."
                       createLabel="Criar responsável"
                       onCreateNew={handleQuickCreateResponsible}

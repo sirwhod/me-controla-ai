@@ -246,7 +246,7 @@ export function EditDebit({ debit, asDropdownItem = false, trigger }: EditDebitP
                     <FormItem>
                       <FormLabel>Dia de Vencimento</FormLabel>
                       <FormControl>
-                        <Input type="number" min={1} max={31} placeholder="Ex: 10" value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)} />
+                        <Input type="number" min={1} max={31} placeholder="Ex.: 10" value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -362,7 +362,7 @@ export function EditDebit({ debit, asDropdownItem = false, trigger }: EditDebitP
                               form.setValue("bankId", selectedCard.bankId)
                             }
                           }}
-                          placeholder="Selecione o cartão..."
+                          placeholder="Selecione o cartão…"
                           searchPlaceholder="Buscar cartão..."
                         />
                       </FormControl>
@@ -412,7 +412,7 @@ export function EditDebit({ debit, asDropdownItem = false, trigger }: EditDebitP
                       }))}
                       value={field.value}
                       onChange={field.onChange}
-                      placeholder="Selecione responsável..."
+                      placeholder="Selecione responsável…"
                       searchPlaceholder="Buscar ou criar responsável..."
                       createLabel="Criar responsável"
                       onCreateNew={handleQuickCreateResponsible}
