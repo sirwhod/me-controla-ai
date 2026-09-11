@@ -189,7 +189,7 @@ export default function Page() {
           <Separator orientation="vertical" className="mr-1 md:mr-2 h-4" />
           <Breadcrumb>
             <BreadcrumbList className="text-xs sm:text-sm">
-              <BreadcrumbItem>
+              <BreadcrumbItem className="lg:hidden">
                 <BreadcrumbPage>
                   {isWorkspaceLoading || !workspaceActive ? (
                     <Skeleton className="h-5 w-32 md:w-48" />
