@@ -1,7 +1,8 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 import { useContextualRouter as useRouter } from "@/app/hooks/use-contextual-router"
+import { useUnsavedChangesGuard } from "@/app/hooks/use-unsaved-changes-guard"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -75,7 +76,7 @@ export function NewDebitForm() {
   })
 
   // Inicializa data com base no mês/ano ativo
-  useEffect(() => {
+  React.useEffect(() => {
     const now = new Date()
     const isCurrentMonthAndYear = now.getMonth() === monthIndex && now.getFullYear() === year
     const initialDay = isCurrentMonthAndYear ? now.getDate() : 1
@@ -167,17 +168,7 @@ export function NewDebitForm() {
     mutationFn: createDebit,
   })
 
-  useEffect(() => {
-    if (!form.formState.isDirty || isSubmitting) return
-
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault()
-      event.returnValue = ""
-    }
-
-    window.addEventListener("beforeunload", handleBeforeUnload)
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
-  }, [form.formState.isDirty, isSubmitting])
+  useUnsavedChangesGuard(form.formState.isDirty, isSubmitting)
 
   // Validação por etapa para avançar
   const handleNextStep = async () => {
