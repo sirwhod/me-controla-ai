@@ -73,7 +73,7 @@ export function StepType({ selectedType, onSelectType }: StepTypeProps) {
               aria-checked={isSelected}
               onClick={() => onSelectType(opt.type)}
               className={cn(
-                "flex flex-col items-start p-4 rounded-xl border text-left transition-all duration-200 relative overflow-hidden group",
+                "flex flex-col items-start p-4 rounded-xl border text-left transition-colors duration-200 relative overflow-hidden group",
                 "bg-card/70 hover:bg-accent/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary",
                 isSelected
                   ? "border-primary bg-primary/10 ring-2 ring-primary/30 shadow-xs"
@@ -86,7 +86,7 @@ export function StepType({ selectedType, onSelectType }: StepTypeProps) {
                 </div>
                 <div
                   className={cn(
-                    "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all",
+                    "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors",
                     isSelected ? "border-primary bg-primary" : "border-muted-foreground/40"
                   )}
                 >

@@ -95,7 +95,7 @@ export function StepCreditPayment({
                       aria-checked={isSelected}
                       onClick={() => field.onChange(method.value)}
                       className={cn(
-                        "flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all duration-200 gap-1.5",
+                        "flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-colors duration-200 gap-1.5",
                         "bg-card/70 hover:bg-accent/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary",
                         isSelected
                           ? "border-primary bg-primary/10 ring-2 ring-primary/30 shadow-xs text-foreground font-semibold"
@@ -128,8 +128,8 @@ export function StepCreditPayment({
                     items={categoryItems}
                     value={field.value}
                     onChange={field.onChange}
-                    placeholder="Selecione categoria..."
-                    searchPlaceholder="Buscar ou criar categoria..."
+                    placeholder="Selecione categoria…"
+                    searchPlaceholder="Buscar ou criar categoria…"
                     createLabel="Criar categoria"
                     onCreateNew={onQuickCreateCategory}
                     disabled={isCategoriesLoading}
@@ -151,8 +151,8 @@ export function StepCreditPayment({
                     items={bankItems}
                     value={field.value}
                     onChange={field.onChange}
-                    placeholder="Selecione o banco..."
-                    searchPlaceholder="Buscar ou criar banco..."
+                    placeholder="Selecione o banco…"
+                    searchPlaceholder="Buscar ou criar banco…"
                     createLabel="Criar banco"
                     onCreateNew={onQuickCreateBank}
                     disabled={isBanksLoading}
@@ -176,8 +176,8 @@ export function StepCreditPayment({
                   items={responsibleItems}
                   value={field.value}
                   onChange={field.onChange}
-                  placeholder="Selecione ou crie um responsável..."
-                  searchPlaceholder="Buscar ou criar responsável..."
+                  placeholder="Selecione ou crie um responsável…"
+                  searchPlaceholder="Buscar ou criar responsável…"
                   createLabel="Criar responsável"
                   onCreateNew={onQuickCreateResponsible}
                   disabled={isResponsiblesLoading}

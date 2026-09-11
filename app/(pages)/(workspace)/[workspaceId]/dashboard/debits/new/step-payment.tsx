@@ -117,7 +117,7 @@ export function StepPayment({
                         }
                       }}
                       className={cn(
-                        "flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all duration-200 gap-1.5 cursor-pointer",
+                        "flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-colors duration-200 gap-1.5 cursor-pointer",
                         "bg-card/70 hover:bg-accent/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary",
                         isSelected
                           ? "border-primary bg-primary/10 ring-2 ring-primary/30 shadow-xs text-foreground font-semibold"
@@ -150,8 +150,8 @@ export function StepPayment({
                     items={categoryItems}
                     value={field.value}
                     onChange={field.onChange}
-                    placeholder="Selecione categoria..."
-                    searchPlaceholder="Buscar ou criar categoria..."
+                    placeholder="Selecione categoria…"
+                    searchPlaceholder="Buscar ou criar categoria…"
                     createLabel="Criar categoria"
                     onCreateNew={onQuickCreateCategory}
                     disabled={isCategoriesLoading}
@@ -180,8 +180,8 @@ export function StepPayment({
                           form.setValue("bankId", selectedCard.bankId)
                         }
                       }}
-                      placeholder="Selecione o cartão..."
-                      searchPlaceholder="Buscar cartão..."
+                      placeholder="Selecione o cartão…"
+                      searchPlaceholder="Buscar cartão…"
                       disabled={isCardsLoading}
                     />
                   </FormControl>
@@ -201,8 +201,8 @@ export function StepPayment({
                       items={bankItems}
                       value={field.value}
                       onChange={field.onChange}
-                      placeholder="Selecione o banco..."
-                      searchPlaceholder="Buscar ou criar banco..."
+                      placeholder="Selecione o banco…"
+                      searchPlaceholder="Buscar ou criar banco…"
                       createLabel="Criar banco"
                       onCreateNew={onQuickCreateBank}
                       disabled={isBanksLoading}
@@ -227,8 +227,8 @@ export function StepPayment({
                   items={responsibleItems}
                   value={field.value}
                   onChange={field.onChange}
-                  placeholder="Selecione ou crie um responsável..."
-                  searchPlaceholder="Buscar ou criar responsável..."
+                  placeholder="Selecione ou crie um responsável…"
+                  searchPlaceholder="Buscar ou criar responsável…"
                   createLabel="Criar responsável"
                   onCreateNew={onQuickCreateResponsible}
                   disabled={isResponsiblesLoading}

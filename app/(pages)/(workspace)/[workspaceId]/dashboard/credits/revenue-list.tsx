@@ -57,7 +57,7 @@ export function RevenueListItem({ credit }: RevenueListItemProps) {
   const formattedValue = formatCurrency(Number(credit.value) || 0)
 
   return (
-    <div className="flex min-w-0 max-w-full flex-col gap-2.5 overflow-hidden rounded-xl border border-border/60 bg-card/60 p-3.5 shadow-xs transition-all hover:bg-card/90">
+    <div className="flex min-w-0 max-w-full flex-col gap-2.5 overflow-hidden rounded-xl border border-border/60 bg-card/60 p-3.5 shadow-xs transition-colors hover:bg-card/90">
       {/* Linha 1: Ícone + Descrição + Menu de Ações (3 pontinhos) */}
       <div className="flex items-start justify-between gap-2 w-full">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">

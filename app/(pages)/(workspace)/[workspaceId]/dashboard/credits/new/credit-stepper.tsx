@@ -23,7 +23,7 @@ export function CreditStepper({ currentStep, steps, onStepClick }: CreditStepper
         <div className="absolute left-6 right-6 top-4 -translate-y-1/2 h-0.5 bg-border/60 z-0" />
         {/* Linha conectora de progresso preenchida */}
         <div
-          className="absolute left-6 top-4 -translate-y-1/2 h-0.5 bg-primary transition-all duration-300 z-0"
+          className="absolute left-6 top-4 -translate-y-1/2 h-0.5 bg-primary transition-[width] duration-300 z-0"
           style={{
             width: `${((Math.min(currentStep, steps.length) - 1) / (steps.length - 1)) * 100}%`,
             maxWidth: "calc(100% - 48px)",
@@ -59,7 +59,7 @@ export function CreditStepper({ currentStep, steps, onStepClick }: CreditStepper
             >
               <div
                 className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-200 shadow-xs",
+                  "w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-colors duration-200 shadow-xs",
                   isCompleted && "bg-primary text-primary-foreground",
                   isCurrent && "bg-primary text-primary-foreground ring-4 ring-primary/20 scale-110",
                   !isCompleted && !isCurrent && "bg-card border border-border/80 text-muted-foreground"

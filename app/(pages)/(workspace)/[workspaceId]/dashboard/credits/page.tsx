@@ -41,7 +41,7 @@ import { SummaryKpiBar } from "@/app/components/summary-kpi-bar"
 import { BottomSheetFilters } from "@/app/components/ui/bottom-sheet-filters"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
-import { EmptyState } from "@/app/components/states/empty-state"
+import { ConfigEmptyState } from "@/app/components/states/config-empty-state"
 import { PageHeader } from "@/app/components/page-header"
 import { isFinancialIconName } from "@/app/lib/icons-catalog"
 import { queryKeys } from "@/app/lib/query-keys"
@@ -276,7 +276,6 @@ export default function Page() {
           <div className="flex items-center justify-between gap-3">
             <PageHeader title="Receitas" description="Acompanhe e gerencie todas as entradas financeiras desta caixinha." icon={<HandCoins className="size-5 shrink-0 text-success md:size-6" aria-hidden="true" />} />
 
-            <CreateCredit />
           </div>
 
           {/* Filtros em linha no Desktop */}
@@ -448,7 +447,7 @@ export default function Page() {
               onRetry={() => refetch()}
             />
           ) : filteredCredits.length === 0 ? (
-            <EmptyState
+            <ConfigEmptyState
               icon={HandCoins}
               title={hasActiveFilters ? "Nenhuma receita encontrada" : "Nenhuma receita neste período"}
               description={hasActiveFilters
@@ -456,7 +455,7 @@ export default function Page() {
                 : "Registre uma receita para começar a acompanhar suas entradas."}
               action={hasActiveFilters
                 ? <Button variant="outline" onClick={clearFilters}>Limpar filtros</Button>
-                : <CreateCredit />}
+                : undefined}
             />
           ) : (
             <DataTable

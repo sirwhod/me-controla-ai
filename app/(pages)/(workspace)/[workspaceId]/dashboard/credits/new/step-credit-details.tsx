@@ -98,7 +98,7 @@ export function StepCreditDetails({ form }: StepCreditDetailsProps) {
               <FormLabel className="text-xs font-semibold">Descrição</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Ex: Salário, Freelance, Rendimentos, Aluguel..."
+                  placeholder="Ex.: Salário, freelance, rendimentos…"
                   className="h-10 bg-card/60 border-border/80"
                   {...field}
                 />

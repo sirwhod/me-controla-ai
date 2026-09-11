@@ -22,12 +22,11 @@ import {
 } from "@/app/components/ui/table"
 import { useState } from "react"
 import { DataTablePagination } from "@/app/components/table/pagination"
-import { EmptyState } from "@/app/components/states/empty-state"
+import { ConfigEmptyState } from "@/app/components/states/config-empty-state"
 import { Debit } from "@/app/types/financial"
 import { Receipt, RotateCcw } from "lucide-react"
 import { ExpenseList, ExpenseListItem } from "./expense-list"
 import { Button } from "@/app/components/ui/button"
-import { CreateDebit } from "@/app/components/create-debit"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -73,7 +72,7 @@ export function DataTable<TData extends Debit, TValue>({
             ))}
           </ExpenseList>
         ) : hasActiveFilters ? (
-          <EmptyState
+          <ConfigEmptyState
             icon={Receipt}
             title="Nenhuma despesa encontrada"
             description="Não encontramos despesas para os filtros selecionados."
@@ -93,11 +92,10 @@ export function DataTable<TData extends Debit, TValue>({
             }
           />
         ) : (
-          <EmptyState
+          <ConfigEmptyState
             icon={Receipt}
             title="Nenhuma despesa cadastrada"
             description="Comece registrando sua primeira despesa neste período."
-            action={<CreateDebit />}
           />
         )}
       </div>
@@ -145,7 +143,7 @@ export function DataTable<TData extends Debit, TValue>({
                   className="h-32 text-center"
                 >
                   {hasActiveFilters ? (
-                    <EmptyState
+                    <ConfigEmptyState
                       icon={Receipt}
                       title="Nenhuma despesa encontrada"
                       description="Não há lançamentos correspondentes aos filtros aplicados."
@@ -165,11 +163,10 @@ export function DataTable<TData extends Debit, TValue>({
                       }
                     />
                   ) : (
-                    <EmptyState
+                    <ConfigEmptyState
                       icon={Receipt}
                       title="Nenhuma despesa cadastrada"
                       description="Não há lançamentos de despesas para o período selecionado."
-                      action={<CreateDebit />}
                     />
                   )}
                 </TableCell>

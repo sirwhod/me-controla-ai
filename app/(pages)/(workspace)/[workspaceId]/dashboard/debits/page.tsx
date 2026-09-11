@@ -41,7 +41,7 @@ import { SummaryKpiBar } from "@/app/components/summary-kpi-bar"
 import { BottomSheetFilters } from "@/app/components/ui/bottom-sheet-filters"
 import { LoadingState } from "@/app/components/states/loading-state"
 import { ErrorState } from "@/app/components/states/error-state"
-import { EmptyState } from "@/app/components/states/empty-state"
+import { ConfigEmptyState } from "@/app/components/states/config-empty-state"
 import { PageHeader } from "@/app/components/page-header"
 import { isFinancialIconName } from "@/app/lib/icons-catalog"
 import { queryKeys } from "@/app/lib/query-keys"
@@ -272,7 +272,6 @@ export default function Page() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <PageHeader title="Despesas" description="Gerencie lançamentos de despesas, compras no crédito, assinaturas e parcelamentos." icon={<Receipt className="size-5 shrink-0 text-destructive md:size-6" aria-hidden="true" />} />
 
-            <CreateDebit />
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 bg-card/60 p-3 rounded-xl border border-border/60">
@@ -447,7 +446,7 @@ export default function Page() {
               onRetry={() => refetch()}
             />
           ) : filteredDebits.length === 0 ? (
-            <EmptyState
+            <ConfigEmptyState
               icon={Receipt}
               title={hasActiveFilters ? "Nenhuma despesa encontrada" : "Nenhuma despesa neste período"}
               description={hasActiveFilters
@@ -455,7 +454,7 @@ export default function Page() {
                 : "Registre uma despesa para começar a acompanhar seus gastos."}
               action={hasActiveFilters
                 ? <Button variant="outline" onClick={clearFilters}>Limpar filtros</Button>
-                : <CreateDebit />}
+                : undefined}
             />
           ) : (
             <DataTable

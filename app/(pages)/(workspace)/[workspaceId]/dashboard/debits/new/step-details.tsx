@@ -213,7 +213,7 @@ export function StepDetails({ form }: StepDetailsProps) {
               <FormLabel className="text-xs font-semibold">Descrição</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Ex: Supermercado, Aluguel, Farmácia..."
+                  placeholder="Ex.: Supermercado, aluguel, farmácia…"
                   className="h-10 bg-card/60 border-border/80"
                   {...field}
                 />

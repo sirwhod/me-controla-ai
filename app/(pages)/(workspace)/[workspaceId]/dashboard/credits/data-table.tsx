@@ -22,13 +22,12 @@ import {
 } from "@/app/components/ui/table"
 import { useState } from "react"
 import { DataTablePagination } from "@/app/components/table/pagination"
-import { EmptyState } from "@/app/components/states/empty-state"
+import { ConfigEmptyState } from "@/app/components/states/config-empty-state"
 import { Credit } from "@/app/types/financial"
 import { HandCoins, RotateCcw, Search } from "lucide-react"
 import { RevenueList, RevenueListItem } from "./revenue-list"
 import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
-import { CreateCredit } from "@/app/components/create-credit"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -78,7 +77,8 @@ export function DataTable<TData extends Credit, TValue>({
       <div className="relative w-full sm:max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar receitas..."
+          aria-label="Buscar receitas"
+          placeholder="Buscar receitas…"
           value={searchValue}
           onChange={(event) =>
             table.getColumn("description")?.setFilterValue(event.target.value)
@@ -96,7 +96,7 @@ export function DataTable<TData extends Credit, TValue>({
             ))}
           </RevenueList>
         ) : isFiltering ? (
-          <EmptyState
+          <ConfigEmptyState
             icon={HandCoins}
             title="Nenhuma receita encontrada"
             description="Não encontramos receitas para os filtros ou busca aplicados."
@@ -114,11 +114,10 @@ export function DataTable<TData extends Credit, TValue>({
             }
           />
         ) : (
-          <EmptyState
+          <ConfigEmptyState
             icon={HandCoins}
             title="Nenhuma receita cadastrada"
             description="Comece registrando sua primeira receita neste período."
-            action={<CreateCredit />}
           />
         )}
       </div>
@@ -166,7 +165,7 @@ export function DataTable<TData extends Credit, TValue>({
                   className="h-32 text-center"
                 >
                   {isFiltering ? (
-                    <EmptyState
+                    <ConfigEmptyState
                       icon={HandCoins}
                       title="Nenhuma receita encontrada"
                       description="Não há lançamentos correspondentes aos filtros ou busca aplicados."
@@ -184,11 +183,10 @@ export function DataTable<TData extends Credit, TValue>({
                       }
                     />
                   ) : (
-                    <EmptyState
+                    <ConfigEmptyState
                       icon={HandCoins}
                       title="Nenhuma receita cadastrada"
                       description="Não há lançamentos de receitas para o período selecionado."
-                      action={<CreateCredit />}
                     />
                   )}
                 </TableCell>
