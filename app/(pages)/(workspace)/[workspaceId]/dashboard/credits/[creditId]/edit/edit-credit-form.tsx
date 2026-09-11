@@ -242,7 +242,7 @@ export function EditCreditForm({ credit }: EditCreditFormProps) {
                   <FormLabel className="text-xs font-semibold">Descrição do Lançamento *</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ex: Salário, Freelance, Venda..."
+                      placeholder="Ex.: Salário, freelance, venda…"
                       className="h-10 bg-background/80"
                       {...field}
                     />
@@ -270,7 +270,7 @@ export function EditCreditForm({ credit }: EditCreditFormProps) {
                     <Select value={field.value || "Pix"} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger className="h-10 bg-background/80">
-                          <SelectValue placeholder="Selecione a forma..." />
+                          <SelectValue placeholder="Selecione a forma…" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -295,7 +295,7 @@ export function EditCreditForm({ credit }: EditCreditFormProps) {
                     <Select value={field.value || "received"} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger className="h-10 bg-background/80">
-                          <SelectValue placeholder="Status..." />
+                          <SelectValue placeholder="Status…" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -336,7 +336,7 @@ export function EditCreditForm({ credit }: EditCreditFormProps) {
                         }))}
                         value={field.value || ""}
                         onChange={field.onChange}
-                        placeholder="Selecione a categoria..."
+                        placeholder="Selecione a categoria…"
                         createLabel="Criar nova categoria"
                         onCreateNew={async (name) => {
                           if (!workspaceActive) return null
@@ -372,7 +372,7 @@ export function EditCreditForm({ credit }: EditCreditFormProps) {
                         }))}
                         value={field.value || ""}
                         onChange={field.onChange}
-                        placeholder="Selecione o banco de destino..."
+                        placeholder="Selecione o banco de destino…"
                         createLabel="Criar novo banco"
                         onCreateNew={async (name) => {
                           if (!workspaceActive) return null
@@ -410,7 +410,7 @@ export function EditCreditForm({ credit }: EditCreditFormProps) {
                       }))}
                       value={field.value || ""}
                       onChange={field.onChange}
-                      placeholder="Nenhum responsável vinculado..."
+                      placeholder="Nenhum responsável vinculado…"
                       createLabel="Cadastrar nova pessoa"
                       onCreateNew={async (name) => {
                         if (!workspaceActive) return null

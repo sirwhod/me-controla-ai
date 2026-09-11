@@ -283,7 +283,7 @@ export default function Page() {
             <div className="flex flex-wrap items-center gap-2">
               {/* Responsável */}
               <Select value={responsibleFilter} onValueChange={setResponsibleFilter}>
-                <SelectTrigger className="w-40 h-9 text-xs font-medium">
+                <SelectTrigger aria-label="Filtrar receitas por responsável" className="w-40 h-9 text-xs font-medium">
                   <div className="flex items-center gap-1.5 truncate">
                     <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <SelectValue placeholder="Responsável" />
@@ -302,7 +302,7 @@ export default function Page() {
 
               {/* Tipo */}
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-36 h-9 text-xs font-medium">
+                <SelectTrigger aria-label="Filtrar receitas por tipo" className="w-36 h-9 text-xs font-medium">
                   <div className="flex items-center gap-1.5 truncate">
                     <Layers className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <SelectValue placeholder="Tipo" />
@@ -320,7 +320,7 @@ export default function Page() {
 
               {/* Categoria */}
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-40 h-9 text-xs font-medium">
+                <SelectTrigger aria-label="Filtrar receitas por categoria" className="w-40 h-9 text-xs font-medium">
                   <div className="flex items-center gap-1.5 truncate">
                     <Tags className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <SelectValue placeholder="Categorias" />
@@ -343,7 +343,7 @@ export default function Page() {
 
               {/* Banco */}
               <Select value={bankFilter} onValueChange={setBankFilter}>
-                <SelectTrigger className="w-40 h-9 text-xs font-medium">
+                <SelectTrigger aria-label="Filtrar receitas por banco" className="w-40 h-9 text-xs font-medium">
                   <div className="flex items-center gap-1.5 truncate">
                     <Landmark className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <SelectValue placeholder="Bancos" />
@@ -372,7 +372,7 @@ export default function Page() {
 
               {/* Forma de Pagamento */}
               <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
-                <SelectTrigger className="w-36 h-9 text-xs font-medium">
+                <SelectTrigger aria-label="Filtrar receitas por forma de pagamento" className="w-36 h-9 text-xs font-medium">
                   <div className="flex items-center gap-1.5 truncate">
                     <CreditCard className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <SelectValue placeholder="Pagamento" />
