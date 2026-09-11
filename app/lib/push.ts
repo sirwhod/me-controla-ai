@@ -37,17 +37,5 @@ export async function processPushOutbox(limit = 20) {
 
 export async function sendPushNotification(userId: string, payload: { title: string; body: string; url?: string; notificationId?: string }) {
   const fcm = await sendFcmNotification(userId, payload)
-  const userSnapshot = await db.doc(`users/${userId}`).get()
-  if (userSnapshot.data()?.notificationPreferences?.pushEnabled === false) return { sent: 0, skipped: true }
-  const snap = await db.collection(`users/${userId}/pushSubscriptions`).get()
-  let sent = 0
-  for (const doc of snap.docs) {
-    const subscription = doc.data() as PushSubscriptionRecord
-    try { await webpush.sendNotification(subscription, JSON.stringify(payload)); sent++ }
-    catch (error: unknown) {
-      const statusCode = (error as { statusCode?: number }).statusCode
-      if (statusCode === 404 || statusCode === 410) await doc.ref.delete()
-    }
-  }
-  return { sent: fcm.sent + sent, fcmSent: fcm.sent, legacySent: sent, skipped: fcm.skipped && !publicKey }
+  return { sent: fcm.sent, fcmSent: fcm.sent, legacySent: 0, skipped: fcm.skipped }
 }

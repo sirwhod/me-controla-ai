@@ -10,6 +10,7 @@ if (!getApps().length) initializeApp()
 setGlobalOptions({ region: 'southamerica-east1', maxInstances: 1 })
 
 type Job = { userId: string; payload: { title: string; body: string; url?: string; notificationId?: string }; status?: string; attempts?: number }
+const MAX_PUSH_ATTEMPTS = 3
 
 const dayKey = (date = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(date)
 const dateOnly = (value: unknown) => { const d = value instanceof Date ? value : (value as { toDate?: () => Date })?.toDate?.() || new Date(String(value)); return Number.isNaN(d.getTime()) ? null : d }
@@ -37,6 +38,7 @@ async function runFinancialReminders() {
 async function sendJob(jobId: string, job: Job) {
   const db = getFirestore()
   const ref = db.collection('_pushOutbox').doc(jobId)
+  const attempt = Number(job.attempts || 0) + 1
   const claimed = await db.runTransaction(async transaction => {
     const snap = await transaction.get(ref)
     if (!snap.exists || snap.data()?.status !== 'pending') return false
@@ -52,6 +54,10 @@ async function sendJob(jobId: string, job: Job) {
       return
     }
     const devices = await db.collection(`users/${job.userId}/pushDevices`).where('enabled', '==', true).get()
+    if (devices.empty) {
+      await ref.update({ status: 'failed', sent: 0, attempts: attempt, lastError: 'Nenhum dispositivo FCM ativo para o usuário', terminal: true, updatedAt: new Date() })
+      return
+    }
     let sent = 0
     for (const device of devices.docs) {
       try {
@@ -63,9 +69,19 @@ async function sendJob(jobId: string, job: Job) {
         else console.error('FCM delivery failed', { jobId, deviceId: device.id, code })
       }
     }
-    await ref.update({ status: sent > 0 ? 'sent' : 'pending', sent, lastError: sent > 0 ? null : 'Nenhum dispositivo FCM ativo recebeu a mensagem', updatedAt: new Date() })
+    const delivered = sent > 0
+    const exhausted = attempt >= MAX_PUSH_ATTEMPTS
+    await ref.update({
+      status: delivered ? 'sent' : exhausted ? 'failed' : 'pending',
+      sent,
+      attempts: attempt,
+      lastError: delivered ? null : 'Nenhum dispositivo FCM ativo recebeu a mensagem',
+      terminal: !delivered && exhausted,
+      updatedAt: new Date(),
+    })
   } catch (error) {
-    await ref.update({ status: 'pending', lastError: error instanceof Error ? error.message : 'Erro desconhecido', updatedAt: new Date() })
+    const exhausted = attempt >= MAX_PUSH_ATTEMPTS
+    await ref.update({ status: exhausted ? 'failed' : 'pending', attempts: attempt, terminal: exhausted, lastError: error instanceof Error ? error.message : 'Erro desconhecido', updatedAt: new Date() })
     throw error
   }
 }
