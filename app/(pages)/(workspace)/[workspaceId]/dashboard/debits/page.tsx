@@ -21,7 +21,8 @@ import Link from "@/app/components/context-link"
 import { DataTable } from "./data-table"
 import { columns } from "./columns"
 import { CreateDebit } from "@/app/components/create-debit"
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
+import { useClearUrlFilters, useUrlFilterState } from "@/app/hooks/use-url-filter-state"
 import {
   Select,
   SelectContent,
@@ -92,11 +93,12 @@ export default function Page() {
   })
 
   // Estados dos filtros locais
-  const [categoryFilter, setCategoryFilter] = useState<string>("")
-  const [bankFilter, setBankFilter] = useState<string>("")
-  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("")
-  const [responsibleFilter, setResponsibleFilter] = useState<string>("")
-  const [typeFilter, setTypeFilter] = useState<string>("")
+  const [categoryFilter, setCategoryFilter] = useUrlFilterState("category")
+  const [bankFilter, setBankFilter] = useUrlFilterState("bank")
+  const [paymentMethodFilter, setPaymentMethodFilter] = useUrlFilterState("payment")
+  const [responsibleFilter, setResponsibleFilter] = useUrlFilterState("responsible")
+  const [typeFilter, setTypeFilter] = useUrlFilterState("type")
+  const clearUrlFilters = useClearUrlFilters(["category", "bank", "payment", "responsible", "type"])
 
   // Filtro local dos débitos
   const filteredDebits = useMemo(() => {
@@ -162,11 +164,7 @@ export default function Page() {
   )
 
   const clearFilters = () => {
-    setCategoryFilter("")
-    setBankFilter("")
-    setPaymentMethodFilter("")
-    setResponsibleFilter("")
-    setTypeFilter("")
+    clearUrlFilters()
   }
 
   const isLoading = isWorkspaceLoading || !workspaceActive || isDebitsLoading
