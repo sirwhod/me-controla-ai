@@ -10,6 +10,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/app/components/ui/button"
+import { Input } from "@/app/components/ui/input"
 import { Form } from "@/app/components/ui/form"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { useDateFilter } from "@/app/contexts/date-filter-context"
@@ -30,6 +31,7 @@ import {
   TypeDebit,
 } from "@/app/types/financial"
 import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
+import { uploadProof } from "@/app/http/proofs"
 import { IconName } from "lucide-react/dynamic"
 
 import { ExpenseStepper, StepItem } from "./expense-stepper"
@@ -52,6 +54,7 @@ export function NewDebitForm() {
   const queryClient = useQueryClient()
 
   const [currentStep, setCurrentStep] = useState<number>(1)
+  const [proofFile, setProofFile] = useState<File | null>(null)
 
   const form = useForm<CreateDebitProps>({
     resolver: zodResolver(createDebitSchema),
@@ -302,6 +305,12 @@ export function NewDebitForm() {
       })
 
       if (response?.message) {
+        if (proofFile && response.debitId) {
+          await uploadProof({ workspaceId: workspaceActive.id, collection: 'debits', resourceId: response.debitId, file: proofFile })
+          setProofFile(null)
+        } else if (proofFile) {
+          toast.info('A despesa foi criada, mas o comprovante não pôde ser associado a um lançamento único.')
+        }
         await queryClient.invalidateQueries({ queryKey: ["debits", workspaceActive.id] })
         await invalidateFinancialQueries(queryClient, workspaceActive.id)
         toast.success(response.message)
@@ -363,13 +372,20 @@ export function NewDebitForm() {
             )}
 
             {currentStep === 4 && (
-              <StepReview
+              <>
+                <StepReview
                 form={form}
                 categories={categories}
                 banks={banks}
                 cards={cards}
                 responsibles={responsibles}
-              />
+                />
+                <div className="mt-6 space-y-2 rounded-lg border border-border/70 p-4">
+                  <label htmlFor="debit-proof" className="text-sm font-medium">Comprovante (opcional)</label>
+                  <Input id="debit-proof" type="file" accept="image/jpeg,image/png,application/pdf" onChange={(event) => setProofFile(event.target.files?.[0] || null)} />
+                  <p className="text-xs text-muted-foreground">PDF, PNG ou JPEG até 5 MB. A despesa será criada mesmo sem arquivo.</p>
+                </div>
+              </>
             )}
           </div>
 

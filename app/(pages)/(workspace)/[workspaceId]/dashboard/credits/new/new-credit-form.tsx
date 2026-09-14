@@ -10,6 +10,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/app/components/ui/button"
+import { Input } from "@/app/components/ui/input"
 import { Form } from "@/app/components/ui/form"
 import { useWorkspace } from "@/app/hooks/use-workspace"
 import { useDateFilter } from "@/app/contexts/date-filter-context"
@@ -28,6 +29,7 @@ import {
   TypeCredit,
 } from "@/app/types/financial"
 import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
+import { uploadProof } from "@/app/http/proofs"
 import { IconName } from "lucide-react/dynamic"
 
 import { CreditStepper, StepItem } from "./credit-stepper"
@@ -50,6 +52,7 @@ export function NewCreditForm() {
   const queryClient = useQueryClient()
 
   const [currentStep, setCurrentStep] = useState<number>(1)
+  const [proofFile, setProofFile] = useState<File | null>(null)
 
   const form = useForm<CreateCreditProps>({
     resolver: zodResolver(createCreditSchema),
@@ -251,6 +254,10 @@ export function NewCreditForm() {
       })
 
       if (response) {
+        if (proofFile && response.creditId) {
+          await uploadProof({ workspaceId: workspaceActive.id, collection: 'credits', resourceId: response.creditId, file: proofFile })
+          setProofFile(null)
+        }
         await queryClient.invalidateQueries({ queryKey: ["credits", workspaceActive.id] })
         await invalidateFinancialQueries(queryClient, workspaceActive.id)
         toast.success(response.message || "Receita criada com sucesso!")
@@ -306,12 +313,19 @@ export function NewCreditForm() {
             )}
 
             {currentStep === 4 && (
-              <StepCreditReview
+              <>
+                <StepCreditReview
                 form={form}
                 categories={categories}
                 banks={banks}
                 responsibles={responsibles}
-              />
+                />
+                <div className="mt-6 space-y-2 rounded-lg border border-border/70 p-4">
+                  <label htmlFor="credit-proof" className="text-sm font-medium">Comprovante (opcional)</label>
+                  <Input id="credit-proof" type="file" accept="image/jpeg,image/png,application/pdf" onChange={(event) => setProofFile(event.target.files?.[0] || null)} />
+                  <p className="text-xs text-muted-foreground">PDF, PNG ou JPEG até 5 MB. A receita será criada mesmo sem arquivo.</p>
+                </div>
+              </>
             )}
           </div>
 
