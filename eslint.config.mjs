@@ -42,6 +42,8 @@ export default [
       ".next/",
       "node_modules/",
       "dist/",
+      "functions/lib/",
+      ".agents/",
       "public/",
       "**/__tests__/",
       "next-env.d.ts",
