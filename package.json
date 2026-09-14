@@ -14,6 +14,7 @@
     "test:suite": "tsx --env-file=.env.local scripts/test-suite.ts",
     "security:migrate-storage:dry-run": "tsx scripts/migrate-legacy-storage-urls.ts",
     "security:migrate-storage:apply": "tsx scripts/migrate-legacy-storage-urls.ts --apply",
+    "security:audit-proof-urls": "tsx scripts/audit-legacy-proof-urls.ts",
     "security:test:emulator": "tsx scripts/security-emulator-suite.ts",
     "analytics:backfill:dry-run": "tsx scripts/backfill-financial-periods.ts",
     "analytics:backfill:audit": "tsx scripts/backfill-financial-periods.ts --audit",

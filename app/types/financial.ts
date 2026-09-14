@@ -31,7 +31,8 @@ export interface Debit {
   responsibleName?: string | null;
   /** Defaults to responsible_owes_me for legacy records. */
   debtDirection?: ResponsibleDebtDirection | null;
-  proofUrl: string | null; // URL do comprovante (pode ser null)
+  /** Caminho privado no Storage; URLs externas legadas não são aceitas em novas mutations. */
+  proofPath?: string | null;
   status?: string | null; // Opcional (sem lógica de status)
   createdAt: Date | null; // Convertido de Timestamp para Date
   updatedAt: Date | null; // Convertido de Timestamp para Date
@@ -127,7 +128,8 @@ export interface Credit {
   categoryId: string | null; // ID da categoria associada (pode ser null)
   categoryName?: string | null;
   categoryUrl?: string | null;
-  proofUrl: string | null; // URL do comprovante (pode ser null)
+  /** Caminho privado no Storage; URLs externas legadas não são aceitas em novas mutations. */
+  proofPath?: string | null;
   responsibleId?: string | null;
   responsibleName?: string | null;
   status?: string | null; // Opcional (sem lógica de status)

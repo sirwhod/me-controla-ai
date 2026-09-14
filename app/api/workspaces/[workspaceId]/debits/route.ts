@@ -198,7 +198,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Debit
       responsibleId: responsibleId || null,
       responsibleName: responsibleName || null,
       debtDirection: responsibleId ? debtDirection || 'responsible_owes_me' : null,
-      proofUrl: null,
+      proofPath: null,
       workspaceId,
       userId: session.user.id,
       createdAt: now,

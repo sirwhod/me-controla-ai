@@ -169,7 +169,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
       categoryUrl: categoryUrl || null,
       responsibleId: responsibleId || null,
       responsibleName: responsibleName || null,
-      proofUrl: null,
+      proofPath: null,
       status: status || 'received',
       workspaceId: workspaceId,
       userId: session.user.id,
