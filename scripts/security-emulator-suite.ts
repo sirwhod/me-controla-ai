@@ -17,6 +17,7 @@ const { db, storage } = await import('../app/lib/firebase')
 const { checkIsWorkspaceMember } = await import('../app/api/utils/check-is-workspace-member')
 const { processInvitationAction, InvitationError } = await import('../app/lib/invitations')
 const { consumeRateLimit } = await import('../app/lib/rate-limit')
+const { saveProof, deleteProof, MAX_PROOF_BYTES } = await import('../app/lib/proofs')
 
 const runId = `security-${Date.now()}-${Math.random().toString(16).slice(2)}`
 const ownerId = `${runId}-owner`
@@ -147,6 +148,25 @@ try {
     const response = await fetch(`http://${storageHost}/v0/b/${bucket}/o/${encodeURIComponent(objectPath)}?alt=media`)
     assert('Storage nega leitura direta de objeto existente', response.status === 401 || response.status === 403, `status ${response.status}`)
     await storage.file(objectPath).delete({ ignoreNotFound: true })
+
+    const png = new File([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])], 'proof.png', { type: 'image/png' })
+    const savedProof = await saveProof({ workspaceId, file: png })
+    assert('upload de comprovante válido gera path privado', savedProof.path.startsWith(`proofs/${workspaceId}/`))
+    const proofObject = storage.file(savedProof.path)
+    const [proofExists] = await proofObject.exists()
+    assert('upload de comprovante grava objeto', proofExists)
+
+    const invalid = new File([Buffer.from('not-an-image')], 'proof.png', { type: 'image/png' })
+    try { await saveProof({ workspaceId, file: invalid }); assert('assinatura inválida é rejeitada', false) }
+    catch (error) { assert('assinatura inválida é rejeitada', error instanceof Error && error.message === 'PROOF_SIGNATURE_INVALID') }
+
+    const oversized = new File([Buffer.alloc(MAX_PROOF_BYTES + 1)], 'proof.png', { type: 'image/png' })
+    try { await saveProof({ workspaceId, file: oversized }); assert('comprovante acima do limite é rejeitado', false) }
+    catch (error) { assert('comprovante acima do limite é rejeitado', error instanceof Error && error.message === 'PROOF_TOO_LARGE') }
+
+    await deleteProof(savedProof.path)
+    const [deleted] = await proofObject.exists()
+    assert('exclusão remove o comprovante privado', !deleted)
   } else {
     assert('Storage emulator configurado', false, 'FIREBASE_STORAGE_EMULATOR_HOST ausente')
   }
