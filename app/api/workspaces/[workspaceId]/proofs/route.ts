@@ -3,6 +3,7 @@ import { auth } from '@/app/lib/auth'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { db } from '@/app/lib/firebase'
 import { deleteProof, saveProof, signedProofUrl } from '@/app/lib/proofs'
+import { consumeRateLimit } from '@/app/lib/rate-limit'
 
 type Params = { params: Promise<{ workspaceId: string }> }
 const resourceName = (value: string | null) => value === 'debits' || value === 'credits' ? value : null
@@ -19,6 +20,10 @@ export async function POST(request: NextRequest, { params }: Params) {
   const { workspaceId } = await params
   const access = await authorize(workspaceId)
   if ('error' in access) return access.error
+  const contentLength = Number(request.headers.get('content-length') || 0)
+  if (contentLength > 6 * 1024 * 1024) return NextResponse.json({ message: 'Arquivo acima do limite permitido' }, { status: 413 })
+  const rateLimit = await consumeRateLimit('proof-upload', `${access.session.user.id}:${workspaceId}`, 20, 60 * 60 * 1000)
+  if (!rateLimit.allowed) return NextResponse.json({ message: 'Limite de uploads excedido' }, { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } })
   const form = await request.formData().catch(() => null)
   const file = form?.get('file')
   const collection = resourceName(String(form?.get('collection') || ''))
