@@ -41,6 +41,7 @@ import { getResponsibles, createResponsible } from "@/app/http/responsibles"
 import { PersonResponsible } from "@/app/types/financial"
 import { invalidateFinancialQueries } from "@/app/lib/invalidate-financial-queries"
 import { useUnsavedChangesGuard } from "@/app/hooks/use-unsaved-changes-guard"
+import { uploadProof } from "@/app/http/proofs"
 
 interface EditCreditProps {
   credit: Credit
@@ -49,6 +50,7 @@ interface EditCreditProps {
 
 export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) {
   const [open, setOpen] = useState(false)
+  const [proofFile, setProofFile] = useState<File | null>(null)
   const { workspaceActive } = useWorkspace()
   const queryClient = useQueryClient()
 
@@ -107,6 +109,10 @@ export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) 
   const onSubmit = async (data: UpdateCreditProps) => {
     if (!workspaceActive) return
     await updateCreditMutation(data)
+    if (proofFile) {
+      await uploadProof({ workspaceId: workspaceActive.id, collection: 'credits', resourceId: credit.id, file: proofFile })
+      setProofFile(null)
+    }
   }
 
   const handleQuickCreateCategory = async (name: string) => {
@@ -167,6 +173,13 @@ export function EditCredit({ credit, asDropdownItem = false }: EditCreditProps) 
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormItem>
+              <FormLabel>Comprovante (opcional)</FormLabel>
+              <FormControl>
+                <Input type="file" accept="image/jpeg,image/png,application/pdf" onChange={(event) => setProofFile(event.target.files?.[0] || null)} />
+              </FormControl>
+              <p className="text-xs text-muted-foreground">PDF, PNG ou JPEG até 5 MB.</p>
+            </FormItem>
             <FormField
               control={form.control}
               name="description"

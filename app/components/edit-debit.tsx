@@ -42,6 +42,7 @@ import { createCategory } from "@/app/http/categories/create-category"
 import { createBank } from "@/app/http/banks/create-bank"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import { useUnsavedChangesGuard } from "@/app/hooks/use-unsaved-changes-guard"
+import { uploadProof } from "@/app/http/proofs"
 
 interface EditDebitProps {
   debit: Debit
@@ -51,6 +52,7 @@ interface EditDebitProps {
 
 export function EditDebit({ debit, asDropdownItem = false, trigger }: EditDebitProps) {
   const [open, setOpen] = useState(false)
+  const [proofFile, setProofFile] = useState<File | null>(null)
   const { workspaceActive } = useWorkspace()
   const queryClient = useQueryClient()
 
@@ -127,6 +129,10 @@ export function EditDebit({ debit, asDropdownItem = false, trigger }: EditDebitP
       }
     }
     await updateDebitMutation(payload)
+    if (proofFile) {
+      await uploadProof({ workspaceId: workspaceActive.id, collection: 'debits', resourceId: debit.id!, file: proofFile })
+      setProofFile(null)
+    }
   }
 
   const handleQuickCreateCategory = async (name: string) => {
@@ -204,6 +210,13 @@ export function EditDebit({ debit, asDropdownItem = false, trigger }: EditDebitP
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormItem>
+              <FormLabel>Comprovante (opcional)</FormLabel>
+              <FormControl>
+                <Input type="file" accept="image/jpeg,image/png,application/pdf" onChange={(event) => setProofFile(event.target.files?.[0] || null)} />
+              </FormControl>
+              <p className="text-xs text-muted-foreground">PDF, PNG ou JPEG até 5 MB.</p>
+            </FormItem>
             <FormField
               control={form.control}
               name="description"
