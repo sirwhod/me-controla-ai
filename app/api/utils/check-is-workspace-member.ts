@@ -22,6 +22,7 @@ export async function checkIsWorkspaceMember({ workspaceId, workspaceIds, userId
       const workspaceDoc = await db.collection('workspaces').doc(workspaceId).get()
       if (!workspaceDoc.exists) return false
       const data = workspaceDoc.data()
+      if (data?.deleting) return false
       const members: string[] = Array.isArray(data?.members) ? data.members : []
       return members.includes(userId) || data?.ownerId === userId
     } catch { return false }

@@ -5,6 +5,7 @@ import { serializeFirestoreDate } from '@/app/lib/date-utils'
 import { InvitationError, processInvitationAction } from '@/app/lib/invitations'
 import { normalizeEmail } from '@/app/lib/email-identity'
 import { createNotification } from '@/app/lib/notifications'
+import { runWorkspaceMutation } from '@/app/api/utils/with-workspace-mutation'
 
 export async function GET() {
   try {
@@ -62,6 +63,9 @@ export async function POST(req: NextRequest) {
     const invitationSnapshot = await db.collection('invitations').doc(invitationId).get()
     const invitationData = invitationSnapshot.data()
 
+    if (!invitationData?.workspaceId) return NextResponse.json({ message: 'Convite não encontrado' }, { status: 404 })
+    return await runWorkspaceMutation(String(invitationData.workspaceId), session.user.id, async () => {
+
     const result = await processInvitationAction({
       invitationId,
       action,
@@ -82,6 +86,7 @@ export async function POST(req: NextRequest) {
       if (invitationData?.inviterId) await createNotification({ userId: String(invitationData.inviterId), type: 'workspace.invitation_rejected', category: 'workspace', title: 'Convite recusado', body: `${session.user.name || 'O convidado'} recusou o convite para a caixinha "${invitationData.workspaceName || 'Caixinha'}".`, workspaceId: String(invitationData.workspaceId), actionUrl: `/${invitationData.workspaceId}/manage/members`, dedupeKey: `invitation-rejected:${invitationId}` })
       return NextResponse.json({ message: 'Convite recusado com sucesso.' }, { status: 200 })
     }
+    }, false)
   } catch (error: unknown) {
     if (error instanceof InvitationError) {
       return NextResponse.json({ message: error.message }, { status: error.status })

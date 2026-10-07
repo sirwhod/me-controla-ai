@@ -1,3 +1,4 @@
+import { withWorkspaceMutation } from '@/app/api/utils/with-workspace-mutation'
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
@@ -16,7 +17,7 @@ interface RouteParams {
   params: Promise<{ workspaceId: string }>
 }
 
-export async function POST(req: NextRequest, props: RouteParams) {
+async function postHandler(req: NextRequest, props: RouteParams) {
   try {
     const { workspaceId } = await props.params
     const session = await auth()
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest, props: RouteParams) {
     }
 
     const wsDoc = await db.collection('workspaces').doc(workspaceId).get()
-    if (!wsDoc.exists) {
+    if (!wsDoc.exists || wsDoc.data()?.deleting) {
       return NextResponse.json({ message: 'Caixinha não encontrada' }, { status: 404 })
     }
     if (wsDoc.data()?.ownerId !== session.user.id) {
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest, props: RouteParams) {
         transaction.get(db.collection('workspaces').doc(workspaceId)),
         transaction.get(inviteRef),
       ])
-      if (!currentWorkspace.exists || currentWorkspace.data()?.ownerId !== session.user.id) {
+      if (!currentWorkspace.exists || currentWorkspace.data()?.deleting || currentWorkspace.data()?.ownerId !== session.user.id) {
         throw new InvitationCreationError('Apenas o proprietário pode convidar membros', 403)
       }
       const currentData = currentInvite.data()
@@ -134,3 +135,5 @@ class InvitationCreationError extends Error {
     super(message)
   }
 }
+
+export const POST = withWorkspaceMutation(postHandler)

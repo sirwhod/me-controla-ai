@@ -1,3 +1,4 @@
+import { withWorkspaceMutation } from '@/app/api/utils/with-workspace-mutation'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
@@ -78,7 +79,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<Param
   return NextResponse.json({ sourceId: debitId, type: source.type, description: source.description, entries, totals: { total, paid, remaining: Math.max(0, total - paid) } })
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<Params> }) {
+async function patchHandler(req: NextRequest, { params }: { params: Promise<Params> }) {
   const { workspaceId, debitId } = await params
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ message: 'Não autenticado' }, { status: 401 })
@@ -143,3 +144,5 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Para
   })
   return NextResponse.json({ message: 'Valor atualizado na parcela atual e nas próximas.', updatedCount: targetDocs.length })
 }
+
+export const PATCH = withWorkspaceMutation(patchHandler)

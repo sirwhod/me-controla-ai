@@ -1,4 +1,6 @@
+import { withWorkspaceMutation } from '@/app/api/utils/with-workspace-mutation'
 import { NextRequest, NextResponse } from 'next/server'
+import type { Session } from 'next-auth'
 import { auth } from '@/app/lib/auth'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { db } from '@/app/lib/firebase'
@@ -8,7 +10,7 @@ import { consumeRateLimit } from '@/app/lib/rate-limit'
 type Params = { params: Promise<{ workspaceId: string }> }
 const resourceName = (value: string | null) => value === 'debits' || value === 'credits' ? value : null
 
-async function authorize(workspaceId: string) {
+async function authorize(workspaceId: string): Promise<{ error: NextResponse } | { session: Session }> {
   const session = await auth()
   if (!session?.user?.id) return { error: NextResponse.json({ message: 'Não autenticado' }, { status: 401 }) }
   const member = await checkIsWorkspaceMember({ workspaceId, workspaceIds: session.user.workspaceIds, userId: session.user.id })
@@ -16,7 +18,7 @@ async function authorize(workspaceId: string) {
   return { session }
 }
 
-export async function POST(request: NextRequest, { params }: Params) {
+async function postHandler(request: NextRequest, { params }: Params) {
   const { workspaceId } = await params
   const access = await authorize(workspaceId)
   if ('error' in access) return access.error
@@ -60,7 +62,7 @@ export async function GET(request: NextRequest, { params }: Params) {
   catch { return NextResponse.json({ message: 'Comprovante inválido' }, { status: 404 }) }
 }
 
-export async function DELETE(request: NextRequest, { params }: Params) {
+async function deleteHandler(request: NextRequest, { params }: Params) {
   const { workspaceId } = await params
   const access = await authorize(workspaceId)
   if ('error' in access) return access.error
@@ -75,3 +77,6 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   await deleteProof(doc.data()?.proofPath)
   return NextResponse.json({ ok: true })
 }
+
+export const POST = withWorkspaceMutation(postHandler)
+export const DELETE = withWorkspaceMutation(deleteHandler)

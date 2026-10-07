@@ -1,3 +1,4 @@
+import { withWorkspaceMutation } from '@/app/api/utils/with-workspace-mutation'
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
@@ -189,7 +190,7 @@ export async function GET(req: NextRequest, props: RouteParams) {
   }
 }
 
-export async function PATCH(req: NextRequest, props: RouteParams) {
+async function patchHandler(req: NextRequest, props: RouteParams) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -258,7 +259,7 @@ export async function PATCH(req: NextRequest, props: RouteParams) {
   }
 }
 
-export async function DELETE(_req: NextRequest, props: RouteParams) {
+async function deleteHandler(_req: NextRequest, props: RouteParams) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -285,3 +286,6 @@ export async function DELETE(_req: NextRequest, props: RouteParams) {
     return NextResponse.json({ message: 'Erro interno ao excluir responsável' }, { status: 500 })
   }
 }
+
+export const PATCH = withWorkspaceMutation(patchHandler)
+export const DELETE = withWorkspaceMutation(deleteHandler)

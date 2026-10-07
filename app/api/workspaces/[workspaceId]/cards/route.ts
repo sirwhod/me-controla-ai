@@ -1,3 +1,4 @@
+import { withWorkspaceMutation } from '@/app/api/utils/with-workspace-mutation'
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
@@ -61,7 +62,7 @@ export async function GET(_req: NextRequest, props: RouteParams) {
   }
 }
 
-export async function POST(req: NextRequest, props: RouteParams) {
+async function postHandler(req: NextRequest, props: RouteParams) {
   try {
     const { workspaceId } = await props.params
     const session = await auth()
@@ -129,3 +130,5 @@ export async function POST(req: NextRequest, props: RouteParams) {
     return NextResponse.json({ message }, { status: 500 })
   }
 }
+
+export const POST = withWorkspaceMutation(postHandler)

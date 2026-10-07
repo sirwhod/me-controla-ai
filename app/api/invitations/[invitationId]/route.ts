@@ -3,6 +3,7 @@ import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
 import { createNotification } from '@/app/lib/notifications'
 import { normalizeEmail } from '@/app/lib/email-identity'
+import { runWorkspaceMutation } from '@/app/api/utils/with-workspace-mutation'
 
 interface RouteParams {
   params: Promise<{ invitationId: string }>
@@ -20,6 +21,8 @@ export async function DELETE(_req: NextRequest, props: RouteParams) {
     const inviteRef = db.collection('invitations').doc(invitationId)
     const inviteSnapshot = await inviteRef.get()
     const inviteData = inviteSnapshot.data()
+    if (!inviteData?.workspaceId) return NextResponse.json({ message: 'Convite não encontrado' }, { status: 404 })
+    return await runWorkspaceMutation(String(inviteData.workspaceId), session.user.id, async () => {
     await db.runTransaction(async (transaction) => {
       const doc = await transaction.get(inviteRef)
       if (!doc.exists) throw new InvitationRouteError('Convite não encontrado', 404)
@@ -39,6 +42,7 @@ export async function DELETE(_req: NextRequest, props: RouteParams) {
     }
 
     return NextResponse.json({ message: 'Convite cancelado com sucesso!' }, { status: 200 })
+    })
   } catch (error: unknown) {
     if (error instanceof InvitationRouteError) {
       return NextResponse.json({ message: error.message }, { status: error.status })

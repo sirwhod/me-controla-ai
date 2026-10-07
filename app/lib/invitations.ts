@@ -45,7 +45,7 @@ export async function processInvitationAction(input: {
 
     const workspaceRef = db.collection('workspaces').doc(inviteData.workspaceId)
     const workspaceDoc = await transaction.get(workspaceRef)
-    if (!workspaceDoc.exists) {
+    if (!workspaceDoc.exists || workspaceDoc.data()?.deleting) {
       throw new InvitationError('Workspace ou usuário não encontrado', 404)
     }
 

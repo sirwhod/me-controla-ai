@@ -30,6 +30,7 @@ import {
 import Link from "@/app/components/context-link"
 import { PageHeader } from "@/app/components/page-header"
 import { NotificationPreferences } from "@/app/components/notification-preferences"
+import { DeleteWorkspace } from "@/app/components/delete-workspace"
 
 export default function ManageHubPage() {
   const { workspaceActive, isLoading: isWorkspaceLoading } = useWorkspace()
@@ -175,6 +176,8 @@ export default function ManageHubPage() {
             <NotificationPreferences />
           </div>
         </Card>
+
+        <DeleteWorkspace key={wsId} />
 
         {/* Grupos Semânticos de Configuração */}
         <div className="space-y-6">

@@ -1,3 +1,4 @@
+import { withWorkspaceMutation } from '@/app/api/utils/with-workspace-mutation'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member';
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
@@ -62,11 +63,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
+async function putHandler(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
     return PATCH(req, { params })
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
+async function patchHandler(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
   try {
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
@@ -253,7 +254,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cred
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
+async function deleteHandler(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
   try {
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
@@ -297,3 +298,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Cre
     return NextResponse.json({ message: 'Erro interno do servidor ao excluir débito' }, { status: 500 })
   }
 }
+
+export const PUT = withWorkspaceMutation(putHandler)
+export const PATCH = withWorkspaceMutation(patchHandler)
+export const DELETE = withWorkspaceMutation(deleteHandler)

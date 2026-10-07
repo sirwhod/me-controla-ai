@@ -1,3 +1,4 @@
+import { withWorkspaceMutation } from '@/app/api/utils/with-workspace-mutation'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member';
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
@@ -89,7 +90,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Credit
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
+async function postHandler(req: NextRequest, { params }: { params: Promise<CreditsRouteParams> }) {
   try {
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
@@ -228,3 +229,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Credi
     return NextResponse.json({ message: 'Erro interno do servidor ao criar crédito' }, { status: 500 })
   }
 }
+
+export const POST = withWorkspaceMutation(postHandler)

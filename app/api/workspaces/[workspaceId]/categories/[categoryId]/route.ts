@@ -1,3 +1,4 @@
+import { withWorkspaceMutation } from '@/app/api/utils/with-workspace-mutation'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { auth } from '@/app/lib/auth'
 import { db } from '@/app/lib/firebase'
@@ -55,11 +56,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Catego
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<CategoryRouteParams> }) {
+async function putHandler(req: NextRequest, { params }: { params: Promise<CategoryRouteParams> }) {
     return PATCH(req, { params })
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<CategoryRouteParams> }) {
+async function patchHandler(req: NextRequest, { params }: { params: Promise<CategoryRouteParams> }) {
   try {
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
@@ -119,7 +120,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Cate
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<CategoryRouteParams> }) {
+async function deleteHandler(req: NextRequest, { params }: { params: Promise<CategoryRouteParams> }) {
   try {
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
@@ -157,3 +158,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Cat
     return NextResponse.json({ message: 'Erro interno do servidor ao excluir categoria' }, { status: 500 })
   }
 }
+
+export const PUT = withWorkspaceMutation(putHandler)
+export const PATCH = withWorkspaceMutation(patchHandler)
+export const DELETE = withWorkspaceMutation(deleteHandler)

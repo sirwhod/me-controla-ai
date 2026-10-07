@@ -1,5 +1,4 @@
-"use server"
-
+import { withWorkspaceMutation } from '@/app/api/utils/with-workspace-mutation'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member'
 import { auth } from '@/app/lib/auth'
 import { db, getDownloadURLFromPath, storage } from '@/app/lib/firebase'
@@ -70,7 +69,7 @@ export async function GET(req: NextRequest, { params }: {params: Promise<BankRou
   }
 }
 
-export async function POST(req: NextRequest, { params }: {params: Promise<BankRouteParams>}) {
+async function postHandler(req: NextRequest, { params }: {params: Promise<BankRouteParams>}) {
   try {
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
@@ -195,3 +194,5 @@ function hasAcceptedImageSignature(buffer: Buffer, contentType: string): boolean
   }
   return false
 }
+
+export const POST = withWorkspaceMutation(postHandler)

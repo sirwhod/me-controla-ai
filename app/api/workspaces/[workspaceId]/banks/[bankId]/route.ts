@@ -1,3 +1,4 @@
+import { withWorkspaceMutation } from '@/app/api/utils/with-workspace-mutation'
 import { checkIsWorkspaceMember } from '@/app/api/utils/check-is-workspace-member';
 import { auth } from '@/app/lib/auth'
 import { db, getDownloadURLFromPath } from '@/app/lib/firebase'
@@ -57,11 +58,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<BankRo
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<BankRouteParams> }) {
+async function putHandler(req: NextRequest, { params }: { params: Promise<BankRouteParams> }) {
     return PATCH(req, { params: params })
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<BankRouteParams> }) {
+async function patchHandler(req: NextRequest, { params }: { params: Promise<BankRouteParams> }) {
   try {
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
@@ -122,7 +123,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<Bank
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<BankRouteParams> }) {
+async function deleteHandler(req: NextRequest, { params }: { params: Promise<BankRouteParams> }) {
   try {
     const searchParams = await params
     const workspaceId = searchParams.workspaceId
@@ -161,3 +162,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Ban
     return NextResponse.json({ message: 'Erro interno do servidor ao excluir banco' }, { status: 500 })
   }
 }
+
+export const PUT = withWorkspaceMutation(putHandler)
+export const PATCH = withWorkspaceMutation(patchHandler)
+export const DELETE = withWorkspaceMutation(deleteHandler)
